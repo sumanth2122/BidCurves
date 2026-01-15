@@ -1,0 +1,37 @@
+---
+title: "Bid Curves"
+format: html
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+data <- read_csv(here::here("20250701_20250701_PUB_BID_DAM_v3.csv"))
+subset <- data |>
+  select(STARTTIME, STOPTIME, RESOURCE_TYPE, SCHEDULINGCOORDINATOR_SEQ, RESOURCEBID_SEQ,
+         MARKETPRODUCTTYPE, SELFSCHEDMW, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
+  mutate(STARTDATETIME = as.factor(STARTTIME),
+         STARTTIME = hms::as_hms(STARTTIME))
+  # mutate(STARTDATE = date(STARTTIME),
+  #        STOPDATE = date(STOPTIME),
+  #        STARTTIME = hms::as_hms(STARTTIME),
+  #        STOPTIME = hms::as_hms(STOPTIME))
+```
+
+```{r}
+subset |>
+  filter(RESOURCEBID_SEQ == 394840,
+         STARTTIME %in% c(hms::as_hms("00:00:00"),
+                          hms::as_hms("08:00:00"),
+                          hms::as_hms("10:00:00"),
+                          hms::as_hms("11:00:00"),
+                          hms::as_hms("12:00:00"))) |>
+  ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA, 
+             color = STARTDATETIME, group=STARTDATETIME)) +
+  geom_line() +
+  geom_point()
+```
