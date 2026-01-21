@@ -35,3 +35,32 @@ subset |>
   geom_line() +
   geom_point()
 ```
+
+
+```{r}
+plot_curves <- function(market_data, resource_id){
+    date <- as.Date(market_data$STARTTIME[1])
+
+    plot <- market_data |>
+        mutate(STARTDATETIME = as.factor(STARTTIME),
+               STARTTIME = hms::as_hms(STARTTIME)) |>
+        filter(RESOURCEBID_SEQ == resource_id,
+        STARTTIME %in% c(hms::as_hms("00:00:00"),
+                          hms::as_hms("08:00:00"),
+                          hms::as_hms("10:00:00"),
+                          hms::as_hms("11:00:00"),
+                          hms::as_hms("12:00:00"))) |>
+        ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA, 
+             color = STARTDATETIME, group=STARTDATETIME)) +
+        geom_line() +
+        geom_point() +
+        labs(
+            x="Quantity (MW)",
+            y = "Bid Price ($/MWh)",
+            title = sprintf("Resource ID: %s Date: %s", resource_id, date)) +
+        theme_minimal()
+       plot
+}
+
+plot_curves(data, 394840)
+```
