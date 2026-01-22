@@ -10,7 +10,7 @@ library(tidyverse)
 
 
 ```{r}
-data <- read_csv(here::here("20250701_20250701_PUB_BID_DAM_v3.csv"))
+data <- read_csv(here::here("plot data","20251014_20251014_PUB_BID_DAM_v3.csv"))
 subset <- data |>
   select(STARTTIME, STOPTIME, RESOURCE_TYPE, SCHEDULINGCOORDINATOR_SEQ, RESOURCEBID_SEQ,
          MARKETPRODUCTTYPE, SELFSCHEDMW, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
@@ -44,12 +44,12 @@ plot_curves <- function(market_data, resource_id){
     plot <- market_data |>
         mutate(STARTDATETIME = as.factor(STARTTIME),
                STARTTIME = hms::as_hms(STARTTIME)) |>
-        filter(RESOURCEBID_SEQ == resource_id,
-        STARTTIME %in% c(hms::as_hms("00:00:00"),
-                          hms::as_hms("08:00:00"),
-                          hms::as_hms("10:00:00"),
-                          hms::as_hms("11:00:00"),
-                          hms::as_hms("12:00:00"))) |>
+        filter(RESOURCEBID_SEQ == resource_id) |>
+       #  STARTTIME %in% c(hms::as_hms("00:00:00"),
+       #                    hms::as_hms("04:00:00"),
+       #                    hms::as_hms("08:00:00"),
+       #                    hms::as_hms("13:00:00"),
+       #                    hms::as_hms("20:00:00"))) |>
         ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA, 
              color = STARTDATETIME, group=STARTDATETIME)) +
         geom_line() +
@@ -57,10 +57,51 @@ plot_curves <- function(market_data, resource_id){
         labs(
             x="Quantity (MW)",
             y = "Bid Price ($/MWh)",
-            title = sprintf("Resource ID: %s Date: %s", resource_id, date)) +
+            title = sprintf("ID: %s Date: %s", resource_id, date)) +
         theme_minimal()
        plot
 }
 
 plot_curves(data, 394840)
+```
+
+```{r}
+sept14 <- read_csv(here::here("plot data", "20250914_20250914_PUB_BID_DAM_v3.csv"))
+sept14plot <- plot_curves(sept14, 394840)
+ggsave(here::here("plots", "sept14filter.png"))
+
+oct01 <- read_csv(here::here("plot data", "20251001_20251001_PUB_BID_DAM_v3.csv"))
+oct01plot <- plot_curves(oct10, 394840)
+ggsave(here::here("plots", "oct01filter.png"))
+
+oct14 <- read_csv(here::here("plot data","20251014_20251014_PUB_BID_DAM_v3.csv"))
+oct14plot <- plot_curves(oct14, 394840)
+ggsave(here::here("plots", "oct14filter.png"))
+
+mar14 <- read_csv(here::here("plot data", "20250314_20250314_PUB_BID_DAM_v3.csv"))
+mar14plot <- plot_curves(mar14, 394840)
+ggsave(here::here("plots", "mar14filter.png"))
+```
+
+```{r}
+sept14 |>
+       mutate(STARTTIME = hms::as_hms(STARTTIME)) |>
+       filter(RESOURCEBID_SEQ == 394840) |>
+       filter(STARTTIME == hms::as_hms("16:00:00"))
+
+test <- sept14 |>
+       filter(RESOURCEBID_SEQ == 394840)
+```
+
+```{r}
+# NAs in SCH_BID_XAXISDATA?
+subset |>
+  mutate(STARTTIME = hms::as_hms(STARTTIME)) |>
+  filter(
+    RESOURCEBID_SEQ == 394840,
+#     STARTTIME %in% hms::as_hms(c("00:00:00","08:00:00","10:00:00","11:00:00","12:00:00"))
+  ) |>
+  filter(is.na(SCH_BID_XAXISDATA) | is.na(SCH_BID_Y1AXISDATA)) |>
+  select(STARTTIME, STARTDATETIME = STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA)
+
 ```
