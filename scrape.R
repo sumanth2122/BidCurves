@@ -5,97 +5,38 @@ library(httr)
 # ! WILL NOT WORK ON WINDOWS DUE TO HOW LIBCURL WORKS
 # (at the very least, not working for me)
 
-#' Fetch CAISO OASIS prices by month.
+#' Fetch CAISO OASIS DAM bid data by day.
 #'
 #' Uses sequential requests with backoff and pause-based rate limiting.
+#' Fetches PUB_DAM_GRP data from the GroupZip endpoint.
 #'
 #' @param start_date Start date (YYYY-MM-DD).
-#' @param end_date End date (YYYY-MM-DD). Used as the final monthly boundary.
-#' @param market Market type, either "RTM" or "DAM".
+#' @param end_date End date (YYYY-MM-DD).
 #' @param request_pause Seconds to sleep after each request.
 #' @param retry_times Number of retries for transient failures.
 #' @param retry_pause_base Base seconds between retries.
 #' @param retry_pause_cap Max seconds between retries.
-#' @return A tibble of OASIS price data.
+#' @return A tibble of OASIS DAM bid data.
 fetch_oasis_prices <- function(
   start_date,
   end_date,
-  market = c("RTM", "DAM"),
   request_pause = 5,
   retry_times = 15,
   retry_pause_base = 3,
   retry_pause_cap = 20
 ) {
-  market <- match.arg(market)
-  nodes <- switch(
-    market,
-    RTM = "DLAP_PACE_NPM-APND,DLAP_PACW_NPM-APND,DLAP_PGAE-APND,DLAP_SCE-APND,DLAP_SDGE-APND,DLAP_VEA-APND",
-    DAM = "DLAP_PGAE-APND,DLAP_SCE-APND,DLAP_SDGE-APND,DLAP_VEA-APND"
-  )
+  # Generate sequence of daily dates
+  dates <- seq.Date(as.Date(start_date), as.Date(end_date), by = "day")
 
-  spec <- switch(
-    market,
-    RTM = list(queryname = "PRC_INTVL_LMP", version = 3, market_run_id = "RTM"),
-    DAM = list(queryname = "PRC_LMP", version = 12, market_run_id = "DAM")
-  )
-
-  col_types <- switch(
-    market,
-    RTM = cols(
-      INTERVALSTARTTIME_GMT = col_datetime(),
-      INTERVALENDTIME_GMT = col_datetime(),
-      OPR_DT = col_date(),
-      OPR_HR = col_character(),
-      NODE_ID_XML = col_character(),
-      NODE_ID = col_character(),
-      NODE = col_character(),
-      MARKET_RUN_ID = col_character(),
-      LMP_TYPE = col_character(),
-      XML_DATA_ITEM = col_character(),
-      PNODE_RESMRID = col_character(),
-      GRP_TYPE = col_character(),
-      POS = col_double(),
-      VALUE = col_double(),
-      OPR_INTERVAL = col_double(),
-      GROUP = col_double()
-    ),
-    DAM = cols(
-      INTERVALSTARTTIME_GMT = col_datetime(),
-      INTERVALENDTIME_GMT = col_datetime(),
-      OPR_DT = col_date(),
-      OPR_HR = col_double(),
-      OPR_INTERVAL = col_double(),
-      NODE_ID_XML = col_character(),
-      NODE_ID = col_character(),
-      NODE = col_character(),
-      MARKET_RUN_ID = col_character(),
-      LMP_TYPE = col_character(),
-      XML_DATA_ITEM = col_character(),
-      PNODE_RESMRID = col_character(),
-      GRP_TYPE = col_character(),
-      POS = col_double(),
-      MW = col_double(),
-      GROUP = col_double()
-    )
-  )
-
-  dates <- seq.Date(as.Date(start_date), as.Date(end_date), by = "month")
-  start_dates <- dates[-length(dates)]
-  end_dates <- dates[-1]
   temp_dir <- tempfile("oasis_")
   dir.create(temp_dir)
   on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
 
-  map2(
-    start_dates,
-    end_dates,
-    \(start, end) {
+  map(
+    dates,
+    \(date) {
       fetch_one(
-        start_date = start,
-        end_date = end,
-        spec = spec,
-        nodes = nodes,
-        col_types = col_types,
+        date = date,
         temp_dir = temp_dir,
         request_pause = request_pause,
         retry_times = retry_times,
@@ -107,46 +48,36 @@ fetch_oasis_prices <- function(
     list_rbind()
 }
 
-#' Fetch one month of CAISO OASIS prices.
+#' Fetch one day of CAISO OASIS DAM bid data.
 #'
 #' Internal helper for `fetch_oasis_prices()`.
 #'
-#' @param start_date Start date for the month.
-#' @param end_date End date for the month.
-#' @param spec List with queryname, version, and market_run_id.
-#' @param nodes Comma-separated node list.
+#' @param date Date to fetch data for.
+#' @param temp_dir Temporary directory for downloaded files.
 #' @param request_pause Seconds to sleep after each request.
 #' @param retry_times Number of retries for transient failures.
 #' @param retry_pause_base Base seconds between retries.
 #' @param retry_pause_cap Max seconds between retries.
-#' @return A tibble for a single month of prices.
+#' @return A tibble for a single day of DAM bid data.
 #' @keywords internal
 fetch_one <- function(
-  start_date,
-  end_date,
-  spec,
-  nodes,
-  col_types,
+  date,
   temp_dir,
   request_pause,
   retry_times,
   retry_pause_base,
   retry_pause_cap
 ) {
-  start_datetime <- paste0(format(start_date, "%Y%m%d"), "T08:00-0000")
-  end_datetime <- paste0(format(end_date, "%Y%m%d"), "T07:00-0000")
+  start_datetime <- paste0(format(date, "%Y%m%d"), "T07:00-0000")
   temp <- tempfile(tmpdir = temp_dir)
 
   url <- modify_url(
-    "https://oasis.caiso.com/oasisapi/SingleZip",
+    "https://oasis.caiso.com/oasisapi/GroupZip",
     query = list(
       resultformat = 6,
-      queryname = spec$queryname,
-      version = spec$version,
-      startdatetime = start_datetime,
-      enddatetime = end_datetime,
-      market_run_id = spec$market_run_id,
-      node = nodes
+      version = 3,
+      groupid = "PUB_DAM_GRP",
+      startdatetime = start_datetime
     )
   )
 
@@ -168,6 +99,15 @@ fetch_one <- function(
   )
 
   stop_for_status(response)
-  unzip(temp, exdir = tempdir()) |>
-    read_csv(col_types = col_types)
+
+  # Unzip and find the PUB_BID_DAM file
+  unzipped_files <- unzip(temp, exdir = tempdir())
+  bid_file <- unzipped_files[grepl("PUB_BID_DAM", unzipped_files)]
+
+  if (length(bid_file) == 0) {
+    warning(sprintf("No PUB_BID_DAM file found for %s", date))
+    return(tibble())
+  }
+
+  read_csv(bid_file[1], col_types = cols(.default = col_guess()))
 }
