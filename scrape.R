@@ -31,7 +31,7 @@ fetch_oasis_prices <- function(
   dir.create(temp_dir)
   on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
 
-  seq(ymd(start_date), ymd(end_date), by = days(1)) |>
+  seq(ymd(start_date), ymd(end_date), by = "day") |>
     # Could swap to mirai_map for parallelization
     map(\(d) {
       fetch_one(
