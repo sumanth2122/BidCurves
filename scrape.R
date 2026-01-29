@@ -5,13 +5,12 @@ library(httr)
 # ! WILL NOT WORK ON WINDOWS DUE TO HOW LIBCURL WORKS
 # (at the very least, not working for me)
 
-#' Fetch CAISO OASIS DAM bid data by day.
-#'
-#' Uses sequential requests with backoff and pause-based rate limiting.
-#' Fetches PUB_DAM_GRP data from the GroupZip endpoint.
+#' Fetch CAISO OASIS DAM bid data by day. Only the first
+#' 3 arguments are required to be set manually.
 #'
 #' @param start_date Start date (YYYY-MM-DD).
 #' @param end_date End date (YYYY-MM-DD).
+#' @param market Market type, either "RTM" or "DAM".
 #' @param request_pause Seconds to sleep after each request.
 #' @param retry_times Number of retries for transient failures.
 #' @param retry_pause_base Base seconds between retries.
@@ -20,94 +19,83 @@ library(httr)
 fetch_oasis_prices <- function(
   start_date,
   end_date,
+  market = c("RTM", "DAM"),
   request_pause = 5,
   retry_times = 15,
   retry_pause_base = 3,
   retry_pause_cap = 20
 ) {
-  # Generate sequence of daily dates
-  dates <- seq.Date(as.Date(start_date), as.Date(end_date), by = "day")
+  market <- match.arg(market)
 
   temp_dir <- tempfile("oasis_")
   dir.create(temp_dir)
   on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
 
-  map(
-    dates,
-    \(date) {
+  seq(ymd(start_date), ymd(end_date), by = days(1)) |>
+    # Could swap to mirai_map for parallelization
+    map(\(d) {
       fetch_one(
-        date = date,
+        date = d,
         temp_dir = temp_dir,
+        market = market,
         request_pause = request_pause,
         retry_times = retry_times,
         retry_pause_base = retry_pause_base,
         retry_pause_cap = retry_pause_cap
       )
-    }
-  ) |>
+    }) |>
     list_rbind()
 }
 
-#' Fetch one day of CAISO OASIS DAM bid data.
-#'
-#' Internal helper for `fetch_oasis_prices()`.
-#'
-#' @param date Date to fetch data for.
-#' @param temp_dir Temporary directory for downloaded files.
-#' @param request_pause Seconds to sleep after each request.
-#' @param retry_times Number of retries for transient failures.
-#' @param retry_pause_base Base seconds between retries.
-#' @param retry_pause_cap Max seconds between retries.
-#' @return A tibble for a single day of DAM bid data.
-#' @keywords internal
 fetch_one <- function(
   date,
   temp_dir,
+  market,
   request_pause,
   retry_times,
   retry_pause_base,
   retry_pause_cap
 ) {
-  start_datetime <- paste0(format(date, "%Y%m%d"), "T07:00-0000")
-  temp <- tempfile(tmpdir = temp_dir)
+  start_datetime <- date |>
+    as_date() |>
+    ymd(tz = "America/Los_Angeles") |>
+    with_tz("UTC") |>
+    format("%Y%m%dT%H:%M-0000")
+
+  temp_zip <- tempfile(fileext = ".zip", tmpdir = temp_dir)
 
   url <- modify_url(
     "https://oasis.caiso.com/oasisapi/GroupZip",
     query = list(
       resultformat = 6,
       version = 3,
-      groupid = "PUB_DAM_GRP",
+      groupid = sprintf("PUB_%s_GRP", market),
       startdatetime = start_datetime
     )
   )
 
-  req_config <- config(http_version = 1)
-  ua <- user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-  if (request_pause > 0) {
-    Sys.sleep(request_pause)
-  }
+  Sys.sleep(request_pause)
 
   response <- RETRY(
     "GET",
     url,
-    ua,
-    req_config,
-    write_disk(temp, overwrite = TRUE),
+    user_agent("Mozilla/5.0"),
+    config(http_version = 1),
+    write_disk(temp_zip, overwrite = TRUE),
     times = retry_times,
     pause_base = retry_pause_base,
     pause_cap = retry_pause_cap
   )
-
   stop_for_status(response)
 
-  # Unzip and find the PUB_BID_DAM file
-  unzipped_files <- unzip(temp, exdir = tempdir())
-  bid_file <- unzipped_files[grepl("PUB_BID_DAM", unzipped_files)]
+  unzipped_files <- unzip(temp_zip, exdir = temp_dir)
+  bid_pattern <- sprintf("PUB_BID_%s", market)
+  bid_files <- unzipped_files |> keep(\(f) str_detect(basename(f), bid_pattern))
 
-  if (length(bid_file) == 0) {
-    warning(sprintf("No PUB_BID_DAM file found for %s", date))
+  if (length(bid_files) == 0) {
+    warning(sprintf("No %s files found for %s", bid_pattern, date))
     return(tibble())
   }
 
-  read_csv(bid_file[1], col_types = cols(.default = col_guess()))
+  bid_files |> map(\(f) read_csv(f, show_col_types = FALSE)) |> list_rbind()
 }

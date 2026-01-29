@@ -1,0 +1,145 @@
+---
+title: "Metric"
+format: html
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+test <- read_csv(here::here("20250701_20250701_PUB_BID_DAM_v3.csv")) |>
+    mutate(HOUR = hour(STARTTIME)) |>
+    select(HOUR, RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, STARTTIME) |>
+    filter(RESOURCEBID_SEQ == 321383 | RESOURCEBID_SEQ == 321061)
+```
+
+```{r}
+test_wide <- test |>
+    mutate(HOUR = hour(STARTTIME)) |>
+    select(HOUR, RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
+    filter(RESOURCEBID_SEQ == 321383 | RESOURCEBID_SEQ == 321061) |>
+    group_by(RESOURCEBID_SEQ) |>
+    pivot_wider(
+      id_cols = RESOURCEBID_SEQ,
+      names_from = HOUR,
+      values_from = SCH_BID_Y1AXISDATA,
+      names_expand = TRUE
+    )
+```
+
+
+```{r}
+curves <- test |>
+  mutate(HOUR = hour(STARTTIME)) |>
+  filter(RESOURCEBID_SEQ %in% c(321383, 321061)) |>
+  select(RESOURCEBID_SEQ, HOUR,
+         SCH_BID_XAXISDATA,
+         SCH_BID_Y1AXISDATA) |>
+  group_by(RESOURCEBID_SEQ, HOUR) |>
+  nest(curve = c(SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA)) |>
+  ungroup()
+
+paired <- curves |>
+  pivot_wider(
+    names_from = RESOURCEBID_SEQ,
+    values_from = curve
+  )
+
+curve_cor <- paired |>
+  mutate(
+    cor = purrr::map2_dbl(
+      `321383`, `321061`,
+      ~ cor(.x$SCH_BID_Y1AXISDATA,
+            .y$SCH_BID_Y1AXISDATA,
+            method = "pearson",
+            use = "complete.obs")
+    )
+  ) |>
+  select(HOUR, cor)
+
+mean(curve_cor$cor, na.rm = TRUE)
+
+```
+
+
+```{r}
+cor(paired[7,2][[1]]$SCH_BID_Y1AXISDATA,
+    paired[7,3][[1]]$SCH_BID_Y1AXISDATA)
+```
+
+
+```{r}
+x_grid <- seq(min(test$SCH_BID_XAXISDATA, na.rm=TRUE),
+                max(test$SCH_BID_XAXISDATA, na.rm=TRUE), length.out = 200)
+
+x1 <- paired[7,2][[1]][[1]]$SCH_BID_XAXISDATA
+y1 <- paired[7,2][[1]][[1]]$SCH_BID_Y1AXISDATA
+
+x2 <- paired[7,3][[1]][[1]]$SCH_BID_XAXISDATA
+y2 <- paired[7,3][[1]][[1]]$SCH_BID_Y1AXISDATA
+
+f_interp <- approx(x1, y1, xout = x_grid, rule = 2)$y
+g_interp <- approx(x2, y2, xout = x_grid, rule = 2)$y
+
+dist <- sqrt(mean((f_interp - g_interp)^2))
+
+```
+
+
+```{r}
+dx <- diff(x_grid)[1]
+area_between <- sum(abs(f_interp - g_interp)) * dx
+```
+
+
+```{r}
+# each curve has two cols (SCH_BID_XAXISDATA and SCH_BID_Y1AXISDATA) for one hour
+# interpolates values for full x range
+metrics <- function(curve1, curve2){
+
+    # to avoid exptrapolating:
+    xmin <- max(min(x1), min(x2))
+    xmax <- min(max(x1), max(x2))
+
+    x_grid <- seq(min(curve1$SCH_BID_XAXISDATA,curve2$SCH_BID_XAXISDATA, na.rm=TRUE),
+                  max(curve1$SCH_BID_XAXISDATA,curve2$SCH_BID_XAXISDATA, na.rm=TRUE), length.out = 200)
+
+    x1 <- curve1$SCH_BID_XAXISDATA
+    y1 <- curve1$SCH_BID_Y1AXISDATA
+
+    x2 <- curve2$SCH_BID_XAXISDATA
+    y2 <- curve2$SCH_BID_Y1AXISDATA
+
+    interp1 <- approx(x1, y1, xout = x_grid, rule = 2)$y
+    interp2 <- approx(x2, y2, xout = x_grid, rule = 2)$y
+
+    # area between curves
+    area_1 <- sum(diff(x_grid) * (head(interp1, -1) + tail(interp1, -1)) / 2)
+    area_2 <- sum(diff(x_grid) * (head(interp2, -1) + tail(interp2, -1)) / 2)
+
+    diff <- abs(area_1 - area_2)
+    area_between <- sum(diff(x_grid) * (head(diff, -1) + tail(diff, -1)) / 2)
+
+    # Pearson correlation
+    pearson <- cor(interp1, interp2)
+    if(is.na(pearson)){
+        print("At least one bid curve is a flat line.")
+    }
+
+    # mean square difference
+    # not sum sq bc diff xranges BUT still don't know if this is correct
+    msq <- sum((interp1-interp2)^2)/(xmax-xmin)
+
+    out <- tibble(metric = c("area_between", "pearson", "msq"),
+                  value = c(area_between, pearson, msq))
+    return(out)
+}
+
+metrics(paired[7,2][[1]][[1]], paired[7,3][[1]][[1]])
+```
+
+
+```{r}
+
+```
