@@ -17,14 +17,14 @@ test <- read_csv(here::here("20250701_20250701_PUB_BID_DAM_v3.csv")) |>
     SCH_BID_Y1AXISDATA,
     STARTTIME
   ) |>
-  filter(RESOURCEBID_SEQ == 321383 | RESOURCEBID_SEQ == 321061)
+  filter(RESOURCEBID_SEQ == 100651 | RESOURCEBID_SEQ == 105280)
 ```
 
 ```{r}
 test_wide <- test |>
   mutate(HOUR = hour(STARTTIME)) |>
   select(HOUR, RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
-  filter(RESOURCEBID_SEQ == 321383 | RESOURCEBID_SEQ == 321061) |>
+  filter(RESOURCEBID_SEQ == 100651 | RESOURCEBID_SEQ == 105280) |>
   group_by(RESOURCEBID_SEQ) |>
   pivot_wider(
     id_cols = RESOURCEBID_SEQ,
@@ -37,7 +37,7 @@ test_wide <- test |>
 ```{r}
 curves <- test |>
   mutate(HOUR = hour(STARTTIME)) |>
-  filter(RESOURCEBID_SEQ %in% c(321383, 321061)) |>
+  filter(RESOURCEBID_SEQ %in% c(100651, 105280)) |>
   select(RESOURCEBID_SEQ, HOUR, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
   group_by(RESOURCEBID_SEQ, HOUR) |>
   nest(curve = c(SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA)) |>

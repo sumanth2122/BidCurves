@@ -2256,7 +2256,7 @@ vertical-align: -.125em;
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    SCH_BID_Y1AXISDATA,</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    STARTTIME</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">321383</span> <span class="sc">|</span> RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">321061</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">100651</span> <span class="sc">|</span> RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">105280</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Rows: 53526 Columns: 28
 ── Column specification ────────────────────────────────────────────────────────
@@ -2274,7 +2274,7 @@ dttm (13): STARTTIME, STOPTIME, STARTTIME_GMT, STOPTIME_GMT, STARTDATE, TIME...
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>test_wide <span class="ot">&lt;-</span> test <span class="sc">|&gt;</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HOUR =</span> <span class="fu">hour</span>(STARTTIME)) <span class="sc">|&gt;</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(HOUR, RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) <span class="sc">|&gt;</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">321383</span> <span class="sc">|</span> RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">321061</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">100651</span> <span class="sc">|</span> RESOURCEBID_SEQ <span class="sc">==</span> <span class="dv">105280</span>) <span class="sc">|&gt;</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(RESOURCEBID_SEQ) <span class="sc">|&gt;</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_cols =</span> RESOURCEBID_SEQ,</span>
@@ -2296,7 +2296,7 @@ contain list-cols.
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>curves <span class="ot">&lt;-</span> test <span class="sc">|&gt;</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HOUR =</span> <span class="fu">hour</span>(STARTTIME)) <span class="sc">|&gt;</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(RESOURCEBID_SEQ <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">321383</span>, <span class="dv">321061</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(RESOURCEBID_SEQ <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">100651</span>, <span class="dv">105280</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(RESOURCEBID_SEQ, HOUR, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) <span class="sc">|&gt;</span></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(RESOURCEBID_SEQ, HOUR) <span class="sc">|&gt;</span></span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest</span>(<span class="at">curve =</span> <span class="fu">c</span>(SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA)) <span class="sc">|&gt;</span></span>
@@ -2311,8 +2311,8 @@ contain list-cols.
 <span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># curve_cor &lt;- paired |&gt;</span></span>
 <span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(</span></span>
 <span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">#     cor = purrr::map2_dbl(</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#       `321383`,</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#       `321061`,</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#       `100651`,</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#       `105280`,</span></span>
 <span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">#       ~ cor(</span></span>
 <span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">#         .x$SCH_BID_Y1AXISDATA,</span></span>
 <span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">#         .y$SCH_BID_Y1AXISDATA,</span></span>
@@ -2415,28 +2415,21 @@ contain list-cols.
 <span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(</span>
 <span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>    <span class="at">metric =</span> <span class="fu">c</span>(<span class="st">&quot;area_between&quot;</span>, <span class="st">&quot;pearson&quot;</span>, <span class="st">&quot;msq&quot;</span>, <span class="st">&quot;wasserstein&quot;</span>),</span>
 <span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">c</span>(area_between, pearson, msq, wasserstein)</span>
 <span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a><span class="fu">metrics</span>(paired[<span class="dv">7</span>, <span class="dv">2</span>][[<span class="dv">1</span>]][[<span class="dv">1</span>]], paired[<span class="dv">7</span>, <span class="dv">3</span>][[<span class="dv">1</span>]][[<span class="dv">1</span>]])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in cor(interp1, interp2): the standard deviation is zero</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] &quot;At least one bid curve is a flat line.&quot;</code></pre>
-</div>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a><span class="fu">metrics</span>(paired[<span class="dv">7</span>, <span class="dv">2</span>][[<span class="dv">1</span>]][[<span class="dv">1</span>]], paired[<span class="dv">7</span>, <span class="dv">3</span>][[<span class="dv">1</span>]][[<span class="dv">1</span>]])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 4 × 2
-  metric       value
-  &lt;chr&gt;        &lt;dbl&gt;
-1 area_between     0
-2 pearson         NA
-3 msq              0
-4 wasserstein     NA</code></pre>
+  metric             value
+  &lt;chr&gt;              &lt;dbl&gt;
+1 area_between       0    
+2 pearson           -0.570
+3 msq          3017791.   
+4 wasserstein       41.5  </code></pre>
 </div>
 </div>
 
