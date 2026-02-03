@@ -73,6 +73,7 @@ plot_hourly_mw <- function(data, filter_00 = FALSE) {
     })()
 }
 
+# SEQID 204933 is the nuke?
 df <- here("20250701_20250701_PUB_BID_DAM_v3.csv") |>
   read_csv() |>
   OHE_df()
