@@ -10,7 +10,7 @@ library(tidyverse)
 
 
 ```{r}
-data <- read_csv(here::here("plot data","20251014_20251014_PUB_BID_DAM_v3.csv"))
+data <- read_csv(here::here("plot data","20250914_20250914_PUB_BID_DAM_v3.csv"))
 subset <- data |>
   select(STARTTIME, STOPTIME, RESOURCE_TYPE, SCHEDULINGCOORDINATOR_SEQ, RESOURCEBID_SEQ,
          MARKETPRODUCTTYPE, SELFSCHEDMW, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
@@ -54,6 +54,7 @@ plot_curves <- function(market_data, resource_id){
              color = STARTDATETIME, group=STARTDATETIME)) +
         geom_line() +
         geom_point() +
+       #  xlim(-Inf, Inf) +
         labs(
             x="Quantity (MW)",
             y = "Bid Price ($/MWh)",
@@ -95,13 +96,43 @@ test <- sept14 |>
 
 ```{r}
 # NAs in SCH_BID_XAXISDATA?
-subset |>
+oct01 |>
   mutate(STARTTIME = hms::as_hms(STARTTIME)) |>
   filter(
     RESOURCEBID_SEQ == 394840,
 #     STARTTIME %in% hms::as_hms(c("00:00:00","08:00:00","10:00:00","11:00:00","12:00:00"))
   ) |>
   filter(is.na(SCH_BID_XAXISDATA) | is.na(SCH_BID_Y1AXISDATA)) |>
-  select(STARTTIME, STARTDATETIME = STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA)
+  view()
+#   select(STARTTIME, STARTDATETIME = STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA)
 
+```
+
+
+```{r}
+# area between curves plot
+s14hr0 <- sept14 |>
+       mutate(STARTDATETIME = as.factor(STARTTIME),
+              STARTDATTE = as.Date(STARTDATETIME),
+               STARTTIME = hms::as_hms(STARTTIME)) |>
+       filter(RESOURCEBID_SEQ == 394840,
+       STARTTIME == hms::as_hms("00:00:00"))
+
+o01hr0 <- oct01 |>
+       mutate(STARTDATETIME = as.factor(STARTTIME),
+              STARTDATTE = as.Date(STARTDATETIME),
+               STARTTIME = hms::as_hms(STARTTIME)) |>
+       filter(RESOURCEBID_SEQ == 394840,
+       STARTTIME == hms::as_hms("00:00:00"))
+
+s14hr0 |>
+       bind_rows(o01hr0) |>
+       ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA,
+       color = as.factor(STARTDATTE), group = STARTDATTE)) +
+       geom_point() +
+       geom_line() + 
+       labs(color = 'Date',
+       title = "RESOURCE ID: 394840") +
+       theme_minimal() 
+ggsave(here::here("plots","area-bw-curves.png"))
 ```
