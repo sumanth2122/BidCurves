@@ -117,12 +117,13 @@ single_point_seq_hours_duckdb <- function(
         WHERE interval_start IS NOT NULL
         GROUP BY 1, 2, 3%s
       )
-      SELECT DISTINCT
+      SELECT
+        trade_date,
         hour_num,
         seq_id
       FROM curves
       WHERE n_points = 1
-      ORDER BY hour_num, seq_id
+      ORDER BY trade_date, hour_num, seq_id
       ",
       interval_expr,
       product_select,
@@ -137,6 +138,7 @@ single_point_seq_hours_duckdb <- function(
 
   DBI::dbGetQuery(con, query) |>
     mutate(
+      trade_date = as.Date(trade_date),
       hour_num = as.integer(hour_num),
       seq_id = as.integer(seq_id)
     )
@@ -170,27 +172,21 @@ count_total_unique_generators_duckdb <- function(
     mutate(n_total_generators = as.integer(n_total_generators))
 }
 
-count_single_point_seqids_by_hour <- function(single_point_seq_hours_df) {
-  single_point_seq_hours_df |>
-    count(hour_num, name = "n_unique_seq_ids") |>
-    complete(hour_num = 0:23, fill = list(n_unique_seq_ids = 0L)) |>
+count_single_point_curves_by_hour <- function(single_point_curves_df) {
+  single_point_curves_df |>
+    count(hour_num, name = "n_single_point_curves") |>
+    complete(hour_num = 0:23, fill = list(n_single_point_curves = 0L)) |>
     arrange(hour_num)
 }
 
-plot_single_point_seqid_histogram <- function(single_point_seq_hours_df) {
-  single_point_seq_hours_df |>
-    ggplot(aes(x = hour_num)) +
-    geom_histogram(
-      binwidth = 1,
-      boundary = -0.5,
-      closed = "left",
-      fill = "#2f6da3",
-      color = "white"
-    ) +
+plot_single_point_seqid_histogram <- function(single_point_curves_df) {
+  count_single_point_curves_by_hour(single_point_curves_df) |>
+    ggplot(aes(x = hour_num, y = n_single_point_curves)) +
+    geom_col(fill = "#2f6da3", color = "white") +
     scale_x_continuous(breaks = 0:23, limits = c(-0.5, 23.5)) +
     labs(
       x = "Hour",
-      y = "Unique RESOURCEBID_SEQ with single-point curve",
+      y = "Single-point bid curves",
       title = "Single-Point Bid Curves by Hour"
     ) +
     theme_minimal()
@@ -651,10 +647,13 @@ single_point_seq_hours <- single_point_seq_hours_duckdb(here(
 single_point_unique_generator_count <- count_single_point_unique_generators(
   single_point_seq_hours
 )
+single_point_curve_count <- single_point_seq_hours |>
+  summarise(n_single_point_curves = n())
 total_generator_count <- count_total_unique_generators_duckdb(
   here("CASIO_dam_big.parquet")
 )
 single_point_generator_summary <- tibble(
+  n_single_point_curves = single_point_curve_count$n_single_point_curves,
   n_single_point_generators = single_point_unique_generator_count$n_single_point_generators,
   n_total_generators = total_generator_count$n_total_generators
 ) |>
@@ -672,6 +671,22 @@ point_dist <- bid_curve_point_distribution_duckdb(here("CASIO_dam_big.parquet"))
 point_dist |>
   ggplot(aes(x = n_points, y = n_curves)) +
   geom_col(fill = "#2f6da3") +
+  labs(
+    title = "Bid Curve Point Distribution",
+    x = "Number of points in curve",
+    y = "Number of curves"
+  ) +
+  theme_minimal()
+
+point_dist |>
+  filter(n_points > 11) |>
+  ggplot(aes(x = n_points, y = n_curves)) +
+  geom_col(fill = "#d95f02") +
+  labs(
+    title = "Bid Curve Point Distribution (n_points > 11)",
+    x = "Number of points in curve",
+    y = "Number of curves"
+  ) +
   theme_minimal()
 
 over_11 <- count_bid_curves_over_pair_limit_duckdb(
