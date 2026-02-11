@@ -171,3 +171,17 @@ casio_daily_on_off <- daily_on_off_tables_from_parquet(here(
 casio_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
   "CASIO_dam_big.parquet"
 ))
+
+
+qs2::qs_save(
+  casio_daily_on_off,
+  here("casio_daily_on_off.qs"),
+  compress_level = 10,
+  nthreads = 16
+)
+qs2::qs_save(
+  casio_daily_hourly_anova,
+  here("casio_daily_hourly_anova.qs"),
+  compress_level = 10,
+  nthreads = 16
+)
