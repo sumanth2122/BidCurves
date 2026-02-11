@@ -142,6 +142,34 @@ single_point_seq_hours_duckdb <- function(
     )
 }
 
+count_single_point_unique_generators <- function(single_point_seq_hours_df) {
+  single_point_seq_hours_df |>
+    summarise(n_single_point_generators = n_distinct(seq_id))
+}
+
+count_total_unique_generators_duckdb <- function(
+  parquet_path = here("CASIO_dam_big.parquet"),
+  threads = max(1L, parallel::detectCores(logical = TRUE) - 1L)
+) {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, sprintf("PRAGMA threads = %d", as.integer(threads)))
+
+  query <- DBI::sqlInterpolate(
+    con,
+    "
+    SELECT
+      COUNT(DISTINCT CAST(RESOURCEBID_SEQ AS BIGINT)) AS n_total_generators
+    FROM read_parquet(?parquet_path)
+    WHERE RESOURCEBID_SEQ IS NOT NULL
+    ",
+    parquet_path = parquet_path
+  )
+
+  DBI::dbGetQuery(con, query) |>
+    mutate(n_total_generators = as.integer(n_total_generators))
+}
+
 count_single_point_seqids_by_hour <- function(single_point_seq_hours_df) {
   single_point_seq_hours_df |>
     count(hour_num, name = "n_unique_seq_ids") |>
@@ -408,7 +436,11 @@ count_nonmonotonic_bid_curves_duckdb <- function(
   schema_df <- DBI::dbGetQuery(con, schema_query)
   cols <- schema_df$column_name
 
-  required_cols <- c("RESOURCEBID_SEQ", "SCH_BID_XAXISDATA", "SCH_BID_Y1AXISDATA")
+  required_cols <- c(
+    "RESOURCEBID_SEQ",
+    "SCH_BID_XAXISDATA",
+    "SCH_BID_Y1AXISDATA"
+  )
   missing_cols <- setdiff(required_cols, cols)
   if (length(missing_cols) > 0) {
     stop(
@@ -616,10 +648,24 @@ count_nonmonotonic_bid_curves_duckdb <- function(
 single_point_seq_hours <- single_point_seq_hours_duckdb(here(
   "CASIO_dam_big.parquet"
 ))
-single_point_hourly_counts <- count_single_point_seqids_by_hour(
+single_point_unique_generator_count <- count_single_point_unique_generators(
   single_point_seq_hours
 )
-print(single_point_hourly_counts)
+total_generator_count <- count_total_unique_generators_duckdb(
+  here("CASIO_dam_big.parquet")
+)
+single_point_generator_summary <- tibble(
+  n_single_point_generators = single_point_unique_generator_count$n_single_point_generators,
+  n_total_generators = total_generator_count$n_total_generators
+) |>
+  mutate(
+    pct_single_point_generators = if_else(
+      n_total_generators > 0,
+      n_single_point_generators / n_total_generators,
+      NA_real_
+    )
+  )
+print(single_point_generator_summary)
 plot_single_point_seqid_histogram(single_point_seq_hours)
 
 point_dist <- bid_curve_point_distribution_duckdb(here("CASIO_dam_big.parquet"))
