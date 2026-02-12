@@ -683,7 +683,7 @@ point_dist |>
   ggplot(aes(x = n_points, y = n_curves)) +
   geom_col(fill = "#d95f02") +
   labs(
-    title = "Bid Curve Point Distribution (n_points > 11)",
+    title = "Bid Curve Point Distribution (more than 11 points)",
     x = "Number of points in curve",
     y = "Number of curves"
   ) +
