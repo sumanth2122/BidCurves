@@ -1,16 +1,43 @@
 library(tidyverse)
 library(duckplyr)
-library(mirai)
 use("here", "here")
-daemons(16)
+
+read_bid_data <- function(parquet_path) {
+  arrow::read_parquet(
+    parquet_path,
+    as_data_frame = TRUE,
+    col_select = c("RESOURCEBID_SEQ", "SELFSCHEDMW", "STARTTIME")
+  ) |>
+    mutate(trade_date = as.Date(STARTTIME)) |>
+    filter(!is.na(trade_date))
+}
+
+map_days <- function(raw_df, fn) {
+  trade_dates <- raw_df |>
+    distinct(trade_date) |>
+    arrange(trade_date) |>
+    pull(trade_date)
+
+  results <- trade_dates |>
+    map(\(day) {
+      raw_df |>
+        filter(trade_date == day) |>
+        fn()
+    })
+
+  names(results) <- as.character(trade_dates)
+  results
+}
 
 OHE_df <- function(df) {
   max_mw_df <- df |>
     summarise(
-      max_mw = max(SELFSCHEDMW, na.rm = TRUE),
+      max_mw = {
+        vals <- SELFSCHEDMW[!is.na(SELFSCHEDMW)]
+        if (length(vals) == 0) NA_real_ else max(vals)
+      },
       .by = RESOURCEBID_SEQ
-    ) |>
-    mutate(max_mw = if_else(is.infinite(max_mw), NA_real_, max_mw)) # all-NA -> NA
+    )
 
   hours_df <- df |>
     transmute(
@@ -98,16 +125,8 @@ summarise_on_off_hourly_mw <- function(df) {
 }
 
 daily_on_off_tables_from_parquet <- function(parquet_path) {
-  raw_df <- arrow::read_parquet(parquet_path, as_data_frame = TRUE) |>
-    mutate(trade_date = as.Date(STARTTIME)) |>
-    filter(!is.na(trade_date))
-
-  split(raw_df, raw_df$trade_date) |>
-    map(
-      purrr::in_parallel(
-        \(day_df) day_df |> OHE_df() |> summarise_on_off_hourly_mw()
-      )
-    )
+  raw_df <- read_bid_data(parquet_path)
+  map_days(raw_df, \(day_df) day_df |> OHE_df() |> summarise_on_off_hourly_mw())
 }
 
 run_hourly_available_mw_anova <- function(df) {
@@ -137,21 +156,14 @@ run_hourly_available_mw_anova <- function(df) {
 }
 
 daily_hourly_anova_from_parquet <- function(parquet_path) {
-  raw_df <- arrow::read_parquet(parquet_path, as_data_frame = TRUE) |>
-    mutate(trade_date = as.Date(STARTTIME)) |>
-    filter(!is.na(trade_date))
-
-  day_results <- split(raw_df, raw_df$trade_date) |>
-    map(
-      purrr::in_parallel(
-        \(day_df) day_df |> OHE_df() |> run_hourly_available_mw_anova()
-      )
-    )
+  raw_df <- read_bid_data(parquet_path)
+  day_results <- map_days(raw_df, \(day_df) {
+    day_df |> OHE_df() |> run_hourly_available_mw_anova()
+  })
 
   day_results |>
-    imap_dfr(\(result_df, day) {
-      result_df |> mutate(trade_date = as.Date(day), .before = 1)
-    }) |>
+    bind_rows(.id = "trade_date") |>
+    mutate(trade_date = as.Date(trade_date), .before = 1) |>
     arrange(trade_date) |>
     mutate(p_value_bh = p.adjust(p_value, method = "BH"))
 }
@@ -165,23 +177,25 @@ df |> plot_hourly_mw(TRUE)
 df |> summarise_on_off_hourly_mw()
 df |> run_hourly_available_mw_anova()
 
-casio_daily_on_off <- daily_on_off_tables_from_parquet(here(
-  "CASIO_dam_big.parquet"
-))
-casio_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
-  "CASIO_dam_big.parquet"
-))
+# casio_daily_on_off <- daily_on_off_tables_from_parquet(here(
+#   "CASIO_dam_big.parquet"
+# ))
+# casio_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
+#   "CASIO_dam_big.parquet"
+# ))
 
+# qs2::qs_save(
+#   casio_daily_on_off,
+#   here("casio_daily_on_off.qs"),
+#   compress_level = 10,
+#   nthreads = 16
+# )
+# qs2::qs_save(
+#   casio_daily_hourly_anova,
+#   here("casio_daily_hourly_anova.qs"),
+#   compress_level = 10,
+#   nthreads = 16
+# )
 
-qs2::qs_save(
-  casio_daily_on_off,
-  here("casio_daily_on_off.qs"),
-  compress_level = 10,
-  nthreads = 16
-)
-qs2::qs_save(
-  casio_daily_hourly_anova,
-  here("casio_daily_hourly_anova.qs"),
-  compress_level = 10,
-  nthreads = 16
-)
+casio_daily_on_off <- qs2::qs_read(here("casio_daily_on_off.qs"))
+casio_daily_hourly_anova <- qs2::qs_read(here("casio_daily_hourly_anova.qs"))
