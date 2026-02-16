@@ -185,7 +185,8 @@ plot_curves_new <- function(market_data, resource_id){
                      single_point = if_else(n() == 1, TRUE, FALSE)) |>
               ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA,
                   xend=xend, yend=yend, group=STARTTIME,color=factor(STARTTIME))) +
-              geom_point() +
+              geom_point(aes(shape = ifelse(single_point, 17, 16))) +
+              scale_shape_identity() +
               geom_segment() +
               geom_point(aes(x=xend, y=SCH_BID_Y1AXISDATA), shape=1) +
               # geom_point(data = ~filter(.x, single_point == TRUE), shape = 17, size = 3) +
@@ -199,6 +200,7 @@ plot_curves_new <- function(market_data, resource_id){
 }
 plot_curves_new(subset, 394840)
 ```
+
 ```{r}
 plot_curves <- function(market_data, resource_id){
     date <- as.Date(market_data$STARTTIME[1])
