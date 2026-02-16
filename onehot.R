@@ -2,13 +2,87 @@ library(tidyverse)
 library(duckplyr)
 use("here", "here")
 
+count_new_ids_by_day <- function(parquet_path) {
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  quoted_path <- as.character(DBI::dbQuoteString(con, parquet_path))
+  query <- paste0(
+    "WITH first_seen AS (",
+    "  SELECT",
+    "    RESOURCEBID_SEQ,",
+    "    MIN(CAST(STARTTIME AS DATE)) AS first_trade_date",
+    "  FROM read_parquet(",
+    quoted_path,
+    ")",
+    "  WHERE RESOURCEBID_SEQ IS NOT NULL",
+    "    AND STARTTIME IS NOT NULL",
+    "  GROUP BY RESOURCEBID_SEQ",
+    "), daily_new AS (",
+    "  SELECT",
+    "    first_trade_date AS trade_date,",
+    "    COUNT(*) AS new_id_count",
+    "  FROM first_seen",
+    "  GROUP BY first_trade_date",
+    ")",
+    "SELECT trade_date, new_id_count",
+    " FROM daily_new",
+    " WHERE new_id_count > 0",
+    " ORDER BY trade_date"
+  )
+
+  DBI::dbGetQuery(con, query) |>
+    mutate(trade_date = as.Date(trade_date))
+}
+
+new_ids_by_day <- count_new_ids_by_day(here("CASIO_dam_big.parquet"))
+new_ids_by_day |>
+  tail(-1) |>
+  ggplot(aes(x = trade_date, y = new_id_count)) +
+  geom_col(fill = "#2b8cbe", width = 0.8) +
+  labs(
+    title = "Daily New RESOURCEBID_SEQ",
+    x = "Trade Date",
+    y = "New IDs"
+  ) +
+  theme_minimal()
+
+read_bid_data <- function(parquet_path) {
+  arrow::read_parquet(
+    parquet_path,
+    as_data_frame = TRUE,
+    col_select = c("RESOURCEBID_SEQ", "SELFSCHEDMW", "STARTTIME")
+  ) |>
+    mutate(trade_date = as.Date(STARTTIME)) |>
+    filter(!is.na(trade_date))
+}
+
+map_days <- function(raw_df, fn) {
+  trade_dates <- raw_df |>
+    distinct(trade_date) |>
+    arrange(trade_date) |>
+    pull(trade_date)
+
+  results <- trade_dates |>
+    map(\(day) {
+      raw_df |>
+        filter(trade_date == day) |>
+        fn()
+    })
+
+  names(results) <- as.character(trade_dates)
+  results
+}
+
 OHE_df <- function(df) {
   max_mw_df <- df |>
     summarise(
-      max_mw = max(SELFSCHEDMW, na.rm = TRUE),
+      max_mw = {
+        vals <- SELFSCHEDMW[!is.na(SELFSCHEDMW)]
+        if (length(vals) == 0) NA_real_ else max(vals)
+      },
       .by = RESOURCEBID_SEQ
-    ) |>
-    mutate(max_mw = if_else(is.infinite(max_mw), NA_real_, max_mw)) # all-NA -> NA
+    )
 
   hours_df <- df |>
     transmute(
@@ -96,135 +170,11 @@ summarise_on_off_hourly_mw <- function(df) {
 }
 
 daily_on_off_tables_from_parquet <- function(parquet_path) {
-  hour_stats <- read_daily_hour_stats_duckdb(parquet_path)
-  daily_on_off_tables_from_hour_stats(hour_stats)
+  raw_df <- read_bid_data(parquet_path)
+  map_days(raw_df, \(day_df) day_df |> OHE_df() |> summarise_on_off_hourly_mw())
 }
 
-read_daily_hour_stats_duckdb <- function(
-  parquet_path,
-  threads = max(1L, parallel::detectCores(logical = TRUE) - 1L)
-) {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  DBI::dbExecute(con, sprintf("PRAGMA threads = %d", as.integer(threads)))
-
-  query <- DBI::sqlInterpolate(
-    con,
-    "
-    WITH base AS (
-      SELECT
-        CAST(STARTTIME AS DATE) AS trade_date,
-        RESOURCEBID_SEQ AS id,
-        CAST(EXTRACT(HOUR FROM STARTTIME) AS INTEGER) AS hour_num,
-        SELFSCHEDMW
-      FROM read_parquet(?parquet_path)
-      WHERE STARTTIME IS NOT NULL
-    ),
-    resource_day AS (
-      SELECT
-        trade_date,
-        id,
-        MAX(SELFSCHEDMW) AS max_mw
-      FROM base
-      GROUP BY 1, 2
-    ),
-    resource_day_hour AS (
-      SELECT DISTINCT
-        trade_date,
-        id,
-        hour_num
-      FROM base
-    ),
-    day_totals AS (
-      SELECT
-        trade_date,
-        COALESCE(SUM(max_mw), 0.0) AS total_mw,
-        COUNT(*) AS n_resources
-      FROM resource_day
-      GROUP BY 1
-    ),
-    yes_stats AS (
-      SELECT
-        h.trade_date,
-        h.hour_num,
-        SUM(r.max_mw) AS yes_mw,
-        SUM(r.max_mw * r.max_mw) AS yes_mw_sq,
-        SUM(CASE WHEN r.max_mw IS NULL THEN 1 ELSE 0 END) AS on_na_count
-      FROM resource_day_hour h
-      JOIN resource_day r
-        ON h.trade_date = r.trade_date
-       AND h.id = r.id
-      GROUP BY 1, 2
-    ),
-    days AS (
-      SELECT DISTINCT
-        trade_date
-      FROM day_totals
-    ),
-    hours AS (
-      SELECT
-        range AS hour_num
-      FROM range(24)
-    )
-    SELECT
-      d.trade_date,
-      h.hour_num,
-      COALESCE(y.yes_mw, 0.0) AS yes_mw,
-      COALESCE(y.yes_mw_sq, 0.0) AS yes_mw_sq,
-      t.total_mw,
-      t.n_resources,
-      t.n_resources - COALESCE(y.on_na_count, 0) AS n_obs_hour
-    FROM days d
-    CROSS JOIN hours h
-    JOIN day_totals t
-      ON d.trade_date = t.trade_date
-    LEFT JOIN yes_stats y
-      ON d.trade_date = y.trade_date
-     AND h.hour_num = y.hour_num
-    ORDER BY d.trade_date, h.hour_num
-    ",
-    parquet_path = parquet_path
-  )
-
-  DBI::dbGetQuery(con, query) |>
-    mutate(
-      trade_date = as.Date(trade_date),
-      hour_num = as.integer(hour_num),
-      n_resources = as.integer(n_resources),
-      n_obs_hour = as.integer(n_obs_hour)
-    )
-}
-
-daily_on_off_tables_from_hour_stats <- function(hour_stats_df) {
-  hour_stats_df |>
-    transmute(
-      trade_date,
-      hour = factor(
-        sprintf("hour_%02d", hour_num),
-        levels = sprintf("hour_%02d", 0:23)
-      ),
-      YES = yes_mw,
-      NO = total_mw - yes_mw
-    ) |>
-    pivot_longer(
-      cols = c(YES, NO),
-      names_to = "on",
-      values_to = "mw"
-    ) |>
-    split(x = _, f = .$trade_date) |>
-    map(\(day_df) {
-      day_df |>
-        select(on, hour, mw) |>
-        pivot_wider(
-          names_from = hour,
-          values_from = mw,
-          values_fill = 0
-        ) |>
-        arrange(desc(on))
-    })
-}
-
-run_hourly_available_mw_anova <- function(df, alpha = 0.05) {
+run_hourly_available_mw_anova <- function(df) {
   long_df <- df |>
     pivot_longer(
       cols = starts_with("hour_"),
@@ -238,25 +188,6 @@ run_hourly_available_mw_anova <- function(df, alpha = 0.05) {
 
   fit <- aov(available_mw ~ hour, data = long_df)
   fit_tbl <- summary(fit)[[1]]
-  tukey_tbl <- TukeyHSD(fit, "hour")$hour |>
-    as.data.frame() |>
-    rownames_to_column("contrast") |>
-    as_tibble() |>
-    separate(contrast, into = c("hour_1", "hour_2"), sep = "-") |>
-    rename(
-      diff_mw = diff,
-      conf_low = lwr,
-      conf_high = upr,
-      p_adj = `p adj`
-    ) |>
-    filter(p_adj < alpha) |>
-    arrange(p_adj)
-
-  different_hours <- tukey_tbl |>
-    select(hour_1, hour_2) |>
-    unlist(use.names = FALSE) |>
-    unique() |>
-    sort()
 
   tibble(
     test = "anova",
@@ -265,167 +196,19 @@ run_hourly_available_mw_anova <- function(df, alpha = 0.05) {
     df_between = unname(fit_tbl[1, "Df"]),
     df_within = unname(fit_tbl[2, "Df"]),
     n_resources = n_distinct(df$ID),
-    n_obs = nrow(long_df),
-    n_significant_pairs = nrow(tukey_tbl),
-    different_hours = list(different_hours),
-    significant_pairs = list(tukey_tbl)
+    n_obs = nrow(long_df)
   )
 }
 
 daily_hourly_anova_from_parquet <- function(parquet_path) {
-  hour_stats <- read_daily_hour_stats_duckdb(parquet_path)
-  daily_hourly_anova_from_hour_stats(hour_stats)
-}
+  raw_df <- read_bid_data(parquet_path)
+  day_results <- map_days(raw_df, \(day_df) {
+    day_df |> OHE_df() |> run_hourly_available_mw_anova()
+  })
 
-daily_hourly_anova_from_hour_stats <- function(hour_stats_df, alpha = 0.05) {
-  anova_core <- hour_stats_df |>
-    group_by(trade_date) |>
-    summarise(
-      k = sum(n_obs_hour > 0),
-      n_obs = sum(n_obs_hour),
-      total_sum = sum(yes_mw),
-      ss_between_raw = sum(if_else(n_obs_hour > 0, yes_mw^2 / n_obs_hour, 0)),
-      ss_within = sum(
-        if_else(
-          n_obs_hour > 0,
-          yes_mw_sq - (yes_mw^2 / n_obs_hour),
-          0
-        )
-      ),
-      n_resources = first(n_resources),
-      .groups = "drop"
-    ) |>
-    mutate(
-      ss_between = ss_between_raw - (total_sum^2 / n_obs),
-      df_between = k - 1,
-      df_within = n_obs - k,
-      ms_between = ss_between / df_between,
-      ms_within = ss_within / df_within,
-      statistic = if_else(
-        df_between > 0 & df_within > 0 & ms_within > 0,
-        ms_between / ms_within,
-        NA_real_
-      ),
-      p_value = if_else(
-        is.na(statistic),
-        NA_real_,
-        pf(statistic, df_between, df_within, lower.tail = FALSE)
-      ),
-      test = "anova"
-    )
-
-  pairwise_sig <- hour_stats_df |>
-    filter(n_obs_hour > 0) |>
-    transmute(
-      trade_date,
-      hour_num,
-      hour = sprintf("hour_%02d", hour_num),
-      n_obs_hour,
-      mean_mw = yes_mw / n_obs_hour
-    ) |>
-    inner_join(
-      hour_stats_df |>
-        filter(n_obs_hour > 0) |>
-        transmute(
-          trade_date,
-          hour_num,
-          hour = sprintf("hour_%02d", hour_num),
-          n_obs_hour,
-          mean_mw = yes_mw / n_obs_hour
-        ),
-      by = "trade_date",
-      suffix = c("_1", "_2")
-    ) |>
-    filter(hour_num_1 < hour_num_2) |>
-    left_join(
-      anova_core |>
-        select(trade_date, k, df_within, ms_within),
-      by = "trade_date"
-    ) |>
-    mutate(
-      diff_mw = mean_mw_1 - mean_mw_2,
-      se = sqrt((ms_within / 2) * ((1 / n_obs_hour_1) + (1 / n_obs_hour_2))),
-      q_stat = if_else(se > 0, abs(diff_mw) / se, NA_real_),
-      p_adj = if_else(
-        !is.na(q_stat) & k > 1 & df_within > 0,
-        ptukey(q_stat, nmeans = k, df = df_within, lower.tail = FALSE),
-        NA_real_
-      ),
-      q_crit = if_else(
-        k > 1 & df_within > 0,
-        qtukey(1 - alpha, nmeans = k, df = df_within),
-        NA_real_
-      ),
-      half_width = q_crit * se,
-      conf_low = diff_mw - half_width,
-      conf_high = diff_mw + half_width
-    ) |>
-    filter(!is.na(p_adj), p_adj < alpha) |>
-    transmute(
-      trade_date,
-      hour_1,
-      hour_2,
-      diff_mw,
-      conf_low,
-      conf_high,
-      p_adj
-    ) |>
-    arrange(trade_date, p_adj)
-
-  pairwise_by_day <- pairwise_sig |>
-    group_by(trade_date) |>
-    summarise(
-      n_significant_pairs = n(),
-      different_hours = list(sort(unique(c(hour_1, hour_2)))),
-      significant_pairs = list(
-        tibble(
-          hour_1 = hour_1,
-          hour_2 = hour_2,
-          diff_mw = diff_mw,
-          conf_low = conf_low,
-          conf_high = conf_high,
-          p_adj = p_adj
-        )
-      ),
-      .groups = "drop"
-    )
-
-  empty_pairs <- tibble(
-    hour_1 = character(),
-    hour_2 = character(),
-    diff_mw = numeric(),
-    conf_low = numeric(),
-    conf_high = numeric(),
-    p_adj = numeric()
-  )
-
-  anova_core |>
-    transmute(
-      trade_date,
-      test,
-      statistic,
-      p_value,
-      df_between,
-      df_within,
-      n_resources,
-      n_obs
-    ) |>
-    left_join(pairwise_by_day, by = "trade_date") |>
-    mutate(
-      n_significant_pairs = coalesce(n_significant_pairs, 0L),
-      different_hours = map(
-        different_hours,
-        \(x) {
-          if (is.null(x)) character() else x
-        }
-      ),
-      significant_pairs = map(
-        significant_pairs,
-        \(x) {
-          if (is.null(x)) empty_pairs else x
-        }
-      )
-    ) |>
+  day_results |>
+    bind_rows(.id = "trade_date") |>
+    mutate(trade_date = as.Date(trade_date), .before = 1) |>
     arrange(trade_date) |>
     mutate(p_value_bh = p.adjust(p_value, method = "BH"))
 }
@@ -439,21 +222,25 @@ df |> plot_hourly_mw(TRUE)
 df |> summarise_on_off_hourly_mw()
 df |> run_hourly_available_mw_anova()
 
-build_casio_daily_outputs <- function(
-  parquet_path = here("CASIO_dam_big.parquet"),
-  threads = max(1L, parallel::detectCores(logical = TRUE) - 1L)
-) {
-  hour_stats <- read_daily_hour_stats_duckdb(
-    parquet_path = parquet_path,
-    threads = threads
-  )
+# casio_daily_on_off <- daily_on_off_tables_from_parquet(here(
+#   "CASIO_dam_big.parquet"
+# ))
+# casio_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
+#   "CASIO_dam_big.parquet"
+# ))
 
-  out <- list(
-    casio_daily_on_off = daily_on_off_tables_from_hour_stats(hour_stats),
-    casio_daily_hourly_anova = daily_hourly_anova_from_hour_stats(hour_stats)
-  )
+# qs2::qs_save(
+#   casio_daily_on_off,
+#   here("casio_daily_on_off.qs"),
+#   compress_level = 10,
+#   nthreads = 16
+# )
+# qs2::qs_save(
+#   casio_daily_hourly_anova,
+#   here("casio_daily_hourly_anova.qs"),
+#   compress_level = 10,
+#   nthreads = 16
+# )
 
-  rm(hour_stats)
-  gc(verbose = FALSE)
-  out
-}
+casio_daily_on_off <- qs2::qs_read(here("casio_daily_on_off.qs"))
+casio_daily_hourly_anova <- qs2::qs_read(here("casio_daily_hourly_anova.qs"))
