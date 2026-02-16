@@ -2,6 +2,51 @@ library(tidyverse)
 library(duckplyr)
 use("here", "here")
 
+count_new_ids_by_day <- function(parquet_path) {
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  quoted_path <- as.character(DBI::dbQuoteString(con, parquet_path))
+  query <- paste0(
+    "WITH first_seen AS (",
+    "  SELECT",
+    "    RESOURCEBID_SEQ,",
+    "    MIN(CAST(STARTTIME AS DATE)) AS first_trade_date",
+    "  FROM read_parquet(",
+    quoted_path,
+    ")",
+    "  WHERE RESOURCEBID_SEQ IS NOT NULL",
+    "    AND STARTTIME IS NOT NULL",
+    "  GROUP BY RESOURCEBID_SEQ",
+    "), daily_new AS (",
+    "  SELECT",
+    "    first_trade_date AS trade_date,",
+    "    COUNT(*) AS new_id_count",
+    "  FROM first_seen",
+    "  GROUP BY first_trade_date",
+    ")",
+    "SELECT trade_date, new_id_count",
+    " FROM daily_new",
+    " WHERE new_id_count > 0",
+    " ORDER BY trade_date"
+  )
+
+  DBI::dbGetQuery(con, query) |>
+    mutate(trade_date = as.Date(trade_date))
+}
+
+new_ids_by_day <- count_new_ids_by_day(here("CASIO_dam_big.parquet"))
+new_ids_by_day |>
+  tail(-1) |>
+  ggplot(aes(x = trade_date, y = new_id_count)) +
+  geom_col(fill = "#2b8cbe", width = 0.8) +
+  labs(
+    title = "Daily New RESOURCEBID_SEQ",
+    x = "Trade Date",
+    y = "New IDs"
+  ) +
+  theme_minimal()
+
 read_bid_data <- function(parquet_path) {
   arrow::read_parquet(
     parquet_path,
