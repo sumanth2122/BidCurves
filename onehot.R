@@ -1,13 +1,43 @@
 library(tidyverse)
+library(duckplyr)
 use("here", "here")
+
+read_bid_data <- function(parquet_path) {
+  arrow::read_parquet(
+    parquet_path,
+    as_data_frame = TRUE,
+    col_select = c("RESOURCEBID_SEQ", "SELFSCHEDMW", "STARTTIME")
+  ) |>
+    mutate(trade_date = as.Date(STARTTIME)) |>
+    filter(!is.na(trade_date))
+}
+
+map_days <- function(raw_df, fn) {
+  trade_dates <- raw_df |>
+    distinct(trade_date) |>
+    arrange(trade_date) |>
+    pull(trade_date)
+
+  results <- trade_dates |>
+    map(\(day) {
+      raw_df |>
+        filter(trade_date == day) |>
+        fn()
+    })
+
+  names(results) <- as.character(trade_dates)
+  results
+}
 
 OHE_df <- function(df) {
   max_mw_df <- df |>
     summarise(
-      max_mw = max(SELFSCHEDMW, na.rm = TRUE),
+      max_mw = {
+        vals <- SELFSCHEDMW[!is.na(SELFSCHEDMW)]
+        if (length(vals) == 0) NA_real_ else max(vals)
+      },
       .by = RESOURCEBID_SEQ
-    ) |>
-    mutate(max_mw = if_else(is.infinite(max_mw), NA_real_, max_mw)) # all-NA -> NA
+    )
 
   hours_df <- df |>
     transmute(
@@ -73,28 +103,99 @@ plot_hourly_mw <- function(data, filter_00 = FALSE) {
     })()
 }
 
+summarise_on_off_hourly_mw <- function(df) {
+  df |>
+    pivot_longer(
+      cols = starts_with("hour_"),
+      names_to = "hour",
+      values_to = "on"
+    ) |>
+    mutate(
+      hour = factor(hour, levels = sprintf("hour_%02d", 0:23)),
+      on = if_else(on, "YES", "NO")
+    ) |>
+    group_by(on, hour) |>
+    summarise(mw = sum(MAX_MW, na.rm = TRUE), .groups = "drop") |>
+    pivot_wider(
+      names_from = hour,
+      values_from = mw,
+      values_fill = 0
+    ) |>
+    arrange(desc(on))
+}
+
+daily_on_off_tables_from_parquet <- function(parquet_path) {
+  raw_df <- read_bid_data(parquet_path)
+  map_days(raw_df, \(day_df) day_df |> OHE_df() |> summarise_on_off_hourly_mw())
+}
+
+run_hourly_available_mw_anova <- function(df) {
+  long_df <- df |>
+    pivot_longer(
+      cols = starts_with("hour_"),
+      names_to = "hour",
+      values_to = "on"
+    ) |>
+    mutate(
+      hour = factor(hour, levels = sprintf("hour_%02d", 0:23)),
+      available_mw = if_else(on, MAX_MW, 0)
+    )
+
+  fit <- aov(available_mw ~ hour, data = long_df)
+  fit_tbl <- summary(fit)[[1]]
+
+  tibble(
+    test = "anova",
+    statistic = unname(fit_tbl[1, "F value"]),
+    p_value = unname(fit_tbl[1, "Pr(>F)"]),
+    df_between = unname(fit_tbl[1, "Df"]),
+    df_within = unname(fit_tbl[2, "Df"]),
+    n_resources = n_distinct(df$ID),
+    n_obs = nrow(long_df)
+  )
+}
+
+daily_hourly_anova_from_parquet <- function(parquet_path) {
+  raw_df <- read_bid_data(parquet_path)
+  day_results <- map_days(raw_df, \(day_df) {
+    day_df |> OHE_df() |> run_hourly_available_mw_anova()
+  })
+
+  day_results |>
+    bind_rows(.id = "trade_date") |>
+    mutate(trade_date = as.Date(trade_date), .before = 1) |>
+    arrange(trade_date) |>
+    mutate(p_value_bh = p.adjust(p_value, method = "BH"))
+}
+
 # SEQID 204933 is the nuke?
 df <- here("20250701_20250701_PUB_BID_DAM_v3.csv") |>
   read_csv() |>
   OHE_df()
 
-# df |>
-#   pivot_longer(
-#     cols = starts_with("hour_"),
-#     names_to = "hour",
-#     values_to = "on"
-#   ) |>
-#   mutate(
-#     hour = factor(hour, levels = sprintf("hour_%02d", 0:23)),
-#     on = if_else(on, "YES", "NO")
-#   ) |>
-#   group_by(on, hour) |>
-#   summarise(mw = sum(MAX_MW, na.rm = TRUE), .groups = "drop") |>
-#   pivot_wider(
-#     names_from = hour,
-#     values_from = mw,
-#     values_fill = 0
-#   ) |>
-#   arrange(desc(on))
-
 df |> plot_hourly_mw(TRUE)
+df |> summarise_on_off_hourly_mw()
+df |> run_hourly_available_mw_anova()
+
+# casio_daily_on_off <- daily_on_off_tables_from_parquet(here(
+#   "CASIO_dam_big.parquet"
+# ))
+# casio_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
+#   "CASIO_dam_big.parquet"
+# ))
+
+# qs2::qs_save(
+#   casio_daily_on_off,
+#   here("casio_daily_on_off.qs"),
+#   compress_level = 10,
+#   nthreads = 16
+# )
+# qs2::qs_save(
+#   casio_daily_hourly_anova,
+#   here("casio_daily_hourly_anova.qs"),
+#   compress_level = 10,
+#   nthreads = 16
+# )
+
+casio_daily_on_off <- qs2::qs_read(here("casio_daily_on_off.qs"))
+casio_daily_hourly_anova <- qs2::qs_read(here("casio_daily_hourly_anova.qs"))
