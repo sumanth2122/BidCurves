@@ -182,10 +182,11 @@ plot_curves_new <- function(market_data, resource_id){
                      # yend = if_else(is.na(yend), SCH_BID_Y1AXISDATA, yend),
                      xend = if_else(is.na(xend), SCH_BID_XAXISDATA, xend),
                      is_pos = if_else(SCH_BID_XAXISDATA  > 0, TRUE, FALSE),
-                     single_point = if_else(n() == 1, TRUE, FALSE)) |>
+                     end_point = (SCH_BID_XAXISDATA == xend),
+                     single_point = (n() == 1))|>
               ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA,
                   xend=xend, yend=yend, group=STARTTIME,color=factor(STARTTIME))) +
-              geom_point(aes(shape = ifelse(single_point, 17, 16))) +
+              geom_point(aes(shape = ifelse(single_point, 2, ifelse(end_point, 1, 16)))) +
               scale_shape_identity() +
               geom_segment() +
               geom_point(aes(x=xend, y=SCH_BID_Y1AXISDATA), shape=1) +
@@ -198,7 +199,7 @@ plot_curves_new <- function(market_data, resource_id){
               theme_bw()
        plot
 }
-plot_curves_new(subset, 394840)
+plot_curves_new(subset, 140023)
 ```
 
 ```{r}
