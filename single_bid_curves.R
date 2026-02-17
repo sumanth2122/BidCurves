@@ -2,20 +2,6 @@ library(tidyverse)
 library(duckplyr)
 use("here", "here")
 
-# Inspect parquet columns before writing SQL against the file.
-inspect_parquet_schema_duckdb <- function(parquet_path) {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  query <- DBI::sqlInterpolate(
-    con,
-    "DESCRIBE SELECT * FROM read_parquet(?parquet_path)",
-    parquet_path = parquet_path
-  )
-
-  DBI::dbGetQuery(con, query)
-}
-
 single_point_seq_hours_duckdb <- function(
   parquet_path = here("CASIO_dam_big.parquet"),
   threads = max(1L, parallel::detectCores(logical = TRUE) - 1L)
