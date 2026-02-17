@@ -169,7 +169,7 @@ example |>
 
 ```{r}
 plot_curves_new <- function(market_data, resource_id){
-       date <- as.Date(market_data$STARTDATETIME[1])
+       date <- as.Date(market_data$STARTTIME[1])
        plot <- market_data |>
               mutate(STARTDATETIME = as.factor(STARTTIME),
                STARTTIME = hms::as_hms(STARTTIME)) |>
@@ -199,33 +199,96 @@ plot_curves_new <- function(market_data, resource_id){
               theme_bw()
        plot
 }
-plot_curves_new(subset, 140023)
+plot_curves_new(data, 140023)
+plot_curves(data, 140023)
 ```
 
-```{r}
-plot_curves <- function(market_data, resource_id){
-    date <- as.Date(market_data$STARTTIME[1])
 
-    plot <- market_data |>
-        mutate(STARTDATETIME = as.factor(STARTTIME),
-               STARTTIME = hms::as_hms(STARTTIME)) |>
-        filter(RESOURCEBID_SEQ == resource_id)|>
-              # STARTTIME %in% hms::as_hms("14:00:00")) |>
-       #  STARTTIME %in% c(hms::as_hms("00:00:00"),
-       #                    hms::as_hms("04:00:00"),
-       #                    hms::as_hms("08:00:00"),
-       #                    hms::as_hms("13:00:00"),
-       #                    hms::as_hms("20:00:00"))) |>
-        ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA, 
-             color = STARTDATETIME, group=STARTDATETIME)) +
-        geom_line() +
-        geom_point() +
-       #  xlim(-Inf, Inf) +
-        labs(
-            x="Quantity (MW)",
-            y = "Bid Price ($/MWh)",
-            title = sprintf("ID: %s Date: %s", resource_id, date)) +
-        theme_minimal()
-       plot
+
+```{r}
+plot_curves_new <- function(market_data, resource_id){
+       date_val <- as.Date(market_data$STARTTIME[1])
+       
+       plot_data <- market_data |>
+              mutate(STARTDATETIME = as.factor(STARTTIME),
+                     STARTTIME = hms::as_hms(STARTTIME)) |>
+              filter(RESOURCEBID_SEQ == resource_id,
+                     !is.na(SCH_BID_XAXISDATA)) |>
+              arrange(STARTDATETIME, SCH_BID_XAXISDATA) |>
+              group_by(STARTTIME) |>
+              mutate(xend = lead(SCH_BID_XAXISDATA),
+                     yend = SCH_BID_Y1AXISDATA,
+                     xend = if_else(is.na(xend), SCH_BID_XAXISDATA, xend),
+                     is_pos = if_else(SCH_BID_XAXISDATA  >= 0, "Positive MW Bids", "Negative MW Bids"),
+                     end_point = (SCH_BID_XAXISDATA == xend),
+                     single_point = (n() == 1))
+       plot_data |>
+              ggplot(aes(x=SCH_BID_XAXISDATA, y=SCH_BID_Y1AXISDATA,
+                         xend=xend, yend=yend, group=STARTTIME, color=factor(STARTTIME))) +
+              geom_point(aes(
+  shape = ifelse(single_point, "Single-point bid",
+          ifelse(end_point, "End point", "Submitted bid")),
+  size = ifelse(single_point, 3, 1.5)
+)) +
+scale_shape_manual(
+  name = "Point Type",
+  values = c(
+    "Single-point bid" = 17,  # triangle
+    "End point" = 1,          # hollow circle
+    "Submitted bid" = 16         # filled circle
+  ), drop=FALSE
+) +
+              # geom_point(aes(
+              #     shape = ifelse(single_point, 17, ifelse(end_point, 1, 16)),
+              #     size = ifelse(single_point, 3, 1.5)
+              # )) +
+              # scale_shape_identity() +
+              scale_size_identity() + 
+              geom_segment() +
+              geom_point(aes(x=xend, y=SCH_BID_Y1AXISDATA), shape=1, size=1.5) +
+              labs(x="Quantity (MW)",
+                   y = "Bid Price ($/MWh)",
+                   title = sprintf("ID: %s Date: %s", resource_id, date_val),
+                   color="Hour") +
+              facet_wrap(~is_pos) +
+              theme_bw()
+       # return(plot_data)
 }
+plot_curves_new(data, 394840)
+plot_curves_new(data, 160605)
+plot_curves_new(ex.data, 394840)
+plot_curves_new(data, 238485)
+plot_curves_new(data, 140023)
+```
+
+
+```{r}
+plot_curves_new(ex.data, 394840)
+ex.data <- data |>
+              filter(RESOURCEBID_SEQ == 394840,
+              hms::as_hms(STARTTIME) %in% c(hms::as_hms("00:00:00"),
+                          hms::as_hms("04:00:00"),
+                          hms::as_hms("08:00:00"),
+                          hms::as_hms("13:00:00"),
+                          hms::as_hms("20:00:00")))
+test <- data |>
+              filter(RESOURCEBID_SEQ == 394840) |>
+              arrange(STARTTIME, SCH_BID_XAXISDATA) |>
+              group_by(STARTTIME) |>
+              mutate(n = n())
+
+test <- data |>
+              mutate(STARTDATETIME = as.factor(STARTTIME),
+                     STARTTIME = hms::as_hms(STARTTIME)) |>
+              filter(RESOURCEBID_SEQ == 238485,
+                     !is.na(SCH_BID_XAXISDATA)) |>
+              arrange(STARTDATETIME, SCH_BID_XAXISDATA) |>
+              group_by(STARTTIME) |>
+              mutate(xend = lead(SCH_BID_XAXISDATA),
+                     yend = SCH_BID_Y1AXISDATA,
+                     xend = if_else(is.na(xend), SCH_BID_XAXISDATA, xend),
+                     is_pos = (SCH_BID_XAXISDATA  > 0),
+                     end_point = (SCH_BID_XAXISDATA == xend),
+                     single_point = (n() == 1)) |>
+              select(STARTTIME, xend, yend, SCH_BID_XAXISDATA,SCH_BID_Y1AXISDATA)
 ```
