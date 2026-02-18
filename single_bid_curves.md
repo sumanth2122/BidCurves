@@ -30,3 +30,11 @@ Total number of generators:
 # Distribution of single-point bids as percent of generator max MW
 
 ![](single_bid_curves.markdown_strict_files/figure-markdown_strict/unnamed-chunk-8-1.png)
+
+    Saving 7 x 5 in image
+
+# Single-point curves by hour
+
+![](single_bid_curves.markdown_strict_files/figure-markdown_strict/unnamed-chunk-9-1.png)
+
+    Saving 7 x 5 in image

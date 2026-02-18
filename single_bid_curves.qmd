@@ -126,4 +126,26 @@ single_point_curves |>
     y = "Number of single-point curves"
   ) +
   theme_minimal()
+
+ggsave(filename = here("plots", "single_point_pct_of_max_mw.png"))
+```
+
+# Single-point curves by hour
+
+```{r}
+single_point_curves |>
+  mutate(hour = as.integer(substr(STARTTIME, 12L, 2L))) |>
+  summarise(n_single_point_curves = n(), .by = hour) |>
+  collect() |>
+  ggplot(aes(x = hour, y = n_single_point_curves)) +
+  geom_col(fill = "#00008b") +
+  scale_x_continuous(breaks = 0:23) +
+  labs(
+    title = "Single-Point Curves by Hour",
+    x = NULL,
+    y = "Number of single-point curves"
+  ) +
+  theme_minimal()
+
+ggsave(filename = here("plots", "single_point_curves_by_hour.png"))
 ```
