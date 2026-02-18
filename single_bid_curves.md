@@ -9,6 +9,10 @@ Nicole, Sumanth, and Visruth
 
     [1] 452964
 
+Total number of curves:
+
+    [1] 9089192
+
 # Number of unique generators which submitted single point curves
 
     [1] 250
@@ -16,6 +20,8 @@ Nicole, Sumanth, and Visruth
 Total number of generators:
 
     [1] 4191
+
+Percent:
 
     [1] 5.965163
 
@@ -29,12 +35,12 @@ Total number of generators:
 
 # Distribution of single-point bids as percent of generator max MW
 
-![](single_bid_curves.markdown_strict_files/figure-markdown_strict/unnamed-chunk-8-1.png)
+![](single_bid_curves.markdown_strict_files/figure-markdown_strict/unnamed-chunk-9-1.png)
 
     Saving 7 x 5 in image
 
 # Single-point curves by hour
 
-![](single_bid_curves.markdown_strict_files/figure-markdown_strict/unnamed-chunk-9-1.png)
+![](single_bid_curves.markdown_strict_files/figure-markdown_strict/unnamed-chunk-10-1.png)
 
     Saving 7 x 5 in image

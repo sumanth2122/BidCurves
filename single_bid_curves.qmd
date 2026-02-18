@@ -43,6 +43,19 @@ here("CASIO_dam_big.parquet") |>
   pull(n_single)
 ```
 
+Total number of curves:
+
+```{r}
+here("CASIO_dam_big.parquet") |>
+  read_parquet_duckdb() |>
+  summarise(
+    n_points = n(),
+    .by = c(STARTTIME, RESOURCEBID_SEQ)
+  ) |>
+  summarise(n_curves = n()) |>
+  pull(n_curves)
+```
+
 # Number of unique generators which submitted single point curves
 
 ```{r}
@@ -69,6 +82,8 @@ here("CASIO_dam_big.parquet") |>
   summarise(n_generators = n_distinct(RESOURCEBID_SEQ)) |>
   pull(n_generators)
 ```
+
+Percent:
 
 ```{r}
 250 / 4191 * 100
