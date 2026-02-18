@@ -1,9 +1,7 @@
 ---
 title: "Single Point Bid Curve Numbers"
 format: md
-cache: true
-autodep: true
-cache-comments: true
+echo: false
 ---
 
 ```{r}
@@ -61,4 +59,71 @@ here("CASIO_dam_big.parquet") |>
   filter(n_points == 1L) |>
   summarise(n_generators_single_point = n_distinct(RESOURCEBID_SEQ)) |>
   pull(n_generators_single_point)
+```
+
+Total number of generators:
+
+```{r}
+here("CASIO_dam_big.parquet") |>
+  read_parquet_duckdb() |>
+  summarise(n_generators = n_distinct(RESOURCEBID_SEQ)) |>
+  pull(n_generators)
+```
+
+```{r}
+250 / 4191 * 100
+```
+
+# Single-point curves at each generator's global max MW
+
+```{r}
+dam_nonnull <- here("CASIO_dam_big.parquet") |>
+  read_parquet_duckdb() |>
+  filter(
+    !is.na(SCH_BID_XAXISDATA),
+    !is.na(SCH_BID_Y1AXISDATA)
+  )
+
+generator_max <- dam_nonnull |>
+  summarise(
+    generator_max_mw = max(SCH_BID_XAXISDATA),
+    .by = RESOURCEBID_SEQ
+  )
+
+single_point_curves <- dam_nonnull |>
+  summarise(
+    n_points = n(),
+    point_mw = max(SCH_BID_XAXISDATA),
+    .by = c(RESOURCEBID_SEQ, STARTTIME)
+  ) |>
+  filter(n_points == 1L)
+
+single_point_curves |>
+  inner_join(generator_max, by = "RESOURCEBID_SEQ") |>
+  mutate(at_generator_max = abs(point_mw - generator_max_mw) < 1e-9) |>
+  summarise(
+    n_single_point_curves = n(),
+    n_single_point_at_generator_max = sum(at_generator_max),
+    pct_single_point_at_generator_max = 100 * sum(at_generator_max) / n()
+  ) |>
+  collect()
+```
+
+# Distribution of single-point bids as percent of generator max MW
+
+```{r}
+single_point_curves |>
+  inner_join(generator_max, by = "RESOURCEBID_SEQ") |>
+  filter(generator_max_mw > 0) |>
+  mutate(pct_of_generator_max = 100 * point_mw / generator_max_mw) |>
+  select(RESOURCEBID_SEQ, STARTTIME, pct_of_generator_max) |>
+  collect() |>
+  ggplot(aes(x = pct_of_generator_max)) +
+  geom_histogram(binwidth = 5, fill = "#00008b", color = "white") +
+  labs(
+    title = "Single-Point Bid MW as % of Generator Max MW",
+    x = "Single-point MW (% of generator max MW)",
+    y = "Number of single-point curves"
+  ) +
+  theme_minimal()
 ```
