@@ -1,3 +1,4 @@
 /.quarto/
 **/*.quarto_ipynb
 *.parquet
+single_bid_curves_cache/
