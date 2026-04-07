@@ -29,7 +29,11 @@ Get max capacity for each year/month, each id:
 
 ```{r}
 observed_max <- tbl_pointer |>
-  filter(!is.na(SCH_BID_XAXISDATA), RESOURCE_TYPE == "GENERATOR") |>
+  filter(
+    !is.na(SCH_BID_XAXISDATA),
+    RESOURCE_TYPE == "GENERATOR",
+    MARKETPRODUCTTYPE == "EN"
+  ) |>
   mutate(
     year = year(as.Date(STARTTIME)),
     month = month(as.Date(STARTTIME))
@@ -72,9 +76,12 @@ Repeat for all ids:
 ```{r}
 check_probs <- function(obs_max_df) {
   obs_max_df |>
-    pmap(\(RESOURCEBID_SEQ, year, month, SCH_BID_XAXISDATA) {
-      check_capacity(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, year, month, nqc)
-    }) |>
+    pmap(
+      \(RESOURCEBID_SEQ, year, month, SCH_BID_XAXISDATA) {
+        check_capacity(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, year, month, nqc)
+      },
+      .progress = TRUE
+    ) |>
     list_rbind()
 }
 
@@ -85,4 +92,15 @@ tibble(
   SCH_BID_XAXISDATA = c(880, 120)
 ) |>
   check_probs()
+
+nqc_all <- observed_max |>
+  check_probs() |>
+  arrow::write_parquet(nqc_all, "NQC_data_all.parquet")
+```
+
+```{r}
+nqc_all |>
+  summarize(total = first(prob) * n_distinct(id), .by = c(year, month, prob)) |>
+  summarize(total = max(total), .by = c(year, month)) |>
+  arrange(year, month)
 ```

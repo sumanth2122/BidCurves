@@ -215,7 +215,7 @@ daily_hourly_anova_from_parquet <- function(parquet_path) {
 }
 
 # SEQID 204933 is the nuke?
-df <- here("20250701_20250701_PUB_BID_DAM_v3.csv") |>
+df <- here::here("20250701_20250701_PUB_BID_DAM_v3.csv") |>
   read_csv() |>
   OHE_df()
 
