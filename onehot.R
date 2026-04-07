@@ -32,16 +32,17 @@ count_new_ids_by_day <- function(parquet_path) {
   )
 
   DBI::dbGetQuery(con, query) |>
-    mutate(trade_date = as.Date(trade_date))
+    mutate(trade_date = as.Date(trade_date)) |>
+    as_tibble()
 }
 
-new_ids_by_day <- count_new_ids_by_day(here("CASIO_dam_big.parquet"))
+new_ids_by_day <- count_new_ids_by_day(here("CAISO_dam_big.parquet"))
 new_ids_by_day |>
   tail(-1) |>
   ggplot(aes(x = trade_date, y = new_id_count)) +
   geom_col(fill = "#2b8cbe", width = 0.8) +
   labs(
-    title = "Daily New RESOURCEBID_SEQ",
+    title = "Daily New ID",
     x = "Trade Date",
     y = "New IDs"
   ) +
@@ -222,25 +223,25 @@ df |> plot_hourly_mw(TRUE)
 df |> summarise_on_off_hourly_mw()
 df |> run_hourly_available_mw_anova()
 
-# casio_daily_on_off <- daily_on_off_tables_from_parquet(here(
-#   "CASIO_dam_big.parquet"
+# CAISO_daily_on_off <- daily_on_off_tables_from_parquet(here(
+#   "CAISO_dam_big.parquet"
 # ))
-# casio_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
-#   "CASIO_dam_big.parquet"
+# CAISO_daily_hourly_anova <- daily_hourly_anova_from_parquet(here(
+#   "CAISO_dam_big.parquet"
 # ))
 
 # qs2::qs_save(
-#   casio_daily_on_off,
-#   here("casio_daily_on_off.qs"),
+#   CAISO_daily_on_off,
+#   here("CAISO_daily_on_off.qs"),
 #   compress_level = 10,
 #   nthreads = 16
 # )
 # qs2::qs_save(
-#   casio_daily_hourly_anova,
-#   here("casio_daily_hourly_anova.qs"),
+#   CAISO_daily_hourly_anova,
+#   here("CAISO_daily_hourly_anova.qs"),
 #   compress_level = 10,
 #   nthreads = 16
 # )
 
-casio_daily_on_off <- qs2::qs_read(here("casio_daily_on_off.qs"))
-casio_daily_hourly_anova <- qs2::qs_read(here("casio_daily_hourly_anova.qs"))
+CAISO_daily_on_off <- qs2::qs_read(here("CAISO_daily_on_off.qs"))
+CAISO_daily_hourly_anova <- qs2::qs_read(here("CAISO_daily_hourly_anova.qs"))

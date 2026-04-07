@@ -14,7 +14,7 @@ use("here", "here")
 # Single Point Curves
 
 ```{r}
-here("CASIO_dam_big.parquet") |>
+here("CAISO_dam_big.parquet") |>
   read_parquet_duckdb() |>
   summarise(
     n_points = n(),
@@ -28,7 +28,7 @@ here("CASIO_dam_big.parquet") |>
 # Single Point Curves with nonnull x and y
 
 ```{r}
-here("CASIO_dam_big.parquet") |>
+here("CAISO_dam_big.parquet") |>
   read_parquet_duckdb() |>
   filter(
     !is.na(SCH_BID_XAXISDATA),
@@ -46,7 +46,7 @@ here("CASIO_dam_big.parquet") |>
 Total number of curves:
 
 ```{r}
-here("CASIO_dam_big.parquet") |>
+here("CAISO_dam_big.parquet") |>
   read_parquet_duckdb() |>
   summarise(
     n_points = n(),
@@ -59,7 +59,7 @@ here("CASIO_dam_big.parquet") |>
 # Number of unique generators which submitted single point curves
 
 ```{r}
-here("CASIO_dam_big.parquet") |>
+here("CAISO_dam_big.parquet") |>
   read_parquet_duckdb() |>
   filter(
     !is.na(SCH_BID_XAXISDATA),
@@ -77,7 +77,7 @@ here("CASIO_dam_big.parquet") |>
 Total number of generators:
 
 ```{r}
-here("CASIO_dam_big.parquet") |>
+here("CAISO_dam_big.parquet") |>
   read_parquet_duckdb() |>
   summarise(n_generators = n_distinct(RESOURCEBID_SEQ)) |>
   pull(n_generators)
@@ -92,7 +92,7 @@ Percent:
 # Single-point curves at each generator's global max MW
 
 ```{r}
-dam_nonnull <- here("CASIO_dam_big.parquet") |>
+dam_nonnull <- here("CAISO_dam_big.parquet") |>
   read_parquet_duckdb() |>
   filter(
     !is.na(SCH_BID_XAXISDATA),

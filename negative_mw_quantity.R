@@ -1,10 +1,10 @@
 library(tidyverse)
 
-default_casio_parquet_path <- function() {
+default_CAISO_parquet_path <- function() {
   if (requireNamespace("here", quietly = TRUE)) {
-    return(here::here("CASIO_dam_big.parquet"))
+    return(here::here("CAISO_dam_big.parquet"))
   }
-  "CASIO_dam_big.parquet"
+  "CAISO_dam_big.parquet"
 }
 
 require_duckdb_deps <- function() {
@@ -23,7 +23,7 @@ normalize_market_run_id <- function(market_run_id) {
 }
 
 negative_mw_quantity_summary_duckdb <- function(
-  parquet_path = default_casio_parquet_path(),
+  parquet_path = default_CAISO_parquet_path(),
   market_run_id = NULL,
   threads = max(1L, parallel::detectCores(logical = TRUE) - 1L)
 ) {
@@ -112,7 +112,7 @@ negative_mw_quantity_summary_duckdb <- function(
 }
 
 count_total_curves_duckdb <- function(
-  parquet_path = default_casio_parquet_path(),
+  parquet_path = default_CAISO_parquet_path(),
   market_run_id = NULL,
   threads = max(1L, parallel::detectCores(logical = TRUE) - 1L)
 ) {
@@ -165,7 +165,7 @@ negative_mw_sentence <- function(summary_df, digits = 2) {
 }
 
 negative_mw_summary <- negative_mw_quantity_summary_duckdb(
-  parquet_path = default_casio_parquet_path()
+  parquet_path = default_CAISO_parquet_path()
 )
 
 print(negative_mw_summary)
