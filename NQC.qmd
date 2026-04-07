@@ -3,83 +3,73 @@ title: "NQC Probs"
 format: html
 ---
 
-Load in packages:
+Load in packages and read in data:
+
 ```{r}
 library(duckdb)
 library(tidyverse)
-```
-
-
-Read in data:
-```{r}
 con <- dbConnect(duckdb())
 tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
-
-nqc <- readxl::read_xlsx("NQC_2024_sorted.xlsx")
+nqc <- list(
+  `2023` = readxl::read_excel("NQC_2023.xls", sheet = "2023 NQC List"),
+  `2024` = readxl::read_excel("NQC_2024_sorted.xlsx"),
+  `2025` = readxl::read_excel("NQC_2025.xlsx", sheet = "2025 NQC List"),
+  `2026` = readxl::read_excel("NQC_2026.xlsx", sheet = "2026 NQC List")
+) |>
+  imap_dfr(\(x, year) {
+    x |>
+      select(`Generator Name`:DEC) |>
+      pivot_longer(JAN:DEC, names_to = "month", values_to = "capacity") |>
+      mutate(year = year, .before = month)
+  })
 ```
-
 
 Get max capacity for each month, each id:
+
 ```{r}
 observed_max <- tbl_pointer |>
-    group_by(RESOURCEBID_SEQ, mo = month(as.Date(STARTTIME))) |>
-    filter(!is.na(SCH_BID_XAXISDATA),
-           RESOURCE_TYPE == "GENERATOR") |>
-    slice_max(n=1, order_by = SCH_BID_XAXISDATA, with_ties = FALSE) |>
-    select(RESOURCEBID_SEQ, mo, SCH_BID_XAXISDATA) |>
-    collect()
+  group_by(RESOURCEBID_SEQ, mo = month(as.Date(STARTTIME))) |>
+  filter(!is.na(SCH_BID_XAXISDATA), RESOURCE_TYPE == "GENERATOR") |>
+  slice_max(n = 1, order_by = SCH_BID_XAXISDATA, with_ties = FALSE) |>
+  select(RESOURCEBID_SEQ, mo, SCH_BID_XAXISDATA) |>
+  collect()
 ```
 
-
 Compare observed max capacity to NQC:
+
 ```{r}
-check_capacity <- function(id, obs_max, month, nqc_data){
+check_capacity <- function(id, obs_max, month, nqc_data) {
+  # pull month column of NQC data
+  nqc_month <- tibble(
+    nqc_data$`Generator Name`,
+    nqc_data[str_to_upper(month.abb[month])]
+  )
+  names(nqc_month) <- c("generator", "capacity")
 
-    # pull month column of NQC data
-    nqc_month <- tibble(nqc_data$`Generator Name`,
-                        nqc_data[str_to_upper(month.abb[month])])
-    names(nqc_month) <- c("generator", "capacity")
-
-    # filter to generators with max capacities greater than observed max
-    nqc_month |>
-        filter(capacity >= obs_max) |>
-        mutate(prob = 1/n(),
-               id = id,
-               month = month)
+  # filter to generators with max capacities greater than observed max
+  nqc_month |>
+    filter(capacity >= obs_max) |>
+    mutate(prob = 1 / n(), id = id, month = month)
 }
 
 check_capacity(952796, 880, 6, nqc)
 ```
 
-
 Repeat for all ids:
 
 ```{r}
-check_probs <- function(obs_max_df){
-    out <- tibble()
-
-    for(id in obs_max_df$RESOURCEBID_SEQ){
-        one_id_probs <- tibble()
-
-        one_id <- obs_max_df |>
-            filter(RESOURCEBID_SEQ == id)
-
-        for(month in one_id$mo){
-            one_month_prob <- check_capacity(id, one_id$SCH_BID_XAXISDATA[one_id$mo == month], month, nqc)
-
-            one_id_probs <- bind_rows(one_id_probs, one_month_prob)
-        }
-        
-        out <- bind_rows(out, one_id_probs)
-    }
-
-    return(out)
+check_probs <- function(obs_max_df) {
+  obs_max_df |>
+    pmap(\(RESOURCEBID_SEQ, mo, SCH_BID_XAXISDATA) {
+      check_capacity(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, mo, nqc)
+    }) |>
+    list_rbind()
 }
 
 test_df <- tibble(
-    RESOURCEBID_SEQ = c(952796, 525442),
-    mo = c(6, 2),
-    SCH_BID_XAXISDATA = c(880, 120)
+  RESOURCEBID_SEQ = c(952796, 525442),
+  mo = c(6, 2),
+  SCH_BID_XAXISDATA = c(880, 120)
 )
 
 check_probs(test_df)
