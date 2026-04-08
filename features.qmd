@@ -1,0 +1,101 @@
+---
+title: "Resource ID Feature"
+format: html
+---
+
+```{r}
+library(duckdb)
+library(tidyverse)
+```
+
+
+```{r}
+con <- dbConnect(duckdb())
+tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
+```
+
+```{r}
+tbl_pointer |>
+    colnames()
+```
+
+```{r}
+data <- tbl_pointer |>
+    filter(MARKETPRODUCTTYPE == "EN",
+           RESOURCE_TYPE == "GENERATOR") |>
+    select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
+    collect()
+```
+
+Get max MW
+```{r}
+observed_max <- data |>
+    group_by(RESOURCEBID_SEQ) |>
+    filter(!is.na(SCH_BID_XAXISDATA)) |>
+    slice_max(n=1, order_by = SCH_BID_XAXISDATA, with_ties = FALSE) |>
+    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA)
+```
+
+Mean and median number of knots
+```{r}
+knots <- data |>
+    group_by(STARTTIME, RESOURCEBID_SEQ) |>
+    summarise(knots = n()) |>
+    group_by(RESOURCEBID_SEQ) |>
+    summarise(mean = mean(knots),
+              median = median(knots))
+```
+
+single-point frequency
+
+```{r}
+num_bids <- data |>
+    group_by(RESOURCEBID_SEQ) |>
+    summarise(total_bids = n())
+
+data |>
+    group_by(STARTTIME, RESOURCEBID_SEQ) |>
+    mutate(knots = n()) |>
+    mutate(single (knots == 1))
+```
+
+NULL
+
+```{r}
+null <- data |>
+    summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
+```
+
+% of self scheduled bids
+
+```{r}
+data |>
+    mutate(self = !is.na(SELFSCHEDMW))
+```
+```{r}
+
+filter MARKETPRODUCTTYPE = EN and resource_type
+median # 
+
+date start end 
+
+hour - what % of all bids did they bid during each hour (24 features)
+
+what % of bids are single point bids
+
+null - yes/no
+
+% of self scheduled bids
+```
+
+
+```{r}
+tbl_pointer |>
+    select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
+    collect() |>
+    pull(SELFSCHEDMW) |>
+    table()
+
+
+
+```
