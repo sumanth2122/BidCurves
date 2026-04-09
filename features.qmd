@@ -17,7 +17,8 @@ tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
 ```{r}
 data <- tbl_pointer |>
     filter(MARKETPRODUCTTYPE == "EN",
-           RESOURCE_TYPE == "GENERATOR") |>
+           RESOURCE_TYPE == "GENERATOR",
+           !is.na(RESOURCEBID_SEQ)) |>
     select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
     collect()
 ```
@@ -26,7 +27,7 @@ Get max MW
 ```{r}
 observed_max <- data |>
     group_by(RESOURCEBID_SEQ) |>
-    filter(!is.na(SCH_BID_XAXISDATA)) |>
+    # filter(!is.na(SCH_BID_XAXISDATA)) |>
     slice_max(n=1, order_by = SCH_BID_XAXISDATA, with_ties = FALSE) |>
     select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA)
 ```
@@ -56,12 +57,12 @@ single <- data |>
     select(RESOURCEBID_SEQ, pct_single)
 ```
 
-NULL
+% of all bids that are NULL bids
 
 ```{r}
 null <- data |>
-    filter(is.na(SELFSCHEDMW)) |>
-    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
+    # filter(is.na(SELFSCHEDMW)) |>
+    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
     group_by(RESOURCEBID_SEQ) |>
     summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
 ```
@@ -74,7 +75,8 @@ self <- data |>
     group_by(RESOURCEBID_SEQ) |>
     summarise(total_bids = n(),
               self_sched = sum(self_sched),
-              pct_self_sched = 100 * mean(self_sched))
+              pct_self_sched = 100 * mean(self_sched)) |>
+    select(RESOURCEBID_SEQ, pct_self_sched)
 ```
 
 hours_tbl
@@ -87,6 +89,7 @@ hours_tbl <- data |>
     summarise(num_bids = n(), .groups = "drop") |>
     group_by(RESOURCEBID_SEQ) |>
     mutate(pct_per_hour = 100*num_bids / sum(num_bids)) |>
+    select(!num_bids) |>
     pivot_wider(names_from = hour,
                 values_from = pct_per_hour,
                 names_prefix = "hour_",
@@ -113,9 +116,8 @@ features <- knots |>
     left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
-    # include obs max when num ids matches up
-    # left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
+    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
 ```
 
 ```{r}
