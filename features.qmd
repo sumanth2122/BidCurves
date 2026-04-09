@@ -136,3 +136,43 @@ what % of bids are single point bids
 null - yes/no
 
 % of self scheduled bids
+
+
+Simple similarity metrics for IDS.
+Normalize features and calculate cosine similarity.
+
+```{r}
+# numeric matrix of features
+feat_mat <- features |>
+    mutate(
+        null = replace_na(as.numeric(null), 0),
+        days_active = as.numeric(end - start),
+        max_mw = replace_na(SCH_BID_XAXISDATA, 0)
+    ) |>
+    select(-RESOURCEBID_SEQ, -start, -end, -SCH_BID_XAXISDATA) |>
+    as.matrix()
+
+# Scale each column to zero-mean, unit-variance
+feat_scaled <- scale(feat_mat)
+# Replace any NaN columns (zero-variance) with 0
+feat_scaled[is.nan(feat_scaled)] <- 0
+
+# Normalize each row to unit length
+row_norms <- sqrt(rowSums(feat_scaled^2))
+row_norms[row_norms == 0] <- 1
+feat_norm <- feat_scaled / row_norms
+
+# Cosine similarity = X %*% t(X) on row-normalized data
+cos_sim <- tcrossprod(feat_norm)
+
+ids <- features$RESOURCEBID_SEQ
+rownames(cos_sim) <- ids
+colnames(cos_sim) <- ids
+
+cos_sim
+```
+
+
+```{r}
+cos_sim["100031", "177696"]
+```
