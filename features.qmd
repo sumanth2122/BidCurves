@@ -15,11 +15,6 @@ tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
 ```
 
 ```{r}
-tbl_pointer |>
-    colnames()
-```
-
-```{r}
 data <- tbl_pointer |>
     filter(MARKETPRODUCTTYPE == "EN",
            RESOURCE_TYPE == "GENERATOR") |>
@@ -49,30 +44,79 @@ knots <- data |>
 single-point frequency
 
 ```{r}
-num_bids <- data |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(total_bids = n())
-
-data |>
+single <- data |>
     group_by(STARTTIME, RESOURCEBID_SEQ) |>
-    mutate(knots = n()) |>
-    mutate(single (knots == 1))
+    mutate(knots = n(),
+           single_bid_hour = knots == 1) |>
+    ungroup() |>
+    group_by(RESOURCEBID_SEQ) |>
+    summarise(total_bids = n(),
+              num_single = sum(single_bid_hour),
+              pct_single = 100*num_single/total_bids) |>
+    select(pct_single)
 ```
 
 NULL
 
 ```{r}
 null <- data |>
+    filter(is.na(SELFSCHEDMW)) |>
+    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA) |>
+    group_by(RESOURCEBID_SEQ) |>
     summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
 ```
 
 % of self scheduled bids
 
 ```{r}
-data |>
-    mutate(self = !is.na(SELFSCHEDMW))
+self <- data |>
+    mutate(self_sched = !is.na(SELFSCHEDMW)) |>
+    group_by(RESOURCEBID_SEQ) |>
+    summarise(total_bids = n(),
+              self_sched = sum(self_sched),
+              pct_self_sched = 100 * mean(self_sched))
 ```
+
+hours
+
 ```{r}
+hours <- data |>
+    mutate(hour = hour(ymd_hms(STARTTIME))) |>
+    select(RESOURCEBID_SEQ, hour) |>
+    group_by(RESOURCEBID_SEQ, hour) |>
+    summarise(num_bids = n(), .groups = "drop") |>
+    group_by(RESOURCEBID_SEQ) |>
+    mutate(pct_per_hour = 100*num_bids / sum(num_bids)) |>
+    pivot_wider(names_from = hour,
+                values_from = pct_per_hour,
+                names_prefix = "hour_",
+                values_fill = 0)
+
+```
+
+dates of start and end
+
+```{r}
+start_end <- data |>
+    select(RESOURCEBID_SEQ, STARTTIME) |>
+    mutate(STARTTIME = as.Date(STARTTIME)) |>
+    group_by(RESOURCEBID_SEQ) |>
+    summarise(start = min(STARTTIME),
+              end = max(STARTTIME), .groups = "drop")
+```
+
+join everything
+
+```{r}
+features <- knots |>
+    left_join(single, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(hours, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    # include obs max when num ids matches up
+    # left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
+```
 
 filter MARKETPRODUCTTYPE = EN and resource_type
 median # 
@@ -86,16 +130,3 @@ what % of bids are single point bids
 null - yes/no
 
 % of self scheduled bids
-```
-
-
-```{r}
-tbl_pointer |>
-    select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
-    collect() |>
-    pull(SELFSCHEDMW) |>
-    table()
-
-
-
-```
