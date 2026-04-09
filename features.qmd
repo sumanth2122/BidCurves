@@ -53,7 +53,7 @@ single <- data |>
     summarise(total_bids = n(),
               num_single = sum(single_bid_hour),
               pct_single = 100*num_single/total_bids) |>
-    select(pct_single)
+    select(RESOURCEBID_SEQ, pct_single)
 ```
 
 NULL
@@ -77,10 +77,10 @@ self <- data |>
               pct_self_sched = 100 * mean(self_sched))
 ```
 
-hours
+hours_tbl
 
 ```{r}
-hours <- data |>
+hours_tbl <- data |>
     mutate(hour = hour(ymd_hms(STARTTIME))) |>
     select(RESOURCEBID_SEQ, hour) |>
     group_by(RESOURCEBID_SEQ, hour) |>
@@ -112,10 +112,14 @@ features <- knots |>
     left_join(single, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(hours, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
     # include obs max when num ids matches up
     # left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
+```
+
+```{r}
+hours_tbl
 ```
 
 filter MARKETPRODUCTTYPE = EN and resource_type
