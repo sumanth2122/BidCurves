@@ -61,7 +61,7 @@ single <- data |>
 
 ```{r}
 null <- data |>
-    # filter(is.na(SELFSCHEDMW)) |>
+    filter(is.na(SELFSCHEDMW)) |>
     select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
     group_by(RESOURCEBID_SEQ) |>
     summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
