@@ -32,6 +32,16 @@ observed_max <- data |>
     select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA)
 ```
 
+Proportion of bid curves with negative MW
+
+```{r}
+negative_mw <- data |>
+    group_by(STARTTIME, RESOURCEBID_SEQ) |>
+    summarise(has_negative_mw = any(SCH_BID_XAXISDATA < 0, na.rm = TRUE), .groups = "drop") |>
+    group_by(RESOURCEBID_SEQ) |>
+    summarise(pct_negative_mw = 100 * mean(has_negative_mw), .groups = "drop")
+```
+
 Mean and median number of knots
 ```{r}
 knots <- data |>
@@ -61,10 +71,13 @@ single <- data |>
 
 ```{r}
 null <- data |>
-    filter(is.na(SELFSCHEDMW)) |>
-    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
+    group_by(STARTTIME, RESOURCEBID_SEQ) |>
+    summarise(
+        null_bid = any(is.na(SCH_BID_XAXISDATA) & is.na(SCH_BID_Y1AXISDATA)),
+        .groups = "drop"
+    ) |>
     group_by(RESOURCEBID_SEQ) |>
-    summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
+    summarise(null = 100 * mean(null_bid), .groups = "drop")
 ```
 
 % of self scheduled bids
@@ -74,7 +87,6 @@ self <- data |>
     mutate(self_sched = !is.na(SELFSCHEDMW)) |>
     group_by(RESOURCEBID_SEQ) |>
     summarise(total_bids = n(),
-              self_sched = sum(self_sched),
               pct_self_sched = 100 * mean(self_sched)) |>
     select(RESOURCEBID_SEQ, pct_self_sched)
 ```
@@ -83,7 +95,7 @@ hours_tbl
 
 ```{r}
 hours_tbl <- data |>
-    mutate(hour = hour(ymd_hms(STARTTIME))) |>
+    mutate(hour = formatC(hour(ymd_hms(STARTTIME)), width = 2, flag = "0")) |>
     select(RESOURCEBID_SEQ, hour) |>
     group_by(RESOURCEBID_SEQ, hour) |>
     summarise(num_bids = n(), .groups = "drop") |>
@@ -93,8 +105,8 @@ hours_tbl <- data |>
     pivot_wider(names_from = hour,
                 values_from = pct_per_hour,
                 names_prefix = "hour_",
+                names_sort = TRUE,
                 values_fill = 0)
-
 ```
 
 dates of start and end
@@ -115,14 +127,13 @@ features <- knots |>
     left_join(single, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
+    left_join(negative_mw, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
+    left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    arrow::write_parquet("ID_attributes.parquet")
 ```
 
-```{r}
-hours_tbl
-```
 
 filter MARKETPRODUCTTYPE = EN and resource_type
 median # 
@@ -145,7 +156,6 @@ Normalize features and calculate cosine similarity.
 # numeric matrix of features
 feat_mat <- features |>
     mutate(
-        null = replace_na(as.numeric(null), 0),
         days_active = as.numeric(end - start),
         max_mw = replace_na(SCH_BID_XAXISDATA, 0)
     ) |>
@@ -168,11 +178,30 @@ cos_sim <- tcrossprod(feat_norm)
 ids <- features$RESOURCEBID_SEQ
 rownames(cos_sim) <- ids
 colnames(cos_sim) <- ids
-
-cos_sim
+cos_sim["100031", "177696"]
 ```
 
-
 ```{r}
-cos_sim["100031", "177696"]
+lookup_id_features <- function(ID, features_tbl = features) {
+    idx <- match(ID, features_tbl$RESOURCEBID_SEQ)
+
+    if (is.na(idx)) {
+        stop(glue::glue("RESOURCEBID_SEQ {ID} was not found in features_tbl."))
+    }
+
+    row <- features_tbl[idx, , drop = FALSE]
+    fmt <- \(x) sprintf("%.2f", x)
+
+    glue::glue(
+        "ID: {ID}\n",
+        "max MW: {fmt(row$SCH_BID_XAXISDATA[[1]])}\n",
+        "mean # of bid pairs: {fmt(row$mean[[1]])}\n",
+        "median # of bid pairs: {fmt(row$median[[1]])}\n",
+        "single-point frequency: {fmt(row$pct_single[[1]])}\n",
+        "NULL behavior: {fmt(row$null[[1]])}\n",
+        "self-schedule behavior: {fmt(row$pct_self_sched[[1]])}\n",
+        "negative bid behavior: {fmt(row$pct_negative_mw[[1]])}"
+    )
+}
+lookup_id_features(653256)
 ```

@@ -1,4 +1,6 @@
 /.quarto/
 **/*.quarto_ipynb
-*.parquet
 single_bid_curves_cache/
+CAISO_dam_big.parquet
+CAISO_rtm_big.parquet
+NQC_data_all.parquet
