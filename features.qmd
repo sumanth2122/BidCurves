@@ -182,6 +182,15 @@ cos_sim["100031", "177696"]
 ```
 
 ```{r}
+find_matches <- function(ID, num_matches, similarities){
+    tmp <- similarities[ID |> as.character(), ]
+    tmp[order(abs(tmp), decreasing = TRUE)] |> head(num_matches + 1) |> tail(-1)
+}
+
+find_matches(653256, 5, cos_sim)
+```
+
+```{r}
 lookup_id_features <- function(ID, features_tbl = features) {
     idx <- match(ID, features_tbl$RESOURCEBID_SEQ)
 
@@ -204,4 +213,27 @@ lookup_id_features <- function(ID, features_tbl = features) {
     )
 }
 lookup_id_features(653256)
+
+hourly_plot <- function(ID, features_tbl = features) {
+    features_tbl |>
+        filter(RESOURCEBID_SEQ == ID) |>
+        select(hour_00:hour_23) |>
+        pivot_longer(cols = everything(), names_to = "hour", values_to = "pct_bids") |>
+        mutate(
+            hour = str_remove(hour, "^hour_"),
+            hour = factor(hour, levels = sprintf("%02d", 0:23))
+        ) |>
+        ggplot(aes(x = hour, y = pct_bids)) +
+        geom_col(fill = "#2C6E49") +
+        scale_y_continuous(labels = scales::label_percent(scale = 1)) +
+        labs(
+            title = glue::glue("Hourly Bidding Pattern for ID {ID}"),
+            x = NULL,
+            y = NULL
+        ) + 
+        theme_bw()
+}
+hourly_plot(653256)
+hourly_plot(985335)
+hourly_plot(435045)
 ```
