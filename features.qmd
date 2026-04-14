@@ -32,6 +32,14 @@ observed_max <- data |>
     select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA)
 ```
 
+Get max self scheduled MW
+```{r}
+self_scheduled_max <- data |>
+    group_by(RESOURCEBID_SEQ) |>
+    slice_max(n=1, order_by = SELFSCHEDMW, with_ties = FALSE) |>
+    select(RESOURCEBID_SEQ, SELFSCHEDMW)
+```
+
 Proportion of bid curves with negative MW
 
 ```{r}
@@ -130,6 +138,7 @@ features <- knots |>
     left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(negative_mw, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
+    left_join(self_scheduled_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
     left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     arrow::write_parquet("ID_attributes.parquet")
 ```
@@ -157,9 +166,10 @@ Normalize features and calculate cosine similarity.
 feat_mat <- features |>
     mutate(
         days_active = as.numeric(end - start),
-        max_mw = replace_na(SCH_BID_XAXISDATA, 0)
+        max_mw = replace_na(SCH_BID_XAXISDATA, 0),
+        self_schedule_mw = replace_na(SELFSCHEDMW , 0)
     ) |>
-    select(-RESOURCEBID_SEQ, -start, -end, -SCH_BID_XAXISDATA) |>
+    select(-c(RESOURCEBID_SEQ, start, end, SCH_BID_XAXISDATA, SELFSCHEDMW)) |>
     as.matrix()
 
 # Scale each column to zero-mean, unit-variance
@@ -182,8 +192,13 @@ cos_sim["100031", "177696"]
 ```
 
 ```{r}
-find_matches <- function(ID, num_matches, similarities){
+find_matches <- function(ID, num_matches, similarities, filter_date = FALSE){
     tmp <- similarities[ID |> as.character(), ]
+    if(filter_date){
+        filter_date <- features |> filter(RESOURCEBID_SEQ == ID) |> pull(end)
+        allowed_ids <- features |> filter(start >= filter_date)  |> pull(RESOURCEBID_SEQ)
+        tmp <- tmp[names(tmp) %in% (allowed_ids |> as.character())]
+    }
     tmp[order(abs(tmp), decreasing = TRUE)] |> head(num_matches + 1) |> tail(-1)
 }
 

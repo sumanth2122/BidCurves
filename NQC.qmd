@@ -104,3 +104,17 @@ nqc_all |>
   summarize(total = max(total), .by = c(year, month)) |>
   arrange(year, month)
 ```
+
+```{r}
+months <- seq(as.Date("2023-01-01"), as.Date("2024-07-01"), by = "month")
+slide_nqc <- tibble(
+  RESOURCEBID_SEQ = 653256,
+  year = lubridate::year(months),
+  month = lubridate::month(months),
+  SCH_BID_XAXISDATA = 750
+) |>
+  check_probs() |>
+  print()
+
+slide_nqc |> filter(month == 1)
+```
