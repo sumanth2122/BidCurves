@@ -32,24 +32,6 @@ observed_max <- data |>
     select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA)
 ```
 
-Get max self scheduled MW
-```{r}
-self_scheduled_max <- data |>
-    group_by(RESOURCEBID_SEQ) |>
-    slice_max(n=1, order_by = SELFSCHEDMW, with_ties = FALSE) |>
-    select(RESOURCEBID_SEQ, SELFSCHEDMW)
-```
-
-Proportion of bid curves with negative MW
-
-```{r}
-negative_mw <- data |>
-    group_by(STARTTIME, RESOURCEBID_SEQ) |>
-    summarise(has_negative_mw = any(SCH_BID_XAXISDATA < 0, na.rm = TRUE), .groups = "drop") |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(pct_negative_mw = 100 * mean(has_negative_mw), .groups = "drop")
-```
-
 Mean and median number of knots
 ```{r}
 knots <- data |>
@@ -79,13 +61,10 @@ single <- data |>
 
 ```{r}
 null <- data |>
-    group_by(STARTTIME, RESOURCEBID_SEQ) |>
-    summarise(
-        null_bid = any(is.na(SCH_BID_XAXISDATA) & is.na(SCH_BID_Y1AXISDATA)),
-        .groups = "drop"
-    ) |>
+    filter(is.na(SELFSCHEDMW)) |>
+    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
     group_by(RESOURCEBID_SEQ) |>
-    summarise(null = 100 * mean(null_bid), .groups = "drop")
+    summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
 ```
 
 % of self scheduled bids
@@ -95,6 +74,7 @@ self <- data |>
     mutate(self_sched = !is.na(SELFSCHEDMW)) |>
     group_by(RESOURCEBID_SEQ) |>
     summarise(total_bids = n(),
+              self_sched = sum(self_sched),
               pct_self_sched = 100 * mean(self_sched)) |>
     select(RESOURCEBID_SEQ, pct_self_sched)
 ```
@@ -103,7 +83,7 @@ hours_tbl
 
 ```{r}
 hours_tbl <- data |>
-    mutate(hour = formatC(hour(ymd_hms(STARTTIME)), width = 2, flag = "0")) |>
+    mutate(hour = hour(ymd_hms(STARTTIME))) |>
     select(RESOURCEBID_SEQ, hour) |>
     group_by(RESOURCEBID_SEQ, hour) |>
     summarise(num_bids = n(), .groups = "drop") |>
@@ -113,8 +93,8 @@ hours_tbl <- data |>
     pivot_wider(names_from = hour,
                 values_from = pct_per_hour,
                 names_prefix = "hour_",
-                names_sort = TRUE,
                 values_fill = 0)
+
 ```
 
 dates of start and end
@@ -135,14 +115,14 @@ features <- knots |>
     left_join(single, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(negative_mw, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
-    left_join(self_scheduled_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
     left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    arrow::write_parquet("ID_attributes.parquet")
+    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
 ```
 
+```{r}
+hours_tbl
+```
 
 filter MARKETPRODUCTTYPE = EN and resource_type
 median # 
@@ -165,11 +145,11 @@ Normalize features and calculate cosine similarity.
 # numeric matrix of features
 feat_mat <- features |>
     mutate(
+        null = replace_na(as.numeric(null), 0),
         days_active = as.numeric(end - start),
-        max_mw = replace_na(SCH_BID_XAXISDATA, 0),
-        self_schedule_mw = replace_na(SELFSCHEDMW , 0)
+        max_mw = replace_na(SCH_BID_XAXISDATA, 0)
     ) |>
-    select(-c(RESOURCEBID_SEQ, start, end, SCH_BID_XAXISDATA, SELFSCHEDMW)) |>
+    select(-RESOURCEBID_SEQ, -start, -end, -SCH_BID_XAXISDATA) |>
     as.matrix()
 
 # Scale each column to zero-mean, unit-variance
@@ -188,67 +168,78 @@ cos_sim <- tcrossprod(feat_norm)
 ids <- features$RESOURCEBID_SEQ
 rownames(cos_sim) <- ids
 colnames(cos_sim) <- ids
+
+cos_sim
+```
+
+
+```{r}
 cos_sim["100031", "177696"]
 ```
 
+Euclidean distance on z-scored features.
+
 ```{r}
-find_matches <- function(ID, num_matches, similarities, filter_date = FALSE){
-    tmp <- similarities[ID |> as.character(), ]
-    if(filter_date){
-        filter_date <- features |> filter(RESOURCEBID_SEQ == ID) |> pull(end)
-        allowed_ids <- features |> filter(start >= filter_date)  |> pull(RESOURCEBID_SEQ)
-        tmp <- tmp[names(tmp) %in% (allowed_ids |> as.character())]
-    }
-    tmp[order(abs(tmp), decreasing = TRUE)] |> head(num_matches + 1) |> tail(-1)
+compute_euclidean <- function(features_df) {
+    mat <- features_df |>
+        mutate(
+            null = replace_na(as.numeric(null), 0),
+            days_active = as.numeric(end - start),
+            max_mw = replace_na(SCH_BID_XAXISDATA, 0)
+        ) |>
+        select(-RESOURCEBID_SEQ, -start, -end, -SCH_BID_XAXISDATA) |>
+        as.matrix()
+
+    # Scale each column to zero mean
+    scaled <- scale(mat)
+    scaled[is.nan(scaled)] <- 0
+
+    dist_mat <- as.matrix(dist(scaled, method = "euclidean"))
+
+    ids <- features_df$RESOURCEBID_SEQ
+    rownames(dist_mat) <- ids
+    colnames(dist_mat) <- ids
+
+    dist_mat
 }
 
-find_matches(653256, 5, cos_sim)
+euc_dist <- compute_euclidean(features)
+euc_dist
 ```
 
 ```{r}
-lookup_id_features <- function(ID, features_tbl = features) {
-    idx <- match(ID, features_tbl$RESOURCEBID_SEQ)
+euc_dist["100031", "177696"]
+```
 
-    if (is.na(idx)) {
-        stop(glue::glue("RESOURCEBID_SEQ {ID} was not found in features_tbl."))
+```{r}
+# Find the most similar generators to a given resource ID.
+find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10) {
+    metric <- match.arg(metric)
+    id <- as.character(id)
+
+    mat <- switch(metric,
+        euclidean = euc_dist,
+        cosine = cos_sim
+    )
+
+    stopifnot(id %in% rownames(mat))
+
+    scores <- mat[id, ]
+    scores <- scores[names(scores) != id]
+
+    if (metric == "euclidean") {
+        sorted <- sort(scores, decreasing = FALSE)
+    } else {
+        sorted <- sort(scores, decreasing = TRUE)
     }
 
-    row <- features_tbl[idx, , drop = FALSE]
-    fmt <- \(x) sprintf("%.2f", x)
-
-    glue::glue(
-        "ID: {ID}\n",
-        "max MW: {fmt(row$SCH_BID_XAXISDATA[[1]])}\n",
-        "mean # of bid pairs: {fmt(row$mean[[1]])}\n",
-        "median # of bid pairs: {fmt(row$median[[1]])}\n",
-        "single-point frequency: {fmt(row$pct_single[[1]])}\n",
-        "NULL behavior: {fmt(row$null[[1]])}\n",
-        "self-schedule behavior: {fmt(row$pct_self_sched[[1]])}\n",
-        "negative bid behavior: {fmt(row$pct_negative_mw[[1]])}"
-    )
+    tibble(
+        RESOURCEBID_SEQ = names(sorted),
+        score           = unname(sorted)
+    ) |>
+        slice_head(n = n)
 }
-lookup_id_features(653256)
 
-hourly_plot <- function(ID, features_tbl = features) {
-    features_tbl |>
-        filter(RESOURCEBID_SEQ == ID) |>
-        select(hour_00:hour_23) |>
-        pivot_longer(cols = everything(), names_to = "hour", values_to = "pct_bids") |>
-        mutate(
-            hour = str_remove(hour, "^hour_"),
-            hour = factor(hour, levels = sprintf("%02d", 0:23))
-        ) |>
-        ggplot(aes(x = hour, y = pct_bids)) +
-        geom_col(fill = "#2C6E49") +
-        scale_y_continuous(labels = scales::label_percent(scale = 1)) +
-        labs(
-            title = glue::glue("Hourly Bidding Pattern for ID {ID}"),
-            x = NULL,
-            y = NULL
-        ) + 
-        theme_bw()
-}
-hourly_plot(653256)
-hourly_plot(985335)
-hourly_plot(435045)
+find_similar("100031", metric = "euclidean")
+find_similar("100031", metric = "cosine")
 ```
