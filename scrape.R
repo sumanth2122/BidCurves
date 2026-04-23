@@ -60,7 +60,7 @@ fetch_oasis_prices <- function(
   mirai::mirai_map(
     all_dates,
     function(d) {
-      fetch_one(
+      result <- fetch_one(
         date = d,
         temp_dir = temp_dir,
         market = market,
@@ -68,13 +68,17 @@ fetch_oasis_prices <- function(
         retry_times = retry_times,
         retry_pause_base = retry_pause_base,
         retry_pause_cap = retry_pause_cap
-      ) |>
-        arrow::write_parquet(
-          here::here(
-            output_dir_name,
-            sprintf("%s.parquet", format(lubridate::as_date(d), "%Y%m%d"))
-          )
+      )
+      if (is.null(result)) {
+        return(NULL)
+      }
+      arrow::write_parquet(
+        result,
+        here::here(
+          output_dir_name,
+          sprintf("%s.parquet", format(lubridate::as_date(d), "%Y%m%d"))
         )
+      )
     },
     fetch_one = fetch_one
   )[.progress] |>
@@ -140,7 +144,7 @@ fetch_one <- function(
         }))
   ) {
     warning(sprintf("No %s files found for %s", bid_pattern, date))
-    return(tibble::tibble())
+    NULL
   }
 
   bid_files |>
