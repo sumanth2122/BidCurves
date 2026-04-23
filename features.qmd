@@ -154,7 +154,6 @@ feat_mat <- features |>
 
 # Scale each column to zero-mean, unit-variance
 feat_scaled <- scale(feat_mat)
-# Replace any NaN columns (zero-variance) with 0
 feat_scaled[is.nan(feat_scaled)] <- 0
 
 # Normalize each row to unit length
@@ -213,7 +212,8 @@ euc_dist["100031", "177696"]
 
 ```{r}
 # Find the most similar generators to a given resource ID.
-find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10) {
+# start_filter: NULL (no filter), "after" (candidates started after id), "before" (candidates started before id)
+find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10, start_filter = NULL) {
     metric <- match.arg(metric)
     id <- as.character(id)
 
@@ -226,6 +226,21 @@ find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10) {
 
     scores <- mat[id, ]
     scores <- scores[names(scores) != id]
+
+    if (!is.null(start_filter)) {
+        id_start <- features$start[features$RESOURCEBID_SEQ == id]
+        candidate_starts <- features$start[
+            match(names(scores), features$RESOURCEBID_SEQ)
+        ]
+        keep <- if (start_filter == "after") {
+            candidate_starts > id_start
+        } else if (start_filter == "before") {
+            candidate_starts < id_start
+        } else {
+            stop('start_filter must be NULL, "after", or "before"')
+        }
+        scores <- scores[keep]
+    }
 
     if (metric == "euclidean") {
         sorted <- sort(scores, decreasing = FALSE)
@@ -242,4 +257,6 @@ find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10) {
 
 find_similar("100031", metric = "euclidean")
 find_similar("100031", metric = "cosine")
+find_similar("100031", metric = "euclidean", start_filter = "after")
+find_similar("100031", metric = "cosine", start_filter = "after")
 ```
