@@ -144,7 +144,7 @@ fetch_one <- function(
         }))
   ) {
     warning(sprintf("No %s files found for %s", bid_pattern, date))
-    NULL
+    return(NULL)
   }
 
   bid_files |>
