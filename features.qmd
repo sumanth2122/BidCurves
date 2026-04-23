@@ -117,7 +117,8 @@ features <- knots |>
     left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
     left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ))
+    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
+    arrow::write_parquet(here::here("ID_attributes.parquet"))
 ```
 
 ```{r}
@@ -171,9 +172,8 @@ colnames(cos_sim) <- ids
 cos_sim
 ```
 
-
 ```{r}
-cos_sim["100031", "177696"]
+cos_sim["144033", "177696"]
 ```
 
 Euclidean distance on z-scored features.
@@ -202,12 +202,13 @@ compute_euclidean <- function(features_df) {
     dist_mat
 }
 
+features <- arrow::read_parquet(here::here("ID_attributes.parquet"))
 euc_dist <- compute_euclidean(features)
 euc_dist
 ```
 
 ```{r}
-euc_dist["100031", "177696"]
+euc_dist["144033", "177696"]
 ```
 
 ```{r}
@@ -255,8 +256,12 @@ find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10, start_fi
         slice_head(n = n)
 }
 
-find_similar("100031", metric = "euclidean")
-find_similar("100031", metric = "cosine")
-find_similar("100031", metric = "euclidean", start_filter = "after")
-find_similar("100031", metric = "cosine", start_filter = "after")
+find_similar("144033", metric = "euclidean")
+find_similar("144033", metric = "cosine")
+find_similar("144033", metric = "euclidean", start_filter = "after")
+find_similar("144033", metric = "cosine", start_filter = "after")
+```
+
+```{r}
+find_similar("144033", metric = "euclidean", start_filter = "after")
 ```

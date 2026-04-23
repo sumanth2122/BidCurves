@@ -118,3 +118,7 @@ slide_nqc <- tibble(
 
 slide_nqc |> filter(month == 1)
 ```
+
+```{r}
+check_capacity(144033, 287, 2023, 1, nqc) |> View()
+```
