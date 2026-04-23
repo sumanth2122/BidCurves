@@ -12,6 +12,7 @@ library(mirai)
 #' @param start_date Start date (YYYY-MM-DD).
 #' @param end_date End date (YYYY-MM-DD).
 #' @param market Market type, either "RTM" or "DAM".
+#' @param skip_existing Skip dates that already have a parquet on disk.
 #' @param request_pause Seconds to sleep after each request.
 #' @param retry_times Number of retries for transient failures.
 #' @param retry_pause_base Base seconds between retries.
@@ -21,6 +22,7 @@ fetch_oasis_prices <- function(
   start_date,
   end_date,
   market = c("RTM", "DAM"),
+  skip_existing = TRUE,
   request_pause = 5,
   retry_times = 15,
   retry_pause_base = 3,
@@ -32,24 +34,51 @@ fetch_oasis_prices <- function(
   dir.create(temp_dir)
   on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
 
-  seq(ymd(start_date), ymd(end_date), by = "day") |>
-    # Could swap to mirai_map for parallelization
-    mirai_map(
-      \(d) {
-        fetch_one(
-          date = d,
-          temp_dir = temp_dir,
-          market = market,
-          request_pause = request_pause,
-          retry_times = retry_times,
-          retry_pause_base = retry_pause_base,
-          retry_pause_cap = retry_pause_cap
+  output_dir_name <- sprintf("CAISO_%s_daily", tolower(market))
+  output_dir <- here::here(output_dir_name)
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+  all_dates <- seq(
+    lubridate::ymd(start_date),
+    lubridate::ymd(end_date),
+    by = "day"
+  )
+
+  if (isTRUE(skip_existing)) {
+    existing_dates <- list.files(output_dir, pattern = "\\.parquet$") |>
+      stringr::str_remove("\\.parquet$") |>
+      lubridate::ymd(quiet = TRUE)
+
+    existing_dates <- existing_dates[!is.na(existing_dates)]
+    all_dates <- setdiff(all_dates, existing_dates)
+  }
+
+  if (length(all_dates) == 0) {
+    return(tibble::tibble())
+  }
+
+  mirai::mirai_map(
+    all_dates,
+    function(d) {
+      fetch_one(
+        date = d,
+        temp_dir = temp_dir,
+        market = market,
+        request_pause = request_pause,
+        retry_times = retry_times,
+        retry_pause_base = retry_pause_base,
+        retry_pause_cap = retry_pause_cap
+      ) |>
+        arrow::write_parquet(
+          here::here(
+            output_dir_name,
+            sprintf("%s.parquet", format(lubridate::as_date(d), "%Y%m%d"))
+          )
         )
-      },
-      fetch_one = fetch_one
-    ) |>
-    (\(x) x[])() |>
-    list_rbind()
+    },
+    fetch_one = fetch_one
+  )[.progress] |>
+    purrr::list_rbind()
 }
 
 fetch_one <- function(

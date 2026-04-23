@@ -4,3 +4,4 @@ single_bid_curves_cache/
 CAISO_dam_big.parquet
 CAISO_rtm_big.parquet
 NQC_data_all.parquet
+CAISO_dam_daily/
