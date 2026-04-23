@@ -90,11 +90,7 @@ fetch_one <- function(
   retry_pause_base,
   retry_pause_cap
 ) {
-  start_datetime <- date |>
-    lubridate::as_date() |>
-    lubridate::ymd(tz = "America/Los_Angeles") |>
-    lubridate::with_tz("UTC") |>
-    format("%Y%m%dT%H:%M-0000")
+  Sys.sleep(request_pause)
 
   temp_zip <- tempfile(fileext = ".zip", tmpdir = temp_dir)
 
@@ -104,11 +100,13 @@ fetch_one <- function(
       resultformat = 6,
       version = 3,
       groupid = sprintf("PUB_%s_GRP", market),
-      startdatetime = start_datetime
+      startdatetime = date |>
+        lubridate::as_date() |>
+        lubridate::ymd(tz = "America/Los_Angeles") |>
+        lubridate::with_tz("UTC") |>
+        format("%Y%m%dT%H:%M-0000")
     )
   )
-
-  Sys.sleep(request_pause)
 
   response <- httr::RETRY(
     "GET",
@@ -127,7 +125,20 @@ fetch_one <- function(
   bid_files <- unzipped_files |>
     purrr::keep(\(f) stringr::str_detect(basename(f), bid_pattern))
 
-  if (length(bid_files) == 0) {
+  if (
+    length(bid_files) == 0 ||
+      # empty response
+      (bid_files |>
+        purrr::some(\(f) {
+          lines <- readLines(f, n = 20, warn = FALSE)
+          length(lines) > 0 &&
+            stringr::str_detect(lines[[1]], "^<\\?xml") &&
+            any(stringr::str_detect(
+              lines,
+              "No data returned for the specified selection"
+            ))
+        }))
+  ) {
     warning(sprintf("No %s files found for %s", bid_pattern, date))
     return(tibble::tibble())
   }
