@@ -1,9 +1,8 @@
 library(tidyverse)
-library(DBI)
 library(duckdb)
-use("here", "here")
+library(DBI)
 
-generator_outages <- function(generator) {
+generator_outages <- function(generators) {
   con <- dbConnect(duckdb())
   on.exit(dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -13,82 +12,50 @@ generator_outages <- function(generator) {
       "
       SELECT DISTINCT
         \"RESOURCE ID\" AS generator,
-        \"RESOURCE NAME\" AS generator_name,
-        \"OUTAGE TYPE\" AS outage_type,
-        \"NATURE OF WORK\" AS nature_of_work,
         \"CURTAILMENT START DATE TIME\" AS outage_start,
-        \"CURTAILMENT END DATE TIME\" AS outage_stop,
-        \"CURTAILMENT MW\" AS curtailment_mw
-      FROM read_parquet({here('prior_trade_day_outages.parquet')})
-      WHERE \"RESOURCE ID\" = {generator}
-      ORDER BY outage_start, outage_stop
+        \"CURTAILMENT END DATE TIME\" AS outage_stop
+      FROM read_parquet({here::here('prior_trade_day_outages.parquet')})
+      WHERE \"RESOURCE ID\" IN ({generators*})
+      ORDER BY generator, outage_start, outage_stop
       ",
-      generator = generator,
+      generators = generators,
       .con = con
     )
   ) |>
     as_tibble() |>
     summarise(
-      outage_stop = {
-        known_stops <- outage_stop[!is.na(outage_stop)]
-        if (length(known_stops) == 0) {
-          as.POSIXct(NA, tz = "UTC")
-        } else {
-          max(known_stops)
-        }
+      outage_stop = if (all(is.na(outage_stop))) {
+        as.POSIXct(NA, tz = "UTC")
+      } else {
+        max(outage_stop, na.rm = TRUE)
       },
-      curtailment_mw = max(curtailment_mw, na.rm = TRUE),
-      n_rows = n(),
-      .by = c(
-        generator,
-        generator_name,
-        outage_type,
-        nature_of_work,
-        outage_start
-      )
+      .by = c(generator, outage_start)
     ) |>
+    arrange(generator, outage_start, outage_stop) |>
     mutate(
-      merge_stop = if_else(
-        is.na(outage_stop),
-        outage_start,
-        outage_stop
-      )
-    ) |>
-    arrange(outage_start, merge_stop) |>
-    mutate(
+      merge_stop = coalesce(outage_stop, lead(outage_start), outage_start),
       outage_group = cumsum(
         coalesce(
           as.numeric(outage_start) > lag(cummax(as.numeric(merge_stop))),
           TRUE
         )
-      )
+      ),
+      .by = generator
     ) |>
     summarise(
       outage_start = min(outage_start),
-      outage_stop = {
-        known_stops <- outage_stop[!is.na(outage_stop)]
-        if (length(known_stops) == 0) {
-          as.POSIXct(NA, tz = "UTC")
-        } else {
-          max(known_stops)
-        }
+      outage_stop = if (all(is.na(outage_stop))) {
+        as.POSIXct(NA, tz = "UTC")
+      } else {
+        max(outage_stop, na.rm = TRUE)
       },
-      .by = outage_group
+      .by = c(generator, outage_group)
     ) |>
-    mutate(
-      outage_start,
-      outage_stop,
-      outage_hours = if_else(
-        is.na(outage_stop),
-        NA_real_,
-        as.numeric(difftime(outage_stop, outage_start, units = "hours"))
-      ),
-      .keep = "none"
-    ) |>
-    arrange(outage_start, outage_stop)
+    select(generator, outage_start, outage_stop) |>
+    arrange(generator, outage_start, outage_stop)
 }
 
-rtm_bidding_windows <- function(id) {
+rtm_bid_submissions <- function(id, lead_minutes = 5) {
   con <- dbConnect(duckdb())
   on.exit(dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -100,12 +67,8 @@ rtm_bidding_windows <- function(id) {
         try_strptime(
           SCH_BID_TIMEINTERVALSTART_GMT,
           '%Y-%m-%dT%H:%M:%S-00:00'
-        ) AS bid_start,
-        try_strptime(
-          SCH_BID_TIMEINTERVALSTOP_GMT,
-          '%Y-%m-%dT%H:%M:%S-00:00'
-        ) AS bid_stop
-      FROM read_parquet({here('CAISO_rtm_big.parquet')})
+        ) AS bid_start
+      FROM read_parquet({here::here('CAISO_rtm_big.parquet')})
       WHERE RESOURCEBID_SEQ = {id}
       ORDER BY bid_start
       ",
@@ -113,73 +76,31 @@ rtm_bidding_windows <- function(id) {
       .con = con
     )
   ) |>
-    as_tibble()
-}
-
-rtm_non_bidding_windows <- function(id) {
-  rtm_bidding_windows(id) |>
     as_tibble() |>
-    mutate(
-      gap_start = bid_stop,
-      gap_stop = lead(bid_start),
-      .keep = "none"
-    ) |>
-    filter(gap_stop > gap_start) |>
-    mutate(
-      gap_hours = as.numeric(difftime(gap_stop, gap_start, units = "hours"))
-    )
+    mutate(bid_submitted = bid_start - lubridate::minutes(lead_minutes))
 }
 
-outage_rtm <- function(id, generators) {
-  bid_starts <- rtm_bidding_windows(id)$bid_start
-
-  generators |>
-    set_names() |>
-    map_lgl(\(generator) {
-      outages <- generator_outages(generator)
-
-      if (nrow(outages) == 0 || length(bid_starts) == 0) {
-        return(FALSE)
-      }
-
-      starts_before_bid <- outer(outages$outage_start, bid_starts, `<=`)
-      stops_after_bid <- outer(
-        coalesce(
-          outages$outage_stop,
-          as.POSIXct("2999-12-31 00:00:00", tz = "UTC")
-        ),
-        bid_starts,
-        `>`
+outage_rtm <- function(
+  id,
+  generators,
+  lead_minutes = 5
+) {
+  generator_outages(generators) |>
+    mutate(
+      outage_stop = coalesce(
+        outage_stop,
+        as.POSIXct("2999-12-31 00:00:00", tz = "UTC")
       )
-
-      any(starts_before_bid & stops_after_bid, na.rm = TRUE)
-    }) |>
-    (\(blocked) generators[!blocked])()
+    ) |>
+    inner_join(
+      rtm_bid_submissions(id, lead_minutes),
+      join_by(outage_start <= bid_submitted, outage_stop > bid_submitted),
+      relationship = "many-to-many"
+    ) |>
+    summarise(conflicts = n_distinct(bid_submitted)) |>
+    pull(conflicts)
 }
 
-# RTM and DAM RESOURCEBID_SEQ are not guaranteed to match.
-
-# 653256 is a 750 MW RTM generator; Ormond is an exact NQC match there.
-# Exact capacity match does not mean it survives the outage screen.
-outage_rtm(
-  653256,
-  c("DIABLO_7_UNIT 1", "DIABLO_7_UNIT 2", "ORMOND_7_UNIT 1", "ORMOND_7_UNIT 2")
-)
-
-# Mixed case: blocked units drop out, controls stay in.
-outage_rtm(
-  653256,
-  c(
-    "DIABLO_7_UNIT 1",
-    "ORMOND_7_UNIT 2",
-    "ALAMIT_2_AESBT2",
-    "BREGGO_6_DSEBT1",
-    "CABLRO_2_CBSBT1",
-    "CAMERN_6_BSPBT1",
-    "CAMERN_6_BSPSR1"
-  )
-)
-
-generator_outages("ORMOND_7_UNIT 2")
-rtm_bidding_windows(653256)
-rtm_non_bidding_windows(653256)
+generator_outages(c("DIABLO_7_UNIT 1", "DIABLO_7_UNIT 2"))
+c(386484, 274516, 338858, 793549, 952796) |>
+  map(\(g) outage_rtm(g, c("DIABLO_7_UNIT 1", "DIABLO_7_UNIT 2")))
