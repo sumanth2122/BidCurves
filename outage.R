@@ -1,6 +1,7 @@
 library(tidyverse)
 library(duckdb)
 library(DBI)
+library(gt)
 use("here", "here")
 
 generator_outages <- function(generators = NULL) {
@@ -177,6 +178,71 @@ outage_rtm <- function(generators = NULL, edge_minutes = 5, top_n = 10) {
   )
 }
 
+display_matches <- function(matches) {
+  matches |>
+    arrange(generator, id) |>
+    mutate(
+      group_start = generator != lag(generator, default = first(generator)),
+      generator_display = if_else(
+        generator == lag(generator, default = ""),
+        "",
+        generator
+      )
+    ) |>
+    select(generator = generator_display, id, group_start) |>
+    gt() |>
+    cols_hide(group_start) |>
+    cols_label(
+      generator = "Generator",
+      id = "Matched ID"
+    ) |>
+    tab_options(
+      table.font.size = px(13),
+      data_row.padding = px(4),
+      column_labels.font.weight = "bold",
+      column_labels.border.bottom.width = px(2),
+
+      # remove default horizontal row lines
+      table_body.hlines.width = px(0)
+    ) |>
+    tab_style(
+      style = cell_borders(
+        sides = "top",
+        color = "gray40",
+        weight = px(2)
+      ),
+      locations = cells_body(
+        rows = group_start
+      )
+    ) |>
+    tab_style(
+      style = cell_borders(
+        sides = "top",
+        color = "gray85",
+        weight = px(1)
+      ),
+      locations = cells_body(
+        columns = id,
+        rows = !group_start
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = generator,
+        rows = generator != ""
+      )
+    ) |>
+    cols_align(
+      align = "left",
+      columns = generator
+    ) |>
+    cols_align(
+      align = "center",
+      columns = id
+    )
+}
+
 large_generator_matches <- outage_rtm(c(
   "DIABLO_7_UNIT 1",
   "DIABLO_7_UNIT 2",
@@ -185,6 +251,7 @@ large_generator_matches <- outage_rtm(c(
   "HIDSRT_2_UNITS"
 ))
 
-large_generator_matches$matches
+large_generator_matches$matches |> display_matches()
+# TODO: collect IDs per generator and return vector, write a print method?
 
 # TODO: an inverse map which goes from IDs to generators based on matched outages
