@@ -3,265 +3,297 @@ title: "Resource ID Feature"
 format: html
 ---
 
+## Feature engineering
+
 ```{r}
 library(duckdb)
 library(tidyverse)
-```
-
-
-```{r}
+library(duckplyr)
 con <- dbConnect(duckdb())
 tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
-```
-
-```{r}
 data <- tbl_pointer |>
-    filter(MARKETPRODUCTTYPE == "EN",
-           RESOURCE_TYPE == "GENERATOR",
-           !is.na(RESOURCEBID_SEQ)) |>
-    select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
-    collect()
+  filter(
+    MARKETPRODUCTTYPE == "EN",
+    RESOURCE_TYPE == "GENERATOR",
+    !is.na(RESOURCEBID_SEQ)
+  ) |>
+  select(
+    RESOURCEBID_SEQ,
+    STARTTIME,
+    SCH_BID_XAXISDATA,
+    SCH_BID_Y1AXISDATA,
+    SELFSCHEDMW
+  ) |>
+  collect()
 ```
 
 Get max MW
+
 ```{r}
+safe_max <- \(...) {
+  x <- c(...)
+  if (all(is.na(x))) NA_real_ else max(x, na.rm = TRUE)
+}
+
 observed_max <- data |>
-    group_by(RESOURCEBID_SEQ) |>
-    # filter(!is.na(SCH_BID_XAXISDATA)) |>
-    slice_max(n=1, order_by = SCH_BID_XAXISDATA, with_ties = FALSE) |>
-    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA)
+  summarize(
+    max_mw = safe_max(SCH_BID_XAXISDATA, SELFSCHEDMW),
+    .by = RESOURCEBID_SEQ
+  )
 ```
 
 Mean and median number of knots
 ```{r}
 knots <- data |>
-    group_by(STARTTIME, RESOURCEBID_SEQ) |>
-    summarise(knots = n()) |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(mean = mean(knots),
-              median = median(knots))
+  summarise(knots = n(), .by = c(STARTTIME, RESOURCEBID_SEQ)) |>
+  summarise(mean = mean(knots), median = median(knots), .by = RESOURCEBID_SEQ)
 ```
 
 single-point frequency
 
 ```{r}
 single <- data |>
-    group_by(STARTTIME, RESOURCEBID_SEQ) |>
-    mutate(knots = n(),
-           single_bid_hour = knots == 1) |>
-    ungroup() |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(total_bids = n(),
-              num_single = sum(single_bid_hour),
-              pct_single = 100*num_single/total_bids) |>
-    select(RESOURCEBID_SEQ, pct_single)
+  group_by(STARTTIME, RESOURCEBID_SEQ) |>
+  mutate(knots = n(), single_bid_hour = knots == 1) |>
+  ungroup() |>
+  group_by(RESOURCEBID_SEQ) |>
+  summarise(
+    total_bids = n(),
+    num_single = sum(single_bid_hour),
+    pct_single = 100 * num_single / total_bids
+  ) |>
+  select(RESOURCEBID_SEQ, pct_single)
 ```
 
 % of all bids that are NULL bids
 
 ```{r}
 null <- data |>
-    filter(is.na(SELFSCHEDMW)) |>
-    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, SELFSCHEDMW) |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA))))
+  filter(is.na(SELFSCHEDMW)) |>
+  group_by(RESOURCEBID_SEQ) |>
+  summarise(
+    has_null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA)))
+  )
 ```
 
 % of self scheduled bids
 
 ```{r}
 self <- data |>
-    mutate(self_sched = !is.na(SELFSCHEDMW)) |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(total_bids = n(),
-              self_sched = sum(self_sched),
-              pct_self_sched = 100 * mean(self_sched)) |>
-    select(RESOURCEBID_SEQ, pct_self_sched)
+  mutate(self_sched = !is.na(SELFSCHEDMW)) |>
+  group_by(RESOURCEBID_SEQ) |>
+  summarise(pct_self_sched = 100 * mean(self_sched))
 ```
 
 hours_tbl
 
 ```{r}
 hours_tbl <- data |>
-    mutate(hour = hour(ymd_hms(STARTTIME))) |>
-    select(RESOURCEBID_SEQ, hour) |>
-    group_by(RESOURCEBID_SEQ, hour) |>
-    summarise(num_bids = n(), .groups = "drop") |>
-    group_by(RESOURCEBID_SEQ) |>
-    mutate(pct_per_hour = 100*num_bids / sum(num_bids)) |>
-    select(!num_bids) |>
-    pivot_wider(names_from = hour,
-                values_from = pct_per_hour,
-                names_prefix = "hour_",
-                values_fill = 0)
+  mutate(hour = hour(ymd_hms(STARTTIME))) |>
+  select(RESOURCEBID_SEQ, hour) |>
+  group_by(RESOURCEBID_SEQ, hour) |>
+  summarise(num_bids = n(), .groups = "drop") |>
+  group_by(RESOURCEBID_SEQ) |>
+  mutate(pct_per_hour = 100 * num_bids / sum(num_bids)) |>
+  select(!num_bids) |>
+  pivot_wider(
+    names_from = hour,
+    values_from = pct_per_hour,
+    names_prefix = "hour_",
+    values_fill = 0
+  )
+```
 
+negative bids
+
+```{r}
+negatives <- data |>
+  summarize(
+    has_negative = any(SCH_BID_XAXISDATA < 0, SELFSCHEDMW < 0, na.rm = TRUE),
+    .by = RESOURCEBID_SEQ
+  )
 ```
 
 dates of start and end
 
 ```{r}
 start_end <- data |>
-    select(RESOURCEBID_SEQ, STARTTIME) |>
-    mutate(STARTTIME = as.Date(STARTTIME)) |>
-    group_by(RESOURCEBID_SEQ) |>
-    summarise(start = min(STARTTIME),
-              end = max(STARTTIME), .groups = "drop")
+  select(RESOURCEBID_SEQ, STARTTIME) |>
+  mutate(STARTTIME = as.Date(STARTTIME)) |>
+  group_by(RESOURCEBID_SEQ) |>
+  summarise(start = min(STARTTIME), end = max(STARTTIME), .groups = "drop")
 ```
 
 join everything
 
 ```{r}
 features <- knots |>
-    left_join(single, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
-    left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |> 
-    arrow::write_parquet(here::here("ID_attributes.parquet"))
+  left_join(single, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  left_join(null, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  left_join(negatives, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  left_join(self, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  left_join(hours_tbl, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  left_join(start_end, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  left_join(observed_max, by = join_by(RESOURCEBID_SEQ == RESOURCEBID_SEQ)) |>
+  replace_na(list(has_null = TRUE)) |>
+  arrow::write_parquet(here::here("ID_attributes.parquet"))
 ```
 
-```{r}
-hours_tbl
-```
-
-filter MARKETPRODUCTTYPE = EN and resource_type
-median # 
-
-date start end 
-
-hour - what % of all bids did they bid during each hour (24 features)
-
-what % of bids are single point bids
-
-null - yes/no
-
-% of self scheduled bids
-
-
-Simple similarity metrics for IDS.
-Normalize features and calculate cosine similarity.
+## Feature matching
 
 ```{r}
-# numeric matrix of features
-feat_mat <- features |>
-    mutate(
-        null = replace_na(as.numeric(null), 0),
-        days_active = as.numeric(end - start),
-        max_mw = replace_na(SCH_BID_XAXISDATA, 0)
-    ) |>
-    select(-RESOURCEBID_SEQ, -start, -end, -SCH_BID_XAXISDATA) |>
-    as.matrix()
+features <- arrow::read_parquet(here::here("ID_attributes.parquet"))
 
-# Scale each column to zero-mean, unit-variance
-feat_scaled <- scale(feat_mat)
-feat_scaled[is.nan(feat_scaled)] <- 0
+prepare_scaled_features <- function(
+  features_df,
+  center = TRUE,
+  scale = TRUE,
+  weights = NULL
+) {
+  scaled <- features_df |>
+    mutate(days_active = as.numeric(end - start)) |>
+    select(-RESOURCEBID_SEQ, -start, -end) |>
+    as.matrix() |>
+    scale(center = center, scale = scale)
 
-# Normalize each row to unit length
-row_norms <- sqrt(rowSums(feat_scaled^2))
-row_norms[row_norms == 0] <- 1
-feat_norm <- feat_scaled / row_norms
+  scaled[is.nan(scaled)] <- 0
 
-# Cosine similarity = X %*% t(X) on row-normalized data
-cos_sim <- tcrossprod(feat_norm)
+  if (!is.null(weights)) {
+    weights <- weights[colnames(scaled)]
 
-ids <- features$RESOURCEBID_SEQ
-rownames(cos_sim) <- ids
-colnames(cos_sim) <- ids
+    if (anyNA(weights)) {
+      stop("weights must be named and include every feature column")
+    }
 
-cos_sim
-```
+    scaled <- sweep(scaled, 2, sqrt(weights), `*`)
+  }
 
-```{r}
-cos_sim["144033", "177696"]
-```
-
-Euclidean distance on z-scored features.
-
-```{r}
-compute_euclidean <- function(features_df) {
-    mat <- features_df |>
-        mutate(
-            null = replace_na(as.numeric(null), 0),
-            days_active = as.numeric(end - start),
-            max_mw = replace_na(SCH_BID_XAXISDATA, 0)
-        ) |>
-        select(-RESOURCEBID_SEQ, -start, -end, -SCH_BID_XAXISDATA) |>
-        as.matrix()
-
-    # Scale each column to zero mean
-    scaled <- scale(mat)
-    scaled[is.nan(scaled)] <- 0
-
-    dist_mat <- as.matrix(dist(scaled, method = "euclidean"))
-
-    ids <- features_df$RESOURCEBID_SEQ
-    rownames(dist_mat) <- ids
-    colnames(dist_mat) <- ids
-
-    dist_mat
+  scaled
 }
 
-features <- arrow::read_parquet(here::here("ID_attributes.parquet"))
-euc_dist <- compute_euclidean(features)
-euc_dist
+set_matrix_ids <- function(mat, features_df) {
+  ids <- features_df$RESOURCEBID_SEQ
+  rownames(mat) <- ids
+  colnames(mat) <- ids
+  mat
+}
+
+compute_cosine <- function(features_df, weights = NULL) {
+  scaled <- prepare_scaled_features(features_df)
+
+  row_norms <- sqrt(rowSums(scaled^2))
+  row_norms[row_norms == 0] <- 1
+
+  normed <- scaled / row_norms
+
+  sim_mat <- tcrossprod(normed)
+
+  set_matrix_ids(sim_mat, features_df)
+}
+
+compute_euclidean <- function(features_df, weights = NULL) {
+  features_df |>
+    prepare_scaled_features(scale = FALSE, weights = weights) |>
+    dist(method = "euclidean") |>
+    as.matrix() |>
+    set_matrix_ids(features_df)
+}
 ```
 
 ```{r}
+cos_sim <- compute_cosine(features)
+cos_sim["144033", "177696"]
+
+euc_dist <- compute_euclidean(features)
 euc_dist["144033", "177696"]
 ```
 
 ```{r}
 # Find the most similar generators to a given resource ID.
 # start_filter: NULL (no filter), "after" (candidates started after id), "before" (candidates started before id)
-find_similar <- function(id, metric = c("euclidean", "cosine"), n = 10, start_filter = NULL) {
-    metric <- match.arg(metric)
-    id <- as.character(id)
+find_similar <- function(
+  id,
+  sim_matrix,
+  features_df,
+  rank_by = c("smallest", "largest"),
+  start_filter = c("none", "after", "before")
+) {
+  rank_by <- match.arg(rank_by)
+  start_filter <- match.arg(start_filter)
+  id <- as.character(id)
 
-    mat <- switch(metric,
-        euclidean = euc_dist,
-        cosine = cos_sim
+  if (!id %in% rownames(sim_matrix)) {
+    stop("id not found in sim_matrix")
+  }
+
+  scores <- sim_matrix[id, ]
+  scores <- scores[names(scores) != id]
+
+  if (start_filter != "none") {
+    starts <- features_df |>
+      mutate(
+        RESOURCEBID_SEQ = as.character(RESOURCEBID_SEQ),
+        start,
+        .keep = "none"
+      )
+
+    id_start <- starts$start[starts$RESOURCEBID_SEQ == id]
+
+    if (length(id_start) != 1) {
+      stop("id must match exactly one row in features_df")
+    }
+
+    candidate_starts <- starts$start[
+      match(names(scores), starts$RESOURCEBID_SEQ)
+    ]
+
+    keep <- switch(
+      start_filter,
+      after = candidate_starts > id_start,
+      before = candidate_starts < id_start
     )
 
-    stopifnot(id %in% rownames(mat))
+    scores <- scores[keep]
+  }
 
-    scores <- mat[id, ]
-    scores <- scores[names(scores) != id]
-
-    if (!is.null(start_filter)) {
-        id_start <- features$start[features$RESOURCEBID_SEQ == id]
-        candidate_starts <- features$start[
-            match(names(scores), features$RESOURCEBID_SEQ)
-        ]
-        keep <- if (start_filter == "after") {
-            candidate_starts > id_start
-        } else if (start_filter == "before") {
-            candidate_starts < id_start
-        } else {
-            stop('start_filter must be NULL, "after", or "before"')
-        }
-        scores <- scores[keep]
-    }
-
-    if (metric == "euclidean") {
-        sorted <- sort(scores, decreasing = FALSE)
-    } else {
-        sorted <- sort(scores, decreasing = TRUE)
-    }
-
-    tibble(
-        RESOURCEBID_SEQ = names(sorted),
-        score           = unname(sorted)
-    ) |>
-        slice_head(n = n)
+  sort(
+    scores,
+    decreasing = rank_by == "largest"
+  ) |>
+    enframe(name = "ID", value = "Distance")
 }
-
-find_similar("144033", metric = "euclidean")
-find_similar("144033", metric = "cosine")
-find_similar("144033", metric = "euclidean", start_filter = "after")
-find_similar("144033", metric = "cosine", start_filter = "after")
 ```
 
 ```{r}
-find_similar("144033", metric = "euclidean", start_filter = "after")
+cos_sim <- compute_cosine(features)
+euc_dist <- compute_euclidean(features)
+
+find_similar("144033", euc_dist, features, start_filter = "after") |>
+  slice_head(n = 7)
+```
+
+## Weighted
+
+```{r}
+hour_cols <- grep("^hour_", colnames(features), value = TRUE)
+
+feature_weights <- c(
+  mean = 3,
+  median = 2,
+  pct_single = 4,
+  has_null = 4,
+  pct_self_sched = 4,
+  has_negative = 1,
+  max_mw = 1,
+  days_active = Inf, # zero out number of active days
+  setNames(rep(2 * length(hour_cols), length(hour_cols)), hour_cols)
+) |>
+  (\(ranks) 1 / ranks)() |>
+  prop.table()
+
+cos_sim <- compute_cosine(features, weights = feature_weights)
+euc_dist <- compute_euclidean(features, weights = feature_weights)
+
+find_similar("144033", euc_dist, features, start_filter = "after") |>
+  slice_head(n = 7)
 ```
