@@ -71,60 +71,6 @@ generator_outages <- function(generators = NULL) {
     arrange(generator, outage_start, outage_stop)
 }
 
-rtm_bid_gaps <- function() {
-  con <- dbConnect(duckdb())
-  on.exit(dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  dbGetQuery(
-    con,
-    glue::glue_sql(
-      "
-      WITH bids AS (
-        SELECT DISTINCT
-          CAST(RESOURCEBID_SEQ AS BIGINT) AS id,
-          coalesce(
-            try_strptime(SCH_BID_TIMEINTERVALSTART, '%Y-%m-%dT%H:%M:%S'),
-            try_strptime(TIMEINTERVALSTART, '%Y-%m-%dT%H:%M:%S')
-          ) AS bid_start,
-          coalesce(
-            try_strptime(SCH_BID_TIMEINTERVALSTOP, '%Y-%m-%dT%H:%M:%S'),
-            try_strptime(TIMEINTERVALEND, '%Y-%m-%dT%H:%M:%S')
-          ) AS bid_stop
-        FROM read_parquet({here::here('CAISO_rtm_big.parquet')})
-        WHERE MARKETPRODUCTTYPE = 'EN'
-          AND RESOURCEBID_SEQ IS NOT NULL
-      ),
-      max_mw AS (
-        SELECT
-          CAST(RESOURCEBID_SEQ AS BIGINT) AS id,
-          MAX(SCH_BID_XAXISDATA) AS max_mw
-        FROM read_parquet({here::here('CAISO_rtm_big.parquet')})
-        WHERE MARKETPRODUCTTYPE = 'EN'
-          AND RESOURCEBID_SEQ IS NOT NULL
-        GROUP BY 1
-      )
-      SELECT
-        b.id,
-        b.bid_start,
-        b.bid_stop,
-        lead(b.bid_start) OVER (
-          PARTITION BY b.id
-          ORDER BY b.bid_start, b.bid_stop
-        ) AS next_bid_start,
-        m.max_mw
-      FROM bids b
-      LEFT JOIN max_mw m
-        ON m.id = b.id
-      WHERE b.bid_start IS NOT NULL
-        AND b.bid_stop IS NOT NULL
-      ORDER BY id, bid_start, bid_stop
-      ",
-      .con = con
-    )
-  ) |>
-    as_tibble()
-}
-
 outage_rtm <- function(generators = NULL, edge_minutes = 5, top_n = 10) {
   outages <- generator_outages(generators)
 
@@ -240,3 +186,5 @@ large_generator_matches <- outage_rtm(c(
 ))
 
 large_generator_matches$matches
+
+# TODO: an inverse map which goes from IDs to generators based on matched outages
