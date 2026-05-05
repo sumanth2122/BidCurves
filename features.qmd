@@ -124,6 +124,39 @@ start_end <- data |>
   summarise(start = min(STARTTIME), end = max(STARTTIME), .groups = "drop")
 ```
 
+
+average bid curve
+<!-- TODO: add average bid curves -->
+
+```{r}
+get_mean_bid_curve <- function(RESOURCE_ID) {
+  tbl_pointer |>
+    mutate(
+      SCH_BID_XAXISDATA = coalesce(as.double(SELFSCHEDMW), SCH_BID_XAXISDATA)
+    ) |>
+    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, STARTTIME) |>
+    filter(RESOURCEBID_SEQ == RESOURCE_ID) |>
+    mutate(
+      date = as_datetime(STARTTIME),
+      hour = hour(as_datetime(STARTTIME)),
+      group = if_else(hour %in% 12:20, "12-20", "else")
+    ) |>
+    group_by(group, SCH_BID_XAXISDATA) |>
+    summarise(
+      avg_price = mean(SCH_BID_Y1AXISDATA, na.rm = TRUE),
+      num_bids = n(),
+      sd_price = sd(SCH_BID_Y1AXISDATA, na.rm = TRUE)
+    ) |>
+    mutate(percent_group = num_bids / sum(num_bids)) |>
+    ungroup() |>
+    mutate(
+      percent_total = num_bids / sum(num_bids),
+      RESOURCE_ID = RESOURCE_ID
+    ) |>
+    arrange(group, SCH_BID_XAXISDATA)
+}
+```
+
 join everything
 
 ```{r}
