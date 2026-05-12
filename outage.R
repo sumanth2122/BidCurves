@@ -186,7 +186,7 @@ display_matches <- function(matches) {
       generator_display = if_else(
         generator == lag(generator, default = ""),
         "",
-        generator
+        generator |> str_replace_all("_", " ")
       )
     ) |>
     select(generator = generator_display, id, group_start) |>
@@ -201,8 +201,6 @@ display_matches <- function(matches) {
       data_row.padding = px(4),
       column_labels.font.weight = "bold",
       column_labels.border.bottom.width = px(2),
-
-      # remove default horizontal row lines
       table_body.hlines.width = px(0)
     ) |>
     tab_style(
