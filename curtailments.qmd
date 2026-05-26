@@ -323,44 +323,8 @@ match_detail |>
   arrange(`RESOURCE ID`, curtailment_date)
 ```
 
----
 
-## Step 9: Plot Match Quality (Top 10 by Confidence)
-
-Restrict the plot to the 10 most confident candidates. Resources with `Inf`
-confidence (single candidates) are ranked first.
-
-```{r}
-#| label: plot-match-quality
-#| fig-width: 9
-#| fig-height: 5
-
-top10 <- top_candidates_clean |>
-  slice_max(confidence, n = 10, with_ties = FALSE) |>
-  distinct(`RESOURCE ID`, RESOURCEBID_SEQ)
-
-match_detail |>
-  semi_join(top10, by = c("RESOURCE ID", "RESOURCEBID_SEQ")) |>
-  mutate(label = paste0(`RESOURCE ID`, " \u2192 ", RESOURCEBID_SEQ)) |>
-  ggplot(aes(x = curtailment_date, y = pct_error, color = label)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_point(size = 2) +
-  geom_line() +
-  scale_y_continuous(labels = scales::percent) +
-  labs(
-    title = "Match Quality: % Error Between Expected and Observed Max MW",
-    subtitle = "Top 10 by confidence — planned partial curtailments vs. DAM daily max MW",
-    x = "Curtailment Date",
-    y = "% Error (observed \u2212 expected) / expected",
-    color = "Resource \u2192 Seq ID"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "bottom", legend.text = element_text(size = 7))
-```
-
----
-
-## Step 10: Confidence Distribution
+## Confidence Distribution
 
 Visualise the spread of confidence ratios across all final candidates. `Inf`
 values (single-candidate resources) are excluded from the histogram since they
@@ -417,8 +381,54 @@ cat("Unique named resources matched:              ", n_distinct(top_candidates_c
 cat("Unique RESOURCEBID_SEQ matched:              ", n_distinct(top_candidates_clean$RESOURCEBID_SEQ), "\n")
 ```
 
+---
 
+## Export Results
 
 ```{r}
+#| label: export-csv
+#| message: false
 
+# 1. Final deanonymization map: one row per (named resource → seq ID) pair
+#    Joined with resource nameplate PMAX and the seq ID's all-time observed max MW
+# Some resources have multiple PMAX values in planned_partial (nameplate changed
+# over time). Take the maximum to avoid duplicate rows in the join.
+resource_pmax <- planned_partial |>
+  summarise(`RESOURCE PMAX MW` = max(`RESOURCE PMAX MW`), .by = `RESOURCE ID`)
+
+final_with_pmax <- top_candidates_clean |>
+  left_join(resource_pmax, by = "RESOURCE ID") |>
+  left_join(id_attrs |> rename(seq_max_mw = max_mw), by = "RESOURCEBID_SEQ") |>
+  select(
+    `RESOURCE ID`, `RESOURCE NAME`, `RESOURCE PMAX MW`,
+    RESOURCEBID_SEQ, seq_max_mw,
+    n_matches, mean_pct_err, score, confidence
+  )
+
+write.csv(
+  final_with_pmax,
+  here("curtailment_matches_final.csv"),
+  row.names = FALSE
+)
+
+# 2. Per-day match detail for every final candidate
+write.csv(
+  match_detail |>
+    select(`RESOURCE ID`, RESOURCEBID_SEQ, curtailment_date,
+           expected_available_mw, daily_max_mw, mw_error, pct_error) |>
+    arrange(`RESOURCE ID`, curtailment_date),
+  here("curtailment_match_detail.csv"),
+  row.names = FALSE
+)
+
+# 3. All candidate scores (before collision resolution) — useful for auditing
+write.csv(
+  match_scores,
+  here("curtailment_match_scores_all.csv"),
+  row.names = FALSE
+)
+
+cat("Wrote curtailment_matches_final.csv       —", nrow(final_with_pmax), "rows\n")
+cat("Wrote curtailment_match_detail.csv        —", nrow(match_detail), "rows\n")
+cat("Wrote curtailment_match_scores_all.csv    —", nrow(match_scores), "rows\n")
 ```
