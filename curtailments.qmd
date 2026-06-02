@@ -22,7 +22,7 @@ The core idea is:
 5. Join on date — every size-compatible sequence ID active on a curtailment day becomes a candidate
 6. Filter to candidates whose `daily_max_mw` is within `TOLERANCE` of `expected_available_mw`
 7. **Score** each `(RESOURCE ID, RESOURCEBID_SEQ)` pair using a combined metric that rewards both more matching days *and* lower MW error — described below
-8. Compute a **confidence ratio** comparing the top candidate's score to the runner-up, to flag ambiguous matches
+8. Compute a **confidence score** (0–1) comparing the top candidate's score to the runner-up — 0 means tied, 1.0 means no competing candidate existed (unambiguous)
 9. **Resolve collisions** where the same `RESOURCEBID_SEQ` is claimed by multiple named resources — keep only the highest-confidence claim
 
 **Why planned/DAM?** Planned curtailments are filed in advance and published on the prior trade day report before the DAM closes, so the generator has every reason to reflect the derating in their day-ahead bids. This makes the signal clean and predictable, unlike forced outages which may not appear in DAM bids at all.
@@ -47,28 +47,27 @@ matches at 0% error outscores one with 71 matches at 4% error.
 
 ### Confidence
 
-The **confidence ratio** is defined as:
+The **confidence score** is defined as:
 
-$$\text{confidence} = \frac{\text{score}_{\text{top}}}{\text{score}_{\text{runner-up}}}$$
+$$\text{confidence} = 1 - \frac{\text{score}_{\text{runner-up}}}{\text{score}_{\text{top}}}$$
 
-A ratio much greater than 1 means the top candidate is clearly better than the
-next-best option — a strong deanonymization signal. A ratio near 1 indicates
-the match is ambiguous and should not be trusted without additional corroborating
-evidence.
+This normalises the raw score ratio to a **0–1 scale**:
 
-When a named resource has **only one candidate** after filtering (no runner-up
-exists), the confidence ratio is set to `Inf` — it is an unambiguous match by
-default, since no other sequence ID is size-compatible and temporally consistent
-with this resource's curtailment history. This is assigned explicitly using
-`if_else(is.na(runner_up), Inf, score / runner_up)` rather than dividing by a
-small epsilon, which would produce arbitrarily large but finite values and
-contaminate the distribution.
+- **0** — top candidate is tied with the runner-up; match is ambiguous
+- **0.5** — top candidate is 2× better than the runner-up; practical trustworthiness threshold
+- **approaching 1** — top candidate is strongly dominant
+- **1.0** — no runner-up candidate existed; the match is unambiguous by definition
+
+Internally the raw ratio `score_top / score_runner_up` is computed first (with
+`Inf` for uncontested resources), then transformed to 0–1 via `1 - 1/ratio` at
+export. Because only `Inf` maps to exactly 1.0, the value 1.0 is exclusively
+reserved for unambiguous matches.
 
 ### Collision resolution
 
 A given `RESOURCEBID_SEQ` can only correspond to one physical generator. If
 multiple named resources claim the same sequence ID, we keep only the claim with
-the highest confidence ratio and discard the rest.
+the highest confidence score and discard the rest.
 
 ---
 
@@ -252,11 +251,11 @@ match_scores
 ## Step 6: Top Candidates with Confidence
 
 For each named resource, select the single best-scoring sequence ID. The
-runner-up score is extracted with `nth(..., 2)`. When only one candidate exists
-`nth()` returns `NA` — in that case confidence is set explicitly to `Inf` via
-`if_else()`, correctly reflecting an unambiguous match. This avoids dividing by
-a small epsilon which would produce arbitrarily large finite values that
-misrepresent the distribution.
+runner-up score is extracted with `nth(..., 2)`. The raw ratio
+`score_top / score_runner_up` is computed internally, with `Inf` for resources
+that have no runner-up. This is later normalised to 0–1 at export via
+`1 - 1/ratio`, where 1.0 is exclusively reserved for unambiguous (uncontested)
+matches.
 
 ```{r}
 #| label: top-candidates
@@ -326,11 +325,11 @@ match_detail |>
 
 ## Confidence Distribution
 
-Visualise the spread of confidence ratios across all final candidates. `Inf`
-values (single-candidate resources) are excluded from the histogram since they
-have no runner-up by definition, and are reported separately. The x-axis is
-log-scaled to handle the wide range of finite confidence values. The dashed line
-marks a ratio of 2 — a practical threshold for considering a match trustworthy.
+Visualise the spread of confidence scores across all final candidates.
+Unambiguous matches (confidence = 1.0, no runner-up) are excluded from the
+histogram and reported separately. The x-axis shows the underlying raw ratio
+(log-scaled); the dashed line marks a ratio of 2, equivalent to a normalised
+confidence of 0.5 — a practical threshold for considering a match trustworthy.
 
 ```{r}
 #| label: plot-confidence
@@ -346,15 +345,15 @@ ggplot(plot_data, aes(x = confidence)) +
   geom_histogram(bins = 40, fill = "steelblue", color = "white") +
   geom_vline(xintercept = 2, linetype = "dashed", color = "firebrick") +
   scale_x_log10(labels = scales::comma) +
-  annotate("text", x = 2.2, y = Inf, label = "confidence > 2",
+  annotate("text", x = 2.2, y = Inf, label = "ratio > 2  (confidence ≥ 0.5)",
            hjust = 0, vjust = 1.5, color = "firebrick", size = 3.5) +
   annotate("text", x = Inf, y = Inf,
-           label = paste0(n_inf, " resources with Inf confidence\n(no runner-up candidate)"),
+           label = paste0(n_inf, " unambiguous matches\n(confidence = 1.0, no runner-up)"),
            hjust = 1.05, vjust = 1.5, size = 3.5, color = "grey40") +
   labs(
-    title = "Distribution of Confidence Ratios (log scale)",
-    subtitle = "Top candidate score / runner-up score, per named resource (finite values only)",
-    x = "Confidence Ratio (log scale)",
+    title = "Distribution of Raw Confidence Ratios (log scale)",
+    subtitle = "score_top / score_runner-up, per named resource — excludes unambiguous matches (confidence = 1.0)",
+    x = "Raw Score Ratio (log scale)",
     y = "Count"
   ) +
   theme_minimal()
@@ -367,16 +366,16 @@ ggplot(plot_data, aes(x = confidence)) +
 ```{r}
 #| label: summary
 
-high_conf <- sum(top_candidates_clean$confidence > 2, na.rm = TRUE)
-inf_conf  <- sum(!is.finite(top_candidates_clean$confidence))
+high_conf <- sum(top_candidates_clean$confidence > 2, na.rm = TRUE)  # ratio > 2 = normalised confidence > 0.5
+inf_conf  <- sum(!is.finite(top_candidates_clean$confidence))         # unambiguous: no runner-up (exported as 1.0)
 
 cat("Planned partial curtailment events:          ", nrow(planned_partial), "\n")
 cat("Candidate (resource, seq) pairs — any day:   ", nrow(match_scores), "\n")
 cat("Strong candidates (\u22652 matching days):         ", sum(match_scores$n_matches >= 2), "\n")
 cat("Top candidates before collision resolution:  ", nrow(top_candidates), "\n")
 cat("Final unique matches after resolution:       ", nrow(top_candidates_clean), "\n")
-cat("  of which Inf confidence (no runner-up):    ", inf_conf, "\n")
-cat("  of which finite confidence > 2:            ", high_conf, "\n")
+cat("  of which unambiguous (confidence = 1.0):   ", inf_conf, "\n")
+cat("  of which confidence > 0.5 (ratio > 2):     ", high_conf, "\n")
 cat("Unique named resources matched:              ", n_distinct(top_candidates_clean$`RESOURCE ID`), "\n")
 cat("Unique RESOURCEBID_SEQ matched:              ", n_distinct(top_candidates_clean$RESOURCEBID_SEQ), "\n")
 ```
@@ -403,7 +402,11 @@ final_with_pmax <- top_candidates_clean |>
     `RESOURCE ID`, `RESOURCE NAME`, `RESOURCE PMAX MW`,
     RESOURCEBID_SEQ, seq_max_mw,
     n_matches, mean_pct_err, score, confidence
-  )
+  ) |>
+  # Normalise confidence to [0, 1]: 0 = tied with runner-up, 1 = unambiguous
+  # (no runner-up existed). Formula: 1 - 1/confidence. Only Inf maps to exactly
+  # 1.0, so 1.0 is exclusively reserved for uncontested matches.
+  mutate(confidence = round(1 - 1 / confidence, 3))
 
 write.csv(
   final_with_pmax,
