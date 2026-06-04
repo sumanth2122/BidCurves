@@ -11,3 +11,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Depends: 
     R (>= 3.5)
+Imports: 
+    dplyr,
+    duckplyr
