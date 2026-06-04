@@ -6,14 +6,16 @@
 \alias{CAISOPEA-package}
 \title{CAISOPEA: What the Package Does (One Line, Title Case)}
 \description{
-What the package does (one paragraph).
+Tools for scraping CAISO OASIS data and analyzing anonymized DAM/RTM bid curves, resource features, outages, curtailments, negative-MW bids, single-point curves, and NQC candidate matches.
 }
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com}
+\strong{Maintainer}: Visruth Srimath Kandali \email{vsrimath@calpoly.adu}
 
 Authors:
 \itemize{
-  \item First Last \email{first.last@example.com}
+  \item Visruth Srimath Kandali \email{vsrimath@calpoly.adu}
+  \item Sumanth Thokala \email{sthokala@calpoly.edu}
+  \item Nicole Ye \email{nyee08@calpoly.edu}
 }
 
 }

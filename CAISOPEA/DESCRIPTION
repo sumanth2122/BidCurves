@@ -1,14 +1,15 @@
 Package: CAISOPEA
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
+Authors@R: c(
+    person("Visruth", "Srimath Kandali", , "vsrimath@calpoly.adu", role = c("aut", "cre")),
+    person("Sumanth", "Thokala", , "sthokala@calpoly.edu", role = c("aut", "cre")),
+    person("Nicole", "Ye", , "nyee08@calpoly.edu", role = c("aut", "cre"))
+  )
+Description: Tools for scraping CAISO OASIS data and analyzing anonymized
+    DAM/RTM bid curves, resource features, outages, curtailments,
+    negative-MW bids, single-point curves, and NQC candidate matches.
+License: GPL (>= 3)
 Depends: 
     R (>= 3.5)
 Imports: 
@@ -20,3 +21,6 @@ Imports:
     readr,
     stringr,
     tibble
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
