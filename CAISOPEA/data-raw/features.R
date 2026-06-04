@@ -1,6 +1,5 @@
 library(dplyr)
 library(tidyr)
-library(lubridate)
 library(duckplyr)
 
 data <- read_parquet_duckdb(
@@ -18,23 +17,33 @@ data <- read_parquet_duckdb(
     SCH_BID_XAXISDATA,
     SCH_BID_Y1AXISDATA,
     SELFSCHEDMW
-  ) |>
-  collect()
+  )
 
-# Max MW--bid curve or self schedule
-safe_max <- \(...) {
-  x <- c(...)
-  if (all(is.na(x))) NA_real_ else max(x, na.rm = TRUE)
-}
+resource_features <- data |>
+  summarise(
+    max_bid_curve_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE),
+    max_self_sched_mw = max(SELFSCHEDMW, na.rm = TRUE),
 
-observed_max <- data |>
-  summarize(
-    max_mw = safe_max(SCH_BID_XAXISDATA, SELFSCHEDMW),
+    has_null = any(
+      is.na(SELFSCHEDMW) &
+        is.na(SCH_BID_XAXISDATA) &
+        is.na(SCH_BID_Y1AXISDATA)
+    ),
+
+    has_negative = any(
+      (!is.na(SCH_BID_XAXISDATA) & SCH_BID_XAXISDATA < 0) |
+        (!is.na(SELFSCHEDMW) & SELFSCHEDMW < 0)
+    ),
+
+    pct_self_sched = 100 * sum(as.integer(!is.na(SELFSCHEDMW))) / n(),
+
+    start_time = min(STARTTIME),
+    end_time = max(STARTTIME),
+
     .by = RESOURCEBID_SEQ
   )
 
-# Mean and median number of knots as well as frequency of single-point curves
-knots <- data |>
+knot_features <- data |>
   summarise(
     knots = n(),
     .by = c(RESOURCEBID_SEQ, STARTTIME)
@@ -42,63 +51,76 @@ knots <- data |>
   summarise(
     mean_knots = mean(knots),
     median_knots = median(knots),
-    pct_single = 100 * mean(knots == 1),
+    pct_single = 100 * sum(as.integer(knots == 1)) / n(),
     .by = RESOURCEBID_SEQ
   )
 
-# whether any bids are NULL bids
-null <- data |>
-  filter(is.na(SELFSCHEDMW)) |>
-  group_by(RESOURCEBID_SEQ) |>
-  summarise(
-    has_null = any((is.na(SCH_BID_XAXISDATA)) & (is.na(SCH_BID_Y1AXISDATA)))
-  )
-
-# % of self scheduled bids
-self <- data |>
-  mutate(self_sched = !is.na(SELFSCHEDMW)) |>
-  group_by(RESOURCEBID_SEQ) |>
-  summarise(pct_self_sched = 100 * mean(self_sched))
-
-# % of bids per hour
-hours_tbl <- data |>
-  mutate(hour = hour(ymd_hms(STARTTIME))) |>
-  select(RESOURCEBID_SEQ, hour) |>
-  group_by(RESOURCEBID_SEQ, hour) |>
-  summarise(num_bids = n(), .groups = "drop") |>
-  group_by(RESOURCEBID_SEQ) |>
-  mutate(pct_per_hour = 100 * num_bids / sum(num_bids)) |>
-  select(!num_bids) |>
-  pivot_wider(
-    names_from = hour,
-    values_from = pct_per_hour,
-    names_prefix = "hour_",
-    values_fill = 0
-  )
-
-# whether any bids are negative
-negatives <- data |>
-  summarize(
-    has_negative = any(SCH_BID_XAXISDATA < 0, SELFSCHEDMW < 0, na.rm = TRUE),
-    .by = RESOURCEBID_SEQ
-  )
-
-# dates of first and last date ID was observed
-start_end <- data |>
+hour_features <- data |>
   select(RESOURCEBID_SEQ, STARTTIME) |>
-  mutate(STARTTIME = as.Date(STARTTIME)) |>
-  group_by(RESOURCEBID_SEQ) |>
-  summarise(start = min(STARTTIME), end = max(STARTTIME), .groups = "drop")
+  collect() |>
+  mutate(
+    hour = as.integer(substr(as.character(STARTTIME), 12, 13))
+  ) |>
+  summarise(
+    hour_00 = 100 * sum(hour == 0) / n(),
+    hour_01 = 100 * sum(hour == 1) / n(),
+    hour_02 = 100 * sum(hour == 2) / n(),
+    hour_03 = 100 * sum(hour == 3) / n(),
+    hour_04 = 100 * sum(hour == 4) / n(),
+    hour_05 = 100 * sum(hour == 5) / n(),
+    hour_06 = 100 * sum(hour == 6) / n(),
+    hour_07 = 100 * sum(hour == 7) / n(),
+    hour_08 = 100 * sum(hour == 8) / n(),
+    hour_09 = 100 * sum(hour == 9) / n(),
+    hour_10 = 100 * sum(hour == 10) / n(),
+    hour_11 = 100 * sum(hour == 11) / n(),
+    hour_12 = 100 * sum(hour == 12) / n(),
+    hour_13 = 100 * sum(hour == 13) / n(),
+    hour_14 = 100 * sum(hour == 14) / n(),
+    hour_15 = 100 * sum(hour == 15) / n(),
+    hour_16 = 100 * sum(hour == 16) / n(),
+    hour_17 = 100 * sum(hour == 17) / n(),
+    hour_18 = 100 * sum(hour == 18) / n(),
+    hour_19 = 100 * sum(hour == 19) / n(),
+    hour_20 = 100 * sum(hour == 20) / n(),
+    hour_21 = 100 * sum(hour == 21) / n(),
+    hour_22 = 100 * sum(hour == 22) / n(),
+    hour_23 = 100 * sum(hour == 23) / n(),
+    .by = RESOURCEBID_SEQ
+  )
 
-# join
-features <- knots |>
-  left_join(null, by = "RESOURCEBID_SEQ") |>
-  left_join(negatives, by = "RESOURCEBID_SEQ") |>
-  left_join(self, by = "RESOURCEBID_SEQ") |>
-  left_join(hours_tbl, by = "RESOURCEBID_SEQ") |>
-  left_join(start_end, by = "RESOURCEBID_SEQ") |>
-  left_join(observed_max, by = "RESOURCEBID_SEQ") |>
-  replace_na(list(has_null = TRUE)) |>
-  arrow::write_parquet(here::here("ID_attributes.parquet"))
+features <- knot_features |>
+  left_join(resource_features, by = "RESOURCEBID_SEQ") |>
+  collect() |>
+  left_join(hour_features, by = "RESOURCEBID_SEQ") |>
+  mutate(
+    max_bid_curve_mw = na_if(max_bid_curve_mw, -Inf),
+    max_self_sched_mw = na_if(max_self_sched_mw, -Inf),
+
+    max_mw = if_else(
+      is.na(max_bid_curve_mw) & is.na(max_self_sched_mw),
+      NA_real_,
+      pmax(
+        replace_na(max_bid_curve_mw, -Inf),
+        replace_na(max_self_sched_mw, -Inf)
+      )
+    ),
+
+    start = as.Date(start_time),
+    end = as.Date(end_time)
+  ) |>
+  select(
+    RESOURCEBID_SEQ,
+    mean_knots,
+    median_knots,
+    pct_single,
+    has_null,
+    has_negative,
+    pct_self_sched,
+    starts_with("hour_"),
+    start,
+    end,
+    max_mw
+  )
 
 usethis::use_data(features, internal = TRUE, overwrite = TRUE)
