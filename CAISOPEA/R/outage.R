@@ -226,179 +226,6 @@ get_curtailment_matches <- function(
   final_matches
 }
 
-#' Score curtailment match candidates
-#'
-#' The raw count of matching days (`n_matches`) alone is insufficient as a
-#' ranking signal because it ignores how closely a sequence ID's bids track the
-#' expected available capacity on those days. Two candidates might both match 71
-#' days, but one always bids within 0.1% of the target while the other
-#' consistently sits at 4.9% -- the first is a much stronger match.
-#'
-#' For each (`RESOURCE ID`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
-#' `mean_pct_err`, and `score = n_matches * (1 - mean_pct_err)`. This penalises
-#' candidates with high average MW error, so a candidate with 71 matches at 0%
-#' error outscores one with 71 matches at 4% error.
-#'
-#' @param matches Candidate match rows with `daily_max_mw`,
-#'   `expected_available_mw`, `RESOURCE ID`, `RESOURCE NAME`, and
-#'   `RESOURCEBID_SEQ`.
-#'
-#' @return A tibble of candidate scores with `n_matches`, `mean_pct_err`, and
-#'   `score`.
-#'
-#' @export
-score_curtailment_matches <- function(matches) {
-  matches |>
-    dplyr::mutate(
-      abs_pct_err = abs(daily_max_mw - expected_available_mw) /
-        expected_available_mw
-    ) |>
-    dplyr::summarise(
-      n_matches = dplyr::n(),
-      mean_pct_err = mean(abs_pct_err, na.rm = TRUE),
-      score = n_matches * (1 - mean_pct_err),
-      .by = c(`RESOURCE ID`, `RESOURCE NAME`, RESOURCEBID_SEQ)
-    ) |>
-    dplyr::arrange(dplyr::desc(score), mean_pct_err)
-}
-
-#' Score full-outage RTM gap candidates
-#'
-#' For each generator-ID pair, aggregate across all matched outages.
-#'
-#' The raw count of matching days (`n_matches`) alone is insufficient as a
-#' ranking signal because it ignores how closely a sequence ID's bids track the
-#' expected available capacity on those days.
-#'
-#' For each (`generator`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
-#' `mean_pct_err`, and `score = n_matches * (1 - mean_pct_err)`. This penalises
-#' candidates with high average MW error.
-#'
-#' @param matches Raw join results with `generator`, `RESOURCEBID_SEQ`,
-#'   `pmax_mw`, `max_mw`, `stop_offset`, and `restart_offset`.
-#'
-#' @return A tibble of per-match stats with offsets, match count, mean absolute
-#'   percentage error, and score.
-#'
-#' @export
-score_outage_matches <- function(matches) {
-  matches |>
-    dplyr::filter(
-      pmax_mw > 0,
-      is.finite(max_mw)
-    ) |>
-    dplyr::mutate(
-      abs_pct_err = abs(max_mw - pmax_mw) / pmax_mw,
-      abs_stop_offset = abs(stop_offset),
-      abs_restart_offset = abs(restart_offset)
-    ) |>
-    dplyr::summarise(
-      n_matches = dplyr::n(),
-      pmax_mw = max(pmax_mw, na.rm = TRUE),
-      max_mw = max(max_mw, na.rm = TRUE),
-      mean_pct_err = mean(abs_pct_err, na.rm = TRUE),
-      mean_stop_offset = mean(stop_offset, na.rm = TRUE),
-      mean_restart_offset = mean(restart_offset, na.rm = TRUE),
-      mean_abs_stop_offset = mean(abs_stop_offset, na.rm = TRUE),
-      mean_abs_restart_offset = mean(abs_restart_offset, na.rm = TRUE),
-      score = n_matches * (1 - mean_pct_err),
-      .by = c(generator, RESOURCEBID_SEQ)
-    ) |>
-    dplyr::arrange(
-      generator,
-      dplyr::desc(score),
-      mean_pct_err,
-      mean_abs_stop_offset,
-      RESOURCEBID_SEQ
-    )
-}
-
-#' Extract full generator outages from CAISO prior trade day data
-#'
-#' Reads CAISO prior trade day data and filters to rows where the curtailed MW
-#' meets or exceeds the generator's PMAX (i.e. the whole unit is down, not just
-#' derated). Overlapping outage windows for the same generator are merged into
-#' contiguous intervals.
-#'
-#' Pull full outages: only keep rows where the unit is completely down (curtailed
-#' MW >= rated capacity). Partial derates are excluded.
-#'
-#' CAISO sometimes reports the same outage as multiple rows with the same start
-#' time but different stop times. Collapse them -- take the latest stop.
-#'
-#' Merge overlapping or touching outage windows into contiguous groups.
-#' `merge_stop`: if an outage has no end, assume it extends to the next outage's
-#' start (or its own start if there is no next outage). `outage_group`:
-#' increments whenever the current start falls after all previous merged stops --
-#' i.e. this is a new, non-overlapping interval.
-#'
-#' Collapse each group into a single row spanning the full outage window.
-#'
-#' @param outages CAISO prior trade day outage data.
-#' @param generators Character vector of resource IDs to keep. If `NULL`
-#'   (default), all generators are returned.
-#'
-#' @return A tibble with columns:
-#'   - `generator`: resource ID
-#'   - `outage_start`: start of the outage (POSIXct)
-#'   - `outage_stop`: end of the outage (POSIXct, `NA` if still ongoing)
-#'   - `pmax_mw`: generator max capacity
-#'
-#' @export
-get_generator_outages <- function(outages, generators = NULL) {
-  duckplyr::as_duckdb_tibble(outages) |>
-    dplyr::filter(
-      `RESOURCE PMAX MW` > 0,
-      `CURTAILMENT MW` >= `RESOURCE PMAX MW`
-    ) |>
-    dplyr::filter(
-      if (is.null(generators)) TRUE else `RESOURCE ID` %in% generators
-    ) |>
-    dplyr::transmute(
-      generator = `RESOURCE ID`,
-      outage_start = as.POSIXct(`CURTAILMENT START DATE TIME`),
-      outage_stop = as.POSIXct(`CURTAILMENT END DATE TIME`),
-      pmax_mw = `RESOURCE PMAX MW`
-    ) |>
-    dplyr::distinct() |>
-    dplyr::summarise(
-      outage_stop = if (all(is.na(outage_stop))) {
-        outage_start[NA_integer_]
-      } else {
-        max(outage_stop, na.rm = TRUE)
-      },
-      pmax_mw = max(pmax_mw, na.rm = TRUE),
-      .by = c(generator, outage_start)
-    ) |>
-    dplyr::arrange(generator, outage_start, outage_stop) |>
-    dplyr::mutate(
-      merge_stop = dplyr::coalesce(
-        outage_stop,
-        dplyr::lead(outage_start),
-        outage_start
-      ),
-      outage_group = cumsum(
-        dplyr::coalesce(
-          as.numeric(outage_start) > dplyr::lag(cummax(as.numeric(merge_stop))),
-          TRUE
-        )
-      ),
-      .by = generator
-    ) |>
-    dplyr::summarise(
-      outage_start = min(outage_start),
-      outage_stop = if (all(is.na(outage_stop))) {
-        outage_start[NA_integer_]
-      } else {
-        max(outage_stop, na.rm = TRUE)
-      },
-      pmax_mw = max(pmax_mw, na.rm = TRUE),
-      .by = c(generator, outage_group)
-    ) |>
-    dplyr::select(generator, outage_start, outage_stop, pmax_mw) |>
-    dplyr::arrange(generator, outage_start, outage_stop)
-}
-
 #' Match full generator outages to RTM bid gaps
 #'
 #' When a generator goes offline, its bid curve disappears. This function finds
@@ -618,4 +445,177 @@ get_outage_rtm_matches <- function(
   }
 
   final_matches
+}
+
+#' Score curtailment match candidates
+#'
+#' The raw count of matching days (`n_matches`) alone is insufficient as a
+#' ranking signal because it ignores how closely a sequence ID's bids track the
+#' expected available capacity on those days. Two candidates might both match 71
+#' days, but one always bids within 0.1% of the target while the other
+#' consistently sits at 4.9% -- the first is a much stronger match.
+#'
+#' For each (`RESOURCE ID`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
+#' `mean_pct_err`, and `score = n_matches * (1 - mean_pct_err)`. This penalises
+#' candidates with high average MW error, so a candidate with 71 matches at 0%
+#' error outscores one with 71 matches at 4% error.
+#'
+#' @param matches Candidate match rows with `daily_max_mw`,
+#'   `expected_available_mw`, `RESOURCE ID`, `RESOURCE NAME`, and
+#'   `RESOURCEBID_SEQ`.
+#'
+#' @return A tibble of candidate scores with `n_matches`, `mean_pct_err`, and
+#'   `score`.
+#'
+#' @keywords internal
+score_curtailment_matches <- function(matches) {
+  matches |>
+    dplyr::mutate(
+      abs_pct_err = abs(daily_max_mw - expected_available_mw) /
+        expected_available_mw
+    ) |>
+    dplyr::summarise(
+      n_matches = dplyr::n(),
+      mean_pct_err = mean(abs_pct_err, na.rm = TRUE),
+      score = n_matches * (1 - mean_pct_err),
+      .by = c(`RESOURCE ID`, `RESOURCE NAME`, RESOURCEBID_SEQ)
+    ) |>
+    dplyr::arrange(dplyr::desc(score), mean_pct_err)
+}
+
+#' Score full-outage RTM gap candidates
+#'
+#' For each generator-ID pair, aggregate across all matched outages.
+#'
+#' The raw count of matching days (`n_matches`) alone is insufficient as a
+#' ranking signal because it ignores how closely a sequence ID's bids track the
+#' expected available capacity on those days.
+#'
+#' For each (`generator`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
+#' `mean_pct_err`, and `score = n_matches * (1 - mean_pct_err)`. This penalises
+#' candidates with high average MW error.
+#'
+#' @param matches Raw join results with `generator`, `RESOURCEBID_SEQ`,
+#'   `pmax_mw`, `max_mw`, `stop_offset`, and `restart_offset`.
+#'
+#' @return A tibble of per-match stats with offsets, match count, mean absolute
+#'   percentage error, and score.
+#'
+#' @keywords internal
+score_outage_matches <- function(matches) {
+  matches |>
+    dplyr::filter(
+      pmax_mw > 0,
+      is.finite(max_mw)
+    ) |>
+    dplyr::mutate(
+      abs_pct_err = abs(max_mw - pmax_mw) / pmax_mw,
+      abs_stop_offset = abs(stop_offset),
+      abs_restart_offset = abs(restart_offset)
+    ) |>
+    dplyr::summarise(
+      n_matches = dplyr::n(),
+      pmax_mw = max(pmax_mw, na.rm = TRUE),
+      max_mw = max(max_mw, na.rm = TRUE),
+      mean_pct_err = mean(abs_pct_err, na.rm = TRUE),
+      mean_stop_offset = mean(stop_offset, na.rm = TRUE),
+      mean_restart_offset = mean(restart_offset, na.rm = TRUE),
+      mean_abs_stop_offset = mean(abs_stop_offset, na.rm = TRUE),
+      mean_abs_restart_offset = mean(abs_restart_offset, na.rm = TRUE),
+      score = n_matches * (1 - mean_pct_err),
+      .by = c(generator, RESOURCEBID_SEQ)
+    ) |>
+    dplyr::arrange(
+      generator,
+      dplyr::desc(score),
+      mean_pct_err,
+      mean_abs_stop_offset,
+      RESOURCEBID_SEQ
+    )
+}
+
+#' Extract full generator outages from CAISO prior trade day data
+#'
+#' Reads CAISO prior trade day data and filters to rows where the curtailed MW
+#' meets or exceeds the generator's PMAX (i.e. the whole unit is down, not just
+#' derated). Overlapping outage windows for the same generator are merged into
+#' contiguous intervals.
+#'
+#' Pull full outages: only keep rows where the unit is completely down (curtailed
+#' MW >= rated capacity). Partial derates are excluded.
+#'
+#' CAISO sometimes reports the same outage as multiple rows with the same start
+#' time but different stop times. Collapse them -- take the latest stop.
+#'
+#' Merge overlapping or touching outage windows into contiguous groups.
+#' `merge_stop`: if an outage has no end, assume it extends to the next outage's
+#' start (or its own start if there is no next outage). `outage_group`:
+#' increments whenever the current start falls after all previous merged stops --
+#' i.e. this is a new, non-overlapping interval.
+#'
+#' Collapse each group into a single row spanning the full outage window.
+#'
+#' @param outages CAISO prior trade day outage data.
+#' @param generators Character vector of resource IDs to keep. If `NULL`
+#'   (default), all generators are returned.
+#'
+#' @return A tibble with columns:
+#'   - `generator`: resource ID
+#'   - `outage_start`: start of the outage (POSIXct)
+#'   - `outage_stop`: end of the outage (POSIXct, `NA` if still ongoing)
+#'   - `pmax_mw`: generator max capacity
+#'
+#' @keywords internal
+get_generator_outages <- function(outages, generators = NULL) {
+  duckplyr::as_duckdb_tibble(outages) |>
+    dplyr::filter(
+      `RESOURCE PMAX MW` > 0,
+      `CURTAILMENT MW` >= `RESOURCE PMAX MW`
+    ) |>
+    dplyr::filter(
+      if (is.null(generators)) TRUE else `RESOURCE ID` %in% generators
+    ) |>
+    dplyr::transmute(
+      generator = `RESOURCE ID`,
+      outage_start = as.POSIXct(`CURTAILMENT START DATE TIME`),
+      outage_stop = as.POSIXct(`CURTAILMENT END DATE TIME`),
+      pmax_mw = `RESOURCE PMAX MW`
+    ) |>
+    dplyr::distinct() |>
+    dplyr::summarise(
+      outage_stop = if (all(is.na(outage_stop))) {
+        outage_start[NA_integer_]
+      } else {
+        max(outage_stop, na.rm = TRUE)
+      },
+      pmax_mw = max(pmax_mw, na.rm = TRUE),
+      .by = c(generator, outage_start)
+    ) |>
+    dplyr::arrange(generator, outage_start, outage_stop) |>
+    dplyr::mutate(
+      merge_stop = dplyr::coalesce(
+        outage_stop,
+        dplyr::lead(outage_start),
+        outage_start
+      ),
+      outage_group = cumsum(
+        dplyr::coalesce(
+          as.numeric(outage_start) > dplyr::lag(cummax(as.numeric(merge_stop))),
+          TRUE
+        )
+      ),
+      .by = generator
+    ) |>
+    dplyr::summarise(
+      outage_start = min(outage_start),
+      outage_stop = if (all(is.na(outage_stop))) {
+        outage_start[NA_integer_]
+      } else {
+        max(outage_stop, na.rm = TRUE)
+      },
+      pmax_mw = max(pmax_mw, na.rm = TRUE),
+      .by = c(generator, outage_group)
+    ) |>
+    dplyr::select(generator, outage_start, outage_stop, pmax_mw) |>
+    dplyr::arrange(generator, outage_start, outage_stop)
 }

@@ -42,3 +42,4 @@ i.e. this is a new, non-overlapping interval.
 
 Collapse each group into a single row spanning the full outage window.
 }
+\keyword{internal}

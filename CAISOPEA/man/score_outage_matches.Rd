@@ -26,3 +26,4 @@ For each (\code{generator}, \code{RESOURCEBID_SEQ}) pair, compute \code{n_matche
 \code{mean_pct_err}, and \code{score = n_matches * (1 - mean_pct_err)}. This penalises
 candidates with high average MW error.
 }
+\keyword{internal}

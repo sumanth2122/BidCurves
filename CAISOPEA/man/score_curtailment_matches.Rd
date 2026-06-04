@@ -28,3 +28,4 @@ For each (\verb{RESOURCE ID}, \code{RESOURCEBID_SEQ}) pair, compute \code{n_matc
 candidates with high average MW error, so a candidate with 71 matches at 0\%
 error outscores one with 71 matches at 4\% error.
 }
+\keyword{internal}

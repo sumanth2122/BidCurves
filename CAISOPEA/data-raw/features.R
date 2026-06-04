@@ -123,4 +123,84 @@ features <- knot_features |>
     max_mw
   )
 
-usethis::use_data(features, internal = TRUE, overwrite = TRUE)
+hour_cols <- grep("^hour_", names(features), value = TRUE)
+
+cosine_feature_weights <- c(
+  mean_knots = 3,
+  median_knots = 2,
+  pct_single = 4,
+  has_null = 4,
+  pct_self_sched = 4,
+  has_negative = 1,
+  max_mw = 1,
+  days_active = Inf,
+  stats::setNames(
+    rep(2 * length(hour_cols), length(hour_cols)),
+    hour_cols
+  )
+) |>
+  (\(ranks) 1 / ranks)() |>
+  prop.table()
+
+prepare_cosine_matrix <- function(features_df, weights) {
+  feature_mat <- features_df |>
+    mutate(
+      RESOURCEBID_SEQ = as.character(RESOURCEBID_SEQ),
+      start = as.Date(start),
+      end = as.Date(end),
+      days_active = as.numeric(end - start)
+    ) |>
+    select(
+      -RESOURCEBID_SEQ,
+      -start,
+      -end
+    ) |>
+    as.matrix()
+
+  storage.mode(feature_mat) <- "double"
+
+  scaled <- scale(feature_mat)
+
+  scaled[is.nan(scaled)] <- 0
+  scaled[is.na(scaled)] <- 0
+
+  weights <- weights[colnames(scaled)]
+
+  if (anyNA(weights)) {
+    missing <- colnames(scaled)[is.na(weights)]
+    stop(
+      "weights must include every feature column. Missing: ",
+      paste(missing, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  scaled <- sweep(scaled, 2, sqrt(weights), `*`)
+
+  row_norms <- sqrt(rowSums(scaled^2))
+  row_norms[row_norms == 0] <- 1
+
+  normed <- scaled / row_norms
+
+  cosine_similarity <- tcrossprod(normed)
+
+  ids <- as.character(features_df$RESOURCEBID_SEQ)
+  rownames(cosine_similarity) <- ids
+  colnames(cosine_similarity) <- ids
+
+  cosine_similarity
+}
+
+cosine_similarity <- prepare_cosine_matrix(
+  features_df = features,
+  weights = cosine_feature_weights
+)
+
+usethis::use_data(
+  features,
+  cosine_similarity,
+  cosine_feature_weights,
+  internal = TRUE,
+  overwrite = TRUE,
+  compress = "xz"
+)
