@@ -72,9 +72,10 @@ candidates whose \code{daily_max_mw} is within \code{tolerance} of
 \code{expected_available_mw}.
 
 Score each (\verb{RESOURCE ID}, \code{RESOURCEBID_SEQ}) pair using a combined metric
-that rewards both more matching days and lower MW error. Compute a confidence
-ratio comparing the top candidate's score to the runner-up, to flag ambiguous
-matches. Resolve collisions where the same \code{RESOURCEBID_SEQ} is claimed by
+that rewards both more matching days and lower MW error.
+Compute a confidence score from 0 to 1 comparing the top candidate's score to
+the runner-up: 0 means tied, 1 means no competing candidate existed.
+Resolve collisions where the same \code{RESOURCEBID_SEQ} is claimed by
 multiple named resources -- keep only the highest-confidence claim.
 
 Planned curtailments are filed in advance and published on the prior trade day

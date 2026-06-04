@@ -26,9 +26,10 @@
 #' `expected_available_mw`.
 #'
 #' Score each (`RESOURCE ID`, `RESOURCEBID_SEQ`) pair using a combined metric
-#' that rewards both more matching days and lower MW error. Compute a confidence
-#' ratio comparing the top candidate's score to the runner-up, to flag ambiguous
-#' matches. Resolve collisions where the same `RESOURCEBID_SEQ` is claimed by
+#' that rewards both more matching days and lower MW error.
+#' Compute a confidence score from 0 to 1 comparing the top candidate's score to
+#' the runner-up: 0 means tied, 1 means no competing candidate existed.
+#' Resolve collisions where the same `RESOURCEBID_SEQ` is claimed by
 #' multiple named resources -- keep only the highest-confidence claim.
 #'
 #' Planned curtailments are filed in advance and published on the prior trade day
@@ -158,7 +159,11 @@ get_curtailment_matches <- function(
     dplyr::mutate(
       rank = dplyr::row_number(),
       runner_up = dplyr::nth(score, 2L),
-      confidence = dplyr::if_else(is.na(runner_up), Inf, score / runner_up),
+      confidence = dplyr::case_when(
+        is.na(runner_up) ~ 1,
+        score <= 0 ~ 0,
+        TRUE ~ pmax(0, pmin(1, 1 - runner_up / score))
+      ),
       .by = `RESOURCE ID`
     ) |>
     dplyr::filter(rank == 1L) |>
@@ -249,10 +254,11 @@ get_curtailment_matches <- function(
 #'
 #' For each generator-ID pair, aggregate across all matched outages. Score each
 #' (`generator`, `RESOURCEBID_SEQ`) pair using a combined metric that rewards
-#' both more matches and lower MW error. Compute a confidence ratio comparing the
-#' top candidate's score to the runner-up, to flag ambiguous matches. Resolve
-#' collisions where the same `RESOURCEBID_SEQ` is claimed by multiple named
-#' resources -- keep only the highest-confidence claim.
+#' both more matches and lower MW error. Compute a confidence score from 0 to 1
+#' comparing the top candidate's score to the runner-up: 0 means tied, 1 means
+#' no competing candidate existed. Resolve collisions where the same
+#' `RESOURCEBID_SEQ` is claimed by multiple named resources--keep only the
+#' highest-confidence claim.
 #'
 #' @param rtm_data RTM bid data. Must include `MARKETPRODUCTTYPE`,
 #'   `RESOURCEBID_SEQ`, `SCH_BID_XAXISDATA`, `SCH_BID_TIMEINTERVALSTART`,
@@ -405,7 +411,11 @@ get_outage_rtm_matches <- function(
     dplyr::mutate(
       rank = dplyr::row_number(),
       runner_up = dplyr::nth(score, 2L),
-      confidence = dplyr::if_else(is.na(runner_up), Inf, score / runner_up),
+      confidence = dplyr::case_when(
+        is.na(runner_up) ~ 1,
+        score <= 0 ~ 0,
+        TRUE ~ pmax(0, pmin(1, 1 - runner_up / score))
+      ),
       .by = generator
     ) |>
     dplyr::filter(rank == 1L) |>

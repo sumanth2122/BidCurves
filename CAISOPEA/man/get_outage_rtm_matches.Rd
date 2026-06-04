@@ -63,8 +63,9 @@ at the right time.
 
 For each generator-ID pair, aggregate across all matched outages. Score each
 (\code{generator}, \code{RESOURCEBID_SEQ}) pair using a combined metric that rewards
-both more matches and lower MW error. Compute a confidence ratio comparing the
-top candidate's score to the runner-up, to flag ambiguous matches. Resolve
-collisions where the same \code{RESOURCEBID_SEQ} is claimed by multiple named
-resources -- keep only the highest-confidence claim.
+both more matches and lower MW error. Compute a confidence score from 0 to 1
+comparing the top candidate's score to the runner-up: 0 means tied, 1 means
+no competing candidate existed. Resolve collisions where the same
+\code{RESOURCEBID_SEQ} is claimed by multiple named resources--keep only the
+highest-confidence claim.
 }
