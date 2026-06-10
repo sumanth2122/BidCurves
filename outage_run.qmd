@@ -1,0 +1,120 @@
+---
+title: "RTM Outage Deanonymization — Package Run"
+format: html
+execute:
+  cache: false
+---
+
+## Setup
+
+```{r}
+#| label: setup
+#| message: false
+
+library(CAISOPEA)
+library(duckdb)
+library(arrow)
+library(dplyr)
+library(here)
+```
+
+## Load Data
+
+```{r}
+#| label: load-data
+#| message: false
+
+con <- duckdb::dbConnect(duckdb::duckdb())
+
+# Keep RTM data as a lazy DuckDB table — never collected into R memory.
+# DuckDB reads directly from the parquet file and pushes all filters/aggregations
+# down to the scan, so only the final small result tables come into R.
+rtm_data <- dplyr::tbl(
+  con,
+  dplyr::sql(
+    "SELECT MARKETPRODUCTTYPE, RESOURCEBID_SEQ, SCH_BID_XAXISDATA,
+            SCH_BID_TIMEINTERVALSTART, SCH_BID_TIMEINTERVALSTOP,
+            TIMEINTERVALSTART, TIMEINTERVALEND
+     FROM read_parquet('/Users/sumanth/Desktop/BidCurves/CAISO_rtm_big.parquet')
+     WHERE MARKETPRODUCTTYPE = 'EN' AND RESOURCEBID_SEQ IS NOT NULL"
+  )
+)
+
+outages <- arrow::read_parquet(
+  here("prior_trade_day_outages.parquet"),
+  as_data_frame = FALSE
+)
+```
+
+## Run Matching
+
+```{r}
+#| label: run-matching
+#| message: false
+
+rtm_results <- get_outage_rtm_matches(
+  rtm_data           = rtm_data,
+  outages            = outages,
+  generators         = NULL,
+  edge_minutes       = 5,
+  min_matches        = 1L,
+  resolve_collisions = TRUE,
+  top_n              = 5L,
+  return_detail      = TRUE
+)
+
+cat("Final unique matches (collision-resolved): ", nrow(rtm_results$final_matches), "\n")
+cat("Top-candidate rows (up to 5 per generator):", nrow(rtm_results$top_candidates), "\n")
+```
+
+## Final Matches
+
+One row per named generator — best seq ID after collision resolution.
+
+```{r}
+#| label: final-matches
+
+rtm_results$final_matches
+```
+
+## Top Candidates (up to 5 per generator)
+
+Up to 5 candidate seq IDs per generator, ranked by score with no collision
+resolution applied.
+
+```{r}
+#| label: top-candidates
+
+rtm_results$top_candidates
+```
+
+## Export
+
+```{r}
+#| label: export
+#| message: false
+
+dir.create(here("final_outputs"), showWarnings = FALSE)
+
+write.csv(
+  rtm_results$final_matches,
+  here("final_outputs", "outage_rtm_matches_final.csv"),
+  row.names = FALSE
+)
+
+write.csv(
+  rtm_results$top_candidates,
+  here("final_outputs", "outage_rtm_top_candidates.csv"),
+  row.names = FALSE
+)
+
+write.csv(
+  rtm_results$match_detail,
+  here("final_outputs", "outage_rtm_match_detail.csv"),
+  row.names = FALSE
+)
+
+cat("Wrote final_outputs/outage_rtm_matches_final.csv    —", nrow(rtm_results$final_matches), "rows\n")
+cat("Wrote final_outputs/outage_rtm_top_candidates.csv   —", nrow(rtm_results$top_candidates), "rows\n")
+cat("Wrote final_outputs/outage_rtm_match_detail.csv     —", nrow(rtm_results$match_detail), "rows\n")
+```
