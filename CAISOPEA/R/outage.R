@@ -78,7 +78,7 @@ get_curtailment_matches <- function(
   return_detail = FALSE
 ) {
   dam_data <- duckplyr::as_duckdb_tibble(dam_data)
-  outages  <- dplyr::collect(outages)
+  outages <- dplyr::collect(outages)
   id_attrs <- dplyr::collect(id_attrs)
 
   planned_partial <- outages |>
@@ -379,22 +379,26 @@ get_outage_rtm_matches <- function(
     dplyr::collect() |>
     dplyr::arrange(RESOURCEBID_SEQ, bid_start, bid_stop) |>
     dplyr::mutate(
-      last_bid_stop  = bid_stop,
+      last_bid_stop = bid_stop,
       next_bid_start = dplyr::lead(bid_start),
       .by = RESOURCEBID_SEQ
     ) |>
     dplyr::filter(is.na(next_bid_start) | next_bid_start > last_bid_stop) |>
     dplyr::mutate(
-      gap_start_min       = last_bid_stop - edge_minutes * 60,
-      gap_start_max       = last_bid_stop + edge_minutes * 60,
-      next_bid_start_cmp  = dplyr::coalesce(
+      gap_start_min = last_bid_stop - edge_minutes * 60,
+      gap_start_max = last_bid_stop + edge_minutes * 60,
+      next_bid_start_cmp = dplyr::coalesce(
         next_bid_start,
         as.POSIXct("2999-12-31 00:00:00")
       )
     ) |>
     dplyr::select(
-      RESOURCEBID_SEQ, last_bid_stop, next_bid_start,
-      next_bid_start_cmp, gap_start_min, gap_start_max
+      RESOURCEBID_SEQ,
+      last_bid_stop,
+      next_bid_start,
+      next_bid_start_cmp,
+      gap_start_min,
+      gap_start_max
     )
 
   seq_max_mw <- rtm_en |>
@@ -424,20 +428,34 @@ get_outage_rtm_matches <- function(
     dplyr::left_join(seq_max_mw, by = "RESOURCEBID_SEQ") |>
     dplyr::mutate(
       stop_offset = as.numeric(difftime(
-        last_bid_stop, outage_start, units = "mins"
+        last_bid_stop,
+        outage_start,
+        units = "mins"
       )),
       restart_offset = as.numeric(difftime(
-        next_bid_start, outage_stop, units = "mins"
+        next_bid_start,
+        outage_stop,
+        units = "mins"
       ))
     ) |>
     dplyr::select(
-      generator, outage_start, outage_stop, pmax_mw,
-      RESOURCEBID_SEQ, last_bid_stop, next_bid_start,
-      stop_offset, restart_offset, max_mw
+      generator,
+      outage_start,
+      outage_stop,
+      pmax_mw,
+      RESOURCEBID_SEQ,
+      last_bid_stop,
+      next_bid_start,
+      stop_offset,
+      restart_offset,
+      max_mw
     ) |>
     dplyr::arrange(
-      generator, outage_start,
-      abs(stop_offset), abs(max_mw - pmax_mw), RESOURCEBID_SEQ
+      generator,
+      outage_start,
+      abs(stop_offset),
+      abs(max_mw - pmax_mw),
+      RESOURCEBID_SEQ
     )
 
   scores <- score_outage_matches(raw_matches)

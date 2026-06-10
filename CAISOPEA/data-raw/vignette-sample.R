@@ -202,7 +202,11 @@ rtm_data <- open_dataset("CAISO_rtm_big.parquet") |>
       10
     ))
   ) |>
-  inner_join(rtm_windows, by = "RESOURCEBID_SEQ", relationship = "many-to-many") |>
+  inner_join(
+    rtm_windows,
+    by = "RESOURCEBID_SEQ",
+    relationship = "many-to-many"
+  ) |>
   filter(
     interval_date >= window_start,
     interval_date <= window_stop
@@ -223,7 +227,10 @@ if (nrow(curtailment_dam_data) == 0L) {
 }
 
 if (nrow(dam_plot_data) == 0L) {
-  stop("No DAM plotting rows were sampled from CAISO_dam_big.parquet.", call. = FALSE)
+  stop(
+    "No DAM plotting rows were sampled from CAISO_dam_big.parquet.",
+    call. = FALSE
+  )
 }
 
 if (nrow(rtm_data) == 0L) {
