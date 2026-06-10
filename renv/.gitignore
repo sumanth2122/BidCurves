@@ -5,4 +5,4 @@ lock/
 python/
 sandbox/
 staging/
-interp_dataset/
+interp_dataset/**
