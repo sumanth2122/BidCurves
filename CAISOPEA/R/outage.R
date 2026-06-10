@@ -62,7 +62,8 @@
 #'   map: one row per named resource to seq ID pair, joined with resource
 #'   nameplate PMAX and the seq ID's all-time observed max MW. If
 #'   `return_detail = TRUE`, a named list with `final_matches`, `match_detail`,
-#'   `scores`, `top_candidates`, and `raw_matches`.
+#'   `scores`, `top_candidates`, `raw_matches`, and `planned_partial` (all
+#'   planned partial curtailment events, useful for computing total event counts).
 #'
 #' @export
 get_curtailment_matches <- function(
@@ -226,10 +227,42 @@ get_curtailment_matches <- function(
       ) |>
       dplyr::mutate(
         rank = dplyr::row_number(),
+        runner_up = dplyr::nth(score, 2L),
+        confidence = dplyr::case_when(
+          rank != 1L ~ NA_real_,
+          is.na(runner_up) ~ 1,
+          score <= 0 ~ 0,
+          TRUE ~ pmax(0, pmin(1, 1 - runner_up / score))
+        ),
         .by = `RESOURCE ID`
       ) |>
       dplyr::filter(rank <= top_n) |>
-      dplyr::select(-rank)
+      dplyr::select(-runner_up) |>
+      dplyr::left_join(
+        planned_partial |>
+          dplyr::summarise(
+            `RESOURCE PMAX MW` = max(`RESOURCE PMAX MW`, na.rm = TRUE),
+            .by = `RESOURCE ID`
+          ),
+        by = "RESOURCE ID"
+      ) |>
+      dplyr::left_join(
+        id_attrs |>
+          dplyr::select(RESOURCEBID_SEQ, seq_max_mw = max_mw),
+        by = "RESOURCEBID_SEQ"
+      ) |>
+      dplyr::select(
+        `RESOURCE ID`,
+        `RESOURCE NAME`,
+        `RESOURCE PMAX MW`,
+        RESOURCEBID_SEQ,
+        seq_max_mw,
+        rank,
+        n_matches,
+        mean_pct_err,
+        score,
+        confidence
+      )
 
     return(list(
       final_matches = final_matches,
@@ -245,7 +278,8 @@ get_curtailment_matches <- function(
         dplyr::arrange(`RESOURCE ID`, curtailment_date),
       scores = scores,
       top_candidates = top_candidates,
-      raw_matches = matches
+      raw_matches = matches,
+      planned_partial = dplyr::collect(planned_partial)
     ))
   }
 

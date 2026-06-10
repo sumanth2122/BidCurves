@@ -3199,20 +3199,22 @@ vertical-align: -.125em;
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>results<span class="sc">$</span>top_candidates</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 709 × 6
-   `RESOURCE ID`   `RESOURCE NAME`  RESOURCEBID_SEQ n_matches mean_pct_err score
-   &lt;chr&gt;           &lt;chr&gt;                      &lt;dbl&gt;     &lt;int&gt;        &lt;dbl&gt; &lt;dbl&gt;
- 1 ADLIN_1_UNITS   GEYSERS AIDLIN …          316580         3      0.00815  2.98
- 2 ADLIN_1_UNITS   GEYSERS AIDLIN …          201934         2      0.0359   1.93
- 3 AKINGS_6_AMESR1 American Kings …          828735         2      0.0111   1.98
- 4 ALHMBR_1_ALHSLR SG Alhambra               158082         3      0        3   
- 5 ALHMBR_1_ALHSLR SG Alhambra               165788         3      0        3   
- 6 ALHMBR_1_ALHSLR SG Alhambra               852416         3      0        3   
- 7 ALHMBR_1_ALHSLR SG Alhambra               915712         3      0        3   
- 8 ALMASL_2_AL6BT6 Almasol 6 BES             163688         4      0.0227   3.91
- 9 ALMASL_2_AL6BT6 Almasol 6 BES             156192         4      0.0278   3.89
-10 ALMASL_2_AL6BT6 Almasol 6 BES             932153         4      0.0278   3.89
-# ℹ 699 more rows</code></pre>
+<pre><code># A tibble: 709 × 10
+   `RESOURCE ID`   `RESOURCE NAME` `RESOURCE PMAX MW` RESOURCEBID_SEQ seq_max_mw
+   &lt;chr&gt;           &lt;chr&gt;                        &lt;dbl&gt;           &lt;dbl&gt;      &lt;dbl&gt;
+ 1 ADLIN_1_UNITS   GEYSERS AIDLIN…                 22          316580       20  
+ 2 ADLIN_1_UNITS   GEYSERS AIDLIN…                 22          201934       20.6
+ 3 AKINGS_6_AMESR1 American Kings…                123          828735      127. 
+ 4 ALHMBR_1_ALHSLR SG Alhambra                     50          158082       49  
+ 5 ALHMBR_1_ALHSLR SG Alhambra                     50          165788       49  
+ 6 ALHMBR_1_ALHSLR SG Alhambra                     50          852416       48  
+ 7 ALHMBR_1_ALHSLR SG Alhambra                     50          915712       50  
+ 8 ALMASL_2_AL6BT6 Almasol 6 BES                   50          163688       45  
+ 9 ALMASL_2_AL6BT6 Almasol 6 BES                   50          156192       45.3
+10 ALMASL_2_AL6BT6 Almasol 6 BES                   50          932153       45.3
+# ℹ 699 more rows
+# ℹ 5 more variables: rank &lt;int&gt;, n_matches &lt;int&gt;, mean_pct_err &lt;dbl&gt;,
+#   score &lt;dbl&gt;, confidence &lt;dbl&gt;</code></pre>
 </div>
 </div>
 </section>
@@ -3273,7 +3275,20 @@ vertical-align: -.125em;
 <span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="cn">FALSE</span></span>
 <span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Wrote final_outputs/curtailment_matches_final.csv    —&quot;</span>, <span class="fu">nrow</span>(results<span class="sc">$</span>final_matches), <span class="st">&quot;rows</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Total curtailment events per resource vs how many matched</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  results<span class="sc">$</span>planned_partial <span class="sc">|&gt;</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">count</span>(<span class="st">`</span><span class="at">RESOURCE ID</span><span class="st">`</span>, <span class="st">`</span><span class="at">RESOURCE NAME</span><span class="st">`</span>, <span class="at">name =</span> <span class="st">&quot;total_curtailment_events&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">left_join</span>(</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>      results<span class="sc">$</span>final_matches <span class="sc">|&gt;</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="st">`</span><span class="at">RESOURCE ID</span><span class="st">`</span>, RESOURCEBID_SEQ, n_matches, confidence, score),</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">by =</span> <span class="st">&quot;RESOURCE ID&quot;</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">here</span>(<span class="st">&quot;final_outputs&quot;</span>, <span class="st">&quot;curtailment_event_counts.csv&quot;</span>),</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Wrote final_outputs/curtailment_matches_final.csv    —&quot;</span>, <span class="fu">nrow</span>(results<span class="sc">$</span>final_matches), <span class="st">&quot;rows</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Wrote final_outputs/curtailment_matches_final.csv    — 165 rows</code></pre>
 </div>
@@ -3284,6 +3299,10 @@ vertical-align: -.125em;
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Wrote final_outputs/curtailment_match_detail.csv     —&quot;</span>, <span class="fu">nrow</span>(results<span class="sc">$</span>match_detail), <span class="st">&quot;rows</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Wrote final_outputs/curtailment_match_detail.csv     — 1902 rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Wrote final_outputs/curtailment_event_counts.csv     —&quot;</span>, <span class="fu">n_distinct</span>(results<span class="sc">$</span>planned_partial<span class="sc">$</span><span class="st">`</span><span class="at">RESOURCE ID</span><span class="st">`</span>), <span class="st">&quot;resources</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Wrote final_outputs/curtailment_event_counts.csv     — 428 resources</code></pre>
 </div>
 </div>
 </section>

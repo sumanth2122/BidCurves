@@ -140,7 +140,21 @@ write.csv(
   row.names = FALSE
 )
 
+# Total curtailment events per resource vs how many matched
+write.csv(
+  results$planned_partial |>
+    dplyr::count(`RESOURCE ID`, `RESOURCE NAME`, name = "total_curtailment_events") |>
+    dplyr::left_join(
+      results$final_matches |>
+        dplyr::select(`RESOURCE ID`, RESOURCEBID_SEQ, n_matches, confidence, score),
+      by = "RESOURCE ID"
+    ),
+  here("final_outputs", "curtailment_event_counts.csv"),
+  row.names = FALSE
+)
+
 cat("Wrote final_outputs/curtailment_matches_final.csv    —", nrow(results$final_matches), "rows\n")
 cat("Wrote final_outputs/curtailment_top_candidates.csv   —", nrow(results$top_candidates), "rows\n")
 cat("Wrote final_outputs/curtailment_match_detail.csv     —", nrow(results$match_detail), "rows\n")
+cat("Wrote final_outputs/curtailment_event_counts.csv     —", n_distinct(results$planned_partial$`RESOURCE ID`), "resources\n")
 ```
