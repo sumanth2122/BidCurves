@@ -51,14 +51,18 @@
 #' @param min_matches Minimum number of matching days.
 #' @param resolve_collisions If `TRUE`, resolve collisions where the same
 #'   `RESOURCEBID_SEQ` is claimed by multiple named resources.
+#' @param top_n Maximum number of candidate seq IDs to retain per resource in
+#'   `top_candidates` (returned when `return_detail = TRUE`). Candidates are
+#'   ranked by score with no collision resolution applied, so the same
+#'   `RESOURCEBID_SEQ` may appear for multiple resources.
 #' @param return_detail If `TRUE`, return final matches, per-day match detail,
-#'   scores, and raw matches.
+#'   scores, top candidates, and raw matches.
 #'
 #' @return If `return_detail = FALSE`, a tibble with the final deanonymization
 #'   map: one row per named resource to seq ID pair, joined with resource
 #'   nameplate PMAX and the seq ID's all-time observed max MW. If
 #'   `return_detail = TRUE`, a named list with `final_matches`, `match_detail`,
-#'   `scores`, and `raw_matches`.
+#'   `scores`, `top_candidates`, and `raw_matches`.
 #'
 #' @export
 get_curtailment_matches <- function(
@@ -69,11 +73,12 @@ get_curtailment_matches <- function(
   pmax_tolerance = 0.10,
   min_matches = 2L,
   resolve_collisions = TRUE,
+  top_n = 5L,
   return_detail = FALSE
 ) {
   dam_data <- duckplyr::as_duckdb_tibble(dam_data)
-  outages <- duckplyr::as_duckdb_tibble(outages)
-  id_attrs <- duckplyr::as_duckdb_tibble(id_attrs)
+  outages  <- dplyr::collect(outages)
+  id_attrs <- dplyr::collect(id_attrs)
 
   planned_partial <- outages |>
     dplyr::filter(
@@ -211,6 +216,21 @@ get_curtailment_matches <- function(
     dplyr::arrange(dplyr::desc(confidence), dplyr::desc(score))
 
   if (return_detail) {
+    top_candidates <- scores |>
+      dplyr::filter(n_matches >= min_matches) |>
+      dplyr::arrange(
+        `RESOURCE ID`,
+        dplyr::desc(score),
+        mean_pct_err,
+        RESOURCEBID_SEQ
+      ) |>
+      dplyr::mutate(
+        rank = dplyr::row_number(),
+        .by = `RESOURCE ID`
+      ) |>
+      dplyr::filter(rank <= top_n) |>
+      dplyr::select(-rank)
+
     return(list(
       final_matches = final_matches,
       match_detail = matches |>
@@ -224,6 +244,7 @@ get_curtailment_matches <- function(
         ) |>
         dplyr::arrange(`RESOURCE ID`, curtailment_date),
       scores = scores,
+      top_candidates = top_candidates,
       raw_matches = matches
     ))
   }
@@ -271,12 +292,15 @@ get_curtailment_matches <- function(
 #' @param min_matches Minimum number of matched outages.
 #' @param resolve_collisions If `TRUE`, resolve collisions where the same
 #'   `RESOURCEBID_SEQ` is claimed by multiple named resources.
+#' @param top_n Maximum number of candidate seq IDs to retain per generator in
+#'   `top_candidates` (returned when `return_detail = TRUE`). Candidates are
+#'   ranked by score with no collision resolution applied.
 #' @param return_detail If `TRUE`, return final matches, match detail, scores,
-#'   raw matches, and cleaned outages.
+#'   top candidates, raw matches, and cleaned outages.
 #'
 #' @return If `return_detail = FALSE`, a tibble of generator-bid ID pairs. If
 #'   `return_detail = TRUE`, a named list with `final_matches`, `match_detail`,
-#'   `scores`, `raw_matches`, and `outages`.
+#'   `scores`, `top_candidates`, `raw_matches`, and `outages`.
 #'
 #' @export
 get_outage_rtm_matches <- function(
@@ -286,14 +310,65 @@ get_outage_rtm_matches <- function(
   edge_minutes = 5,
   min_matches = 1L,
   resolve_collisions = TRUE,
+  top_n = 5L,
   return_detail = FALSE
 ) {
-  rtm_data <- duckplyr::as_duckdb_tibble(rtm_data)
+  outages <- dplyr::collect(outages)
 
   outages_clean <- get_generator_outages(
     outages = outages,
     generators = generators
   )
+
+  # Extract bid gaps and max MW from RTM data in DuckDB (or duckplyr), then
+  # collect those two small aggregated tables into R. All subsequent joining
+  # and timestamp arithmetic runs in plain R to avoid dbplyr translation issues.
+  if (is.data.frame(rtm_data)) {
+    rtm_data <- duckplyr::as_duckdb_tibble(rtm_data)
+  }
+
+  rtm_en <- rtm_data |>
+    dplyr::filter(MARKETPRODUCTTYPE == "EN", !is.na(RESOURCEBID_SEQ))
+
+  bid_gaps <- rtm_en |>
+    dplyr::transmute(
+      RESOURCEBID_SEQ,
+      bid_start = as.POSIXct(
+        dplyr::coalesce(SCH_BID_TIMEINTERVALSTART, TIMEINTERVALSTART)
+      ),
+      bid_stop = as.POSIXct(
+        dplyr::coalesce(SCH_BID_TIMEINTERVALSTOP, TIMEINTERVALEND)
+      )
+    ) |>
+    dplyr::distinct() |>
+    dplyr::filter(!is.na(bid_start), !is.na(bid_stop)) |>
+    dplyr::collect() |>
+    dplyr::arrange(RESOURCEBID_SEQ, bid_start, bid_stop) |>
+    dplyr::mutate(
+      last_bid_stop  = bid_stop,
+      next_bid_start = dplyr::lead(bid_start),
+      .by = RESOURCEBID_SEQ
+    ) |>
+    dplyr::filter(is.na(next_bid_start) | next_bid_start > last_bid_stop) |>
+    dplyr::mutate(
+      gap_start_min       = last_bid_stop - edge_minutes * 60,
+      gap_start_max       = last_bid_stop + edge_minutes * 60,
+      next_bid_start_cmp  = dplyr::coalesce(
+        next_bid_start,
+        as.POSIXct("2999-12-31 00:00:00")
+      )
+    ) |>
+    dplyr::select(
+      RESOURCEBID_SEQ, last_bid_stop, next_bid_start,
+      next_bid_start_cmp, gap_start_min, gap_start_max
+    )
+
+  seq_max_mw <- rtm_en |>
+    dplyr::summarise(
+      max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE),
+      .by = RESOURCEBID_SEQ
+    ) |>
+    dplyr::collect()
 
   raw_matches <- outages_clean |>
     dplyr::mutate(
@@ -304,48 +379,7 @@ get_outage_rtm_matches <- function(
       outage_stop_min = outage_stop_cmp - edge_minutes * 60
     ) |>
     dplyr::inner_join(
-      rtm_data |>
-        dplyr::filter(
-          MARKETPRODUCTTYPE == "EN",
-          !is.na(RESOURCEBID_SEQ)
-        ) |>
-        dplyr::transmute(
-          RESOURCEBID_SEQ,
-          bid_start = as.POSIXct(
-            dplyr::coalesce(SCH_BID_TIMEINTERVALSTART, TIMEINTERVALSTART)
-          ),
-          bid_stop = as.POSIXct(
-            dplyr::coalesce(SCH_BID_TIMEINTERVALSTOP, TIMEINTERVALEND)
-          )
-        ) |>
-        dplyr::distinct() |>
-        dplyr::filter(
-          !is.na(bid_start),
-          !is.na(bid_stop)
-        ) |>
-        dplyr::arrange(RESOURCEBID_SEQ, bid_start, bid_stop) |>
-        dplyr::mutate(
-          last_bid_stop = bid_stop,
-          next_bid_start = dplyr::lead(bid_start),
-          .by = RESOURCEBID_SEQ
-        ) |>
-        dplyr::filter(is.na(next_bid_start) | next_bid_start > last_bid_stop) |>
-        dplyr::mutate(
-          gap_start_min = last_bid_stop - edge_minutes * 60,
-          gap_start_max = last_bid_stop + edge_minutes * 60,
-          next_bid_start_cmp = dplyr::coalesce(
-            next_bid_start,
-            as.POSIXct("2999-12-31 00:00:00")
-          )
-        ) |>
-        dplyr::select(
-          RESOURCEBID_SEQ,
-          last_bid_stop,
-          next_bid_start,
-          next_bid_start_cmp,
-          gap_start_min,
-          gap_start_max
-        ),
+      bid_gaps,
       by = dplyr::join_by(
         outage_start >= gap_start_min,
         outage_start <= gap_start_max
@@ -353,48 +387,23 @@ get_outage_rtm_matches <- function(
       relationship = "many-to-many"
     ) |>
     dplyr::filter(next_bid_start_cmp >= outage_stop_min) |>
-    dplyr::left_join(
-      rtm_data |>
-        dplyr::filter(
-          MARKETPRODUCTTYPE == "EN",
-          !is.na(RESOURCEBID_SEQ)
-        ) |>
-        dplyr::summarise(
-          max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE),
-          .by = RESOURCEBID_SEQ
-        ),
-      by = "RESOURCEBID_SEQ"
-    ) |>
+    dplyr::left_join(seq_max_mw, by = "RESOURCEBID_SEQ") |>
     dplyr::mutate(
       stop_offset = as.numeric(difftime(
-        last_bid_stop,
-        outage_start,
-        units = "mins"
+        last_bid_stop, outage_start, units = "mins"
       )),
       restart_offset = as.numeric(difftime(
-        next_bid_start,
-        outage_stop,
-        units = "mins"
+        next_bid_start, outage_stop, units = "mins"
       ))
     ) |>
     dplyr::select(
-      generator,
-      outage_start,
-      outage_stop,
-      pmax_mw,
-      RESOURCEBID_SEQ,
-      last_bid_stop,
-      next_bid_start,
-      stop_offset,
-      restart_offset,
-      max_mw
+      generator, outage_start, outage_stop, pmax_mw,
+      RESOURCEBID_SEQ, last_bid_stop, next_bid_start,
+      stop_offset, restart_offset, max_mw
     ) |>
     dplyr::arrange(
-      generator,
-      outage_start,
-      abs(stop_offset),
-      abs(max_mw - pmax_mw),
-      RESOURCEBID_SEQ
+      generator, outage_start,
+      abs(stop_offset), abs(max_mw - pmax_mw), RESOURCEBID_SEQ
     )
 
   scores <- score_outage_matches(raw_matches)
@@ -440,6 +449,22 @@ get_outage_rtm_matches <- function(
     dplyr::arrange(dplyr::desc(confidence), dplyr::desc(score))
 
   if (return_detail) {
+    top_candidates <- scores |>
+      dplyr::filter(n_matches >= min_matches) |>
+      dplyr::arrange(
+        generator,
+        dplyr::desc(score),
+        mean_pct_err,
+        mean_abs_stop_offset,
+        RESOURCEBID_SEQ
+      ) |>
+      dplyr::mutate(
+        rank = dplyr::row_number(),
+        .by = generator
+      ) |>
+      dplyr::filter(rank <= top_n) |>
+      dplyr::select(-rank)
+
     return(list(
       final_matches = final_matches,
       match_detail = raw_matches |>
@@ -449,6 +474,7 @@ get_outage_rtm_matches <- function(
         ) |>
         dplyr::arrange(generator, outage_start, RESOURCEBID_SEQ),
       scores = scores,
+      top_candidates = top_candidates,
       raw_matches = raw_matches,
       outages = outages_clean
     ))
@@ -577,7 +603,7 @@ score_outage_matches <- function(matches) {
 #'
 #' @keywords internal
 get_generator_outages <- function(outages, generators = NULL) {
-  duckplyr::as_duckdb_tibble(outages) |>
+  dplyr::collect(outages) |>
     dplyr::filter(
       `RESOURCE PMAX MW` > 0,
       `CURTAILMENT MW` >= `RESOURCE PMAX MW`
