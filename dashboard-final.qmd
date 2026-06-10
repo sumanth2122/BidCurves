@@ -1052,6 +1052,8 @@ output$after_match_cards <- renderUI({
 })
 ```
 
+:::
+
 # Average Bid Curve
 
 ##

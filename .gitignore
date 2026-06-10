@@ -7,3 +7,7 @@ NQC_data_all.parquet
 CAISO_dam_daily/
 CAISO_rtm_daily/
 interp_dataset/
+.DS_Store
+renv/library/
+renv/activate.R
+renv/settings.json
