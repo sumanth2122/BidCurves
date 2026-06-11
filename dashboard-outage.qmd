@@ -6,7 +6,7 @@ format:
     orientation: rows
     theme: flatly
 server: shiny
-embed-resources: true
+embed-resources: false
 ---
 
 <style>
@@ -32,8 +32,7 @@ library(Matrix)
 #| label: load-data
 #| include: false
 #| context: setup
-con <- dbConnect(duckdb())
-tbl_pointer <- tbl(con, "read_parquet('CAISO_rtm_big.parquet')")
+max_mw_lookup <- arrow::read_parquet("max_mw_by_id.parquet")
 interp_tbl <- arrow::open_dataset("interp_dataset_rtm")
 
 gen_matches_all <- read_csv("final_outputs/outage_rtm_top_candidates.csv") |>
@@ -61,13 +60,10 @@ outage_events <- read_csv("final_outputs/outage_rtm_event_counts.csv")
 max_mw <- eventReactive(input$submit_id, {
   req(input$resource_id)
 
-  tbl_pointer |>
-    filter(RESOURCEBID_SEQ == input$resource_id) |>
-    summarise(max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE)) |>
-    collect() |>
+  max_mw_lookup |>
+    filter(RESOURCEBID_SEQ == as.numeric(input$resource_id)) |>
     pull(max_mw)
 })
-
 
 average_bid_curve <- eventReactive(input$submit_id, {
   req(input$resource_id)
