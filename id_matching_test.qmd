@@ -10,10 +10,14 @@ format: html
 library(tidyverse)
 library(arrow)
 
-id_matches <- readRDS(here::here("cos_sim.rda"))
+id_matches <- readRDS(here::here("cos_sim.rds"))
 
-new_gen_matches <- read_csv(here::here("final_outputs/curtailment_top_candidates.csv"))
-new_gen_matches <- read_csv(here::here("final_outputs/curtailment_matches_final.csv"))
+new_gen_matches <- read_csv(here::here(
+  "final_outputs/curtailment_top_candidates.csv"
+))
+new_gen_matches <- read_csv(here::here(
+  "final_outputs/curtailment_matches_final.csv"
+))
 ```
 
 
@@ -45,7 +49,7 @@ test_matches <- id_matches["952796", ]
 rownames(id_matches)
 
 tibble(id_matches) |>
-    mutate(id = rownames(id_matches))
+  mutate(id = rownames(id_matches))
 
 class(id_matches)
 dim(id_matches)
@@ -72,31 +76,29 @@ best_matches <- tibble(
 tibble(
   matched_id = colnames(id_matches),
   similarity = round(as.numeric(id_matches[target_id, ]), 3)
-  ) |>
+) |>
   filter(matched_id != target_id) |>
   slice_max(order_by = similarity, n = 5) |>
   gt() |>
   cols_label(
     matched_id = md("**Resource ID**"),
     similarity = md("**Similarity**")
-    ) |>
-    tab_header(
-        title = glue::glue("ID Matches for {target_id}")
-        ) |>
-    tab_style(
-        style = list(cell_fill(color = "#325D88"),
-                     cell_text(color = "white")),
-                locations = cells_title(groups = "title")
-    ) |>
-    tab_style(
-        style = cell_borders(sides = "right",
-                             color = "lightgray",
-                             weight = px(2)),
-        locations = list(cells_body(columns = matched_id),
-                         cells_column_labels(columns = matched_id))
-    ) |>
-    cols_align(align = "center")
-
+  ) |>
+  tab_header(
+    title = glue::glue("ID Matches for {target_id}")
+  ) |>
+  tab_style(
+    style = list(cell_fill(color = "#325D88"), cell_text(color = "white")),
+    locations = cells_title(groups = "title")
+  ) |>
+  tab_style(
+    style = cell_borders(sides = "right", color = "lightgray", weight = px(2)),
+    locations = list(
+      cells_body(columns = matched_id),
+      cells_column_labels(columns = matched_id)
+    )
+  ) |>
+  cols_align(align = "center")
 ```
 
 # ID Features Table
@@ -105,9 +107,21 @@ tibble(
 feature_vectors <- read_parquet(here::here("ID_attributes.parquet"))
 
 feature_vectors |>
-    pivot_longer(cols = c(start, end, max_mw, mean, median, pct_single, has_null, has_negative, pct_self_sched),
-                 names_to = "Feature",
-                 values_to = "value") 
+  pivot_longer(
+    cols = c(
+      start,
+      end,
+      max_mw,
+      mean,
+      median,
+      pct_single,
+      has_null,
+      has_negative,
+      pct_self_sched
+    ),
+    names_to = "Feature",
+    values_to = "value"
+  )
 
 colnames(feature_vectors)
 ```
@@ -122,21 +136,23 @@ features_long <- feature_vectors |>
     names_to = "Feature",
     values_to = "Value"
   ) |>
-  mutate(Feature = recode_values(
-    Feature,
-    "mean" ~ "Mean knots",
-    "median" ~ "Median knots",
-    "pct_single" ~ "Single-point curves",
-    "has_null" ~ "Null bids",
-    "has_negative" ~ "Negative bids",
-    "pct_self_sched" ~ "Self-scheduled bids",
-    "max_mw" ~ "Max MW"
-  ),
+  mutate(
+    Feature = recode_values(
+      Feature,
+      "mean" ~ "Mean knots",
+      "median" ~ "Median knots",
+      "pct_single" ~ "Single-point curves",
+      "has_null" ~ "Null bids",
+      "has_negative" ~ "Negative bids",
+      "pct_self_sched" ~ "Self-scheduled bids",
+      "max_mw" ~ "Max MW"
+    ),
     Value = if_else(
       Feature %in% c("Null bids", "Negative bids"),
       if_else(Value == 1, "Yes", "No"),
       as.character(round(Value, 3))
-    )) 
+    )
+  )
 
 arrow::write_parquet(features_long, "feature_vectors.parquet")
 
@@ -156,21 +172,22 @@ features_wide <- features_long |>
   )
 
 features_long |>
-    filter(RESOURCEBID_SEQ %in% c(952796, 525442)) |>
+  filter(RESOURCEBID_SEQ %in% c(952796, 525442)) |>
   pivot_wider(
     names_from = RESOURCEBID_SEQ,
     values_from = Value
   ) |>
-    gt() |>
+  gt() |>
   cols_label(
     Feature = md("**Attribute**")
-    ) |>
+  ) |>
   tab_spanner(
     label = md("**Resource ID**"),
     columns = -Feature
-  )  |>
+  ) |>
   tab_header(
-        title = glue::glue("{target_id} Matched ID Attributes"))
+    title = glue::glue("{target_id} Matched ID Attributes")
+  )
 ```
 
 ```{r}
@@ -212,32 +229,40 @@ ids_after <- feature_vectors |>
 gen_matches <- read_csv("curtailment_matches_final.csv")
 
 gen_matches |>
-    filter(RESOURCEBID_SEQ == 952796) |>
-    select(-RESOURCEBID_SEQ, -`RESOURCE ID`) |>
-    rename(
-        # "Resource ID" = RESOURCEBID_SEQ,
-           "Resource Name" = `RESOURCE NAME`,
-           "Resource Pmax" = `RESOURCE PMAX MW`,
-           "ID Max MW" = seq_max_mw,
-           "# of Matches" = n_matches,
-           "Mean % Error" = mean_pct_err,
-           "Score" = score,
-           "Confidence" = confidence) |>
-    pivot_longer(
-        cols = `Resource Pmax`:Confidence,
-        names_to = "Matching Attributes",
-        values_to = "Value"
-    ) |>
-    mutate(Value = round(Value, 3),
-           `Resource Name` = if_else(`Resource Name` == lag(`Resource Name`, default = ""), "", `Resource Name`)) |>
-    gt() |>
-    tab_header(
-        title = glue::glue("Matched Resource for ID {target_id}")) |>
-    cols_label(
-        `Resource Name` = md("**Resource Name**"),
-        `Matching Attributes` = md("**Matching Attributes**"),
-        `Value` = md("**Value**")
-        )
+  filter(RESOURCEBID_SEQ == 952796) |>
+  select(-RESOURCEBID_SEQ, -`RESOURCE ID`) |>
+  rename(
+    # "Resource ID" = RESOURCEBID_SEQ,
+    "Resource Name" = `RESOURCE NAME`,
+    "Resource Pmax" = `RESOURCE PMAX MW`,
+    "ID Max MW" = seq_max_mw,
+    "# of Matches" = n_matches,
+    "Mean % Error" = mean_pct_err,
+    "Score" = score,
+    "Confidence" = confidence
+  ) |>
+  pivot_longer(
+    cols = `Resource Pmax`:Confidence,
+    names_to = "Matching Attributes",
+    values_to = "Value"
+  ) |>
+  mutate(
+    Value = round(Value, 3),
+    `Resource Name` = if_else(
+      `Resource Name` == lag(`Resource Name`, default = ""),
+      "",
+      `Resource Name`
+    )
+  ) |>
+  gt() |>
+  tab_header(
+    title = glue::glue("Matched Resource for ID {target_id}")
+  ) |>
+  cols_label(
+    `Resource Name` = md("**Resource Name**"),
+    `Matching Attributes` = md("**Matching Attributes**"),
+    `Value` = md("**Value**")
+  )
 ```
 
 
