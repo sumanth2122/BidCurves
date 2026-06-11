@@ -30,9 +30,6 @@ Built by \code{data-raw/vignette-sample.R} from repository data files.
 caisopea_vignette_sample
 }
 \description{
-A compact real-data sample used by the package vignettes. It was built from
-repository-level CAISO prior-trade-day outage data, ID attributes,
-curtailment match outputs, and sampled rows from the big DAM and RTM parquet
-files.
+A compact real-data sample used by the package vignettes.
 }
 \keyword{datasets}

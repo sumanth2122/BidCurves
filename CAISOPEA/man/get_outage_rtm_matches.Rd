@@ -11,6 +11,7 @@ get_outage_rtm_matches(
   edge_minutes = 5,
   min_matches = 1L,
   resolve_collisions = TRUE,
+  top_n = 5L,
   return_detail = FALSE
 )
 }
@@ -32,13 +33,17 @@ get_outage_rtm_matches(
 \item{resolve_collisions}{If \code{TRUE}, resolve collisions where the same
 \code{RESOURCEBID_SEQ} is claimed by multiple named resources.}
 
+\item{top_n}{Maximum number of candidate seq IDs to retain per generator in
+\code{top_candidates} (returned when \code{return_detail = TRUE}). Candidates are
+ranked by score with no collision resolution applied.}
+
 \item{return_detail}{If \code{TRUE}, return final matches, match detail, scores,
-raw matches, and cleaned outages.}
+top candidates, raw matches, and cleaned outages.}
 }
 \value{
 If \code{return_detail = FALSE}, a tibble of generator-bid ID pairs. If
 \code{return_detail = TRUE}, a named list with \code{final_matches}, \code{match_detail},
-\code{scores}, \code{raw_matches}, and \code{outages}.
+\code{scores}, \code{top_candidates}, \code{raw_matches}, and \code{outages}.
 }
 \description{
 When a generator goes offline, its bid curve disappears. This function finds

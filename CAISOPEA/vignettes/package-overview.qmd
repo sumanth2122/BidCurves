@@ -10,23 +10,14 @@ knitr:
     comment: "#>"
 ---
 
+This vignette walks through the package functions using a small, sampled dataset.
+
 ## Purpose
 
 CAISOPEA provides tools for working with CAISO public bid data and related resource-level signals. It helps collect bid data, inspect individual curves, compare anonymous
 sequence IDs by feature profiles, and build candidate links between anonymous bid IDs and named resources using outage and curtailment behavior.
 
-The package does not claim perfect deanonymization. Its matching functions produce candidate mappings with scores, confidence values, and detail tables so
-the results can be audited.
-## Workflow
-
-A typical analysis has five stages:
-
-1. Fetch CAISO OASIS bid files.
-2. Filter or load bid data for the market and product of interest.
-3. Inspect individual bid curves.
-4. Compare anonymous IDs using precomputed feature similarity.
-5. Match anonymous IDs to named resources using planned curtailments or full
-   outage gaps.
+## Setup
 
 ```{r}
 #| label: setup
@@ -45,7 +36,7 @@ data("caisopea_vignette_sample", package = "CAISOPEA")
 
 ## Fetch Bid Data
 
-`fetch_oasis_bids()` downloads CAISO public bid data from OASIS and writes one Parquet file per market day. Use `market = "DAM"` for Day-Ahead Market data and `market = "RTM"` for Real-Time Market data.
+`fetch_oasis_bids()` scrapes (downloads) CAISO public bid data from OASIS and writes one Parquet file per market day. Use `market = "DAM"` for Day-Ahead Market data and `market = "RTM"` for Real-Time Market data.
 
 ```{r}
 #| eval: false
@@ -65,11 +56,12 @@ The return value is a status table with one row per requested date. That makes i
 The package functions expect ordinary data frames or compatible lazy tables. For bid-curve analysis, the most commonly used columns are:
 
 - `RESOURCEBID_SEQ`: anonymous bid sequence identifier
-- `STARTTIME`: bid operating date or timestamp
+- `STARTTIME`: bid date
+- `SELFSCHEDMW`: self-scheduled MW
 - `SCH_BID_XAXISDATA`: bid quantity in MW
 - `SCH_BID_Y1AXISDATA`: bid price
-- `SELFSCHEDMW`: self-scheduled MW, used by matching functions when computing
-  daily maximum MW
+
+Again, we are working with a small sample of the real data for demonstration purposes, but the functionality is identical. As you can see we have very little data:
 
 ```{r}
 #| label: sample-tables
@@ -91,7 +83,7 @@ For a full local analysis, the same columns can be selected from the large, down
 
 ## Plot Bid Curves
 
-`plot_curves()` draws hourly bid curves for one anonymous sequence ID. This is the quickest way to inspect the shape of a resource's submitted bids on a given day or filtered period. The sample includes actual one-day DAM rows from `CAISO_dam_big.parquet`.
+`plot_curves()` draws hourly bid curves for one anonymous sequence ID. This is the quickest way to inspect the shape of a resource's submitted bids on a given day or filtered period.
 
 ```{r}
 #| label: overview-plot-curves
@@ -107,7 +99,7 @@ The function returns a `ggplot2` object, so it can be printed directly or custom
 
 ## Find Feature-Similar IDs
 
-`find_similar_ids()` uses the package's internal weighted cosine similarity matrix. It is useful when an ID appears to change, split, or have a nearby behavioral peer in the bid-curve feature space.
+`find_similar_ids()` matches IDs across time frames.
 
 ```{r}
 #| label: overview-similar-ids
@@ -118,7 +110,7 @@ find_similar_ids(
 )
 ```
 
-`start_filter = "after"` keeps only candidate IDs whose first observed date is after the queried ID's start date. `start_filter = "before"` does the opposite. Those filters are useful when looking for possible ID transitions.
+`start_filter` has a few possible values, the most important being `start_filter = "after"` which only keeps candidate IDs whose first observed date is after the queried ID's start date. `start_filter = "before"` does the opposite. Those filters are useful when looking for possible ID transitions.
 
 ## Match Planned Curtailments
 
@@ -148,9 +140,13 @@ curtailment_matches$final_matches
 
 Use `return_detail = TRUE` when developing or auditing results. The returned detail tables show which dates supported each match and how close the observed MW was to the expected available MW.
 
+See the Curtailments vignette for more details.
+
+Our full results are already included in the GitHub repository in the "final_outputs" folder.
+
 ## Match Full RTM Outages
 
-`get_outage_rtm_matches()` uses a different signal. Full generator outages should create gaps in RTM bids. The function finds bid gaps for anonymous RTM sequence IDs and aligns them with named generator outage windows from the CAISO prior trade day outage data.
+`get_outage_rtm_matches()` is very similar but works on RTM data and uses outages (i.e., when $\text{resource PMAX MW} = \text{curtailment MW}$). Full generator outages should create gaps in RTM bids. The function finds bid gaps for anonymous RTM sequence IDs and aligns them with named generator outage windows from the CAISO prior trade day outage data in a very similar manner to curtailments.
 
 ```{r}
 #| label: overview-outage-match
@@ -166,16 +162,15 @@ outage_matches <- get_outage_rtm_matches(
 outage_matches$final_matches
 ```
 
-This compact sample uses a wider edge window so the small slice of actual RTM rows still produces demonstrative matches. For full local studies, start with a tighter `edge_minutes` value and widen only if the outage timestamps and RTM bid interval boundaries are known to be coarser.
+This compact sample uses a wider edge window so the small slice of actual RTM rows still produces demonstrative matches. For full local studies, start with a tighter `edge_minutes` value and widen only if required.
+
+Our full results are already included in the GitHub repository in the "final_outputs" folder.
 
 ## Interpreting Match Output
 
-The matching functions return candidate maps rather than ground truth. Treat the following columns as audit signals:
+The matching functions return candidate maps rather than ground truth, with the following measures of closeness
 
 - `n_matches`: how many dates or outage windows supported the candidate
 - `mean_pct_err`: average absolute percentage error in matched capacity
 - `score`: combined ranking metric that rewards more matches and lower error
-- `confidence`: how clearly the top candidate beat the runner-up for that named
-  resource
-
-High confidence is not a substitute for review. Before using a match in downstream analysis, inspect the detail table, check for collisions, and compare the candidate's bid curves against the resource story implied by the outage or curtailment record.
+- `confidence`: how clearly the top candidate beat the runner-up for that named resource

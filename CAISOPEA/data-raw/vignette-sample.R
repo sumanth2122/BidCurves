@@ -1,12 +1,11 @@
-library(arrow)
 library(dplyr)
 library(readr)
-library(usethis)
-
-usethis::proj_set("CAISOPEA")
 
 final_matches <- read_csv(
-  "curtailment_matches_final.csv",
+  here::here(
+    "final_outputs",
+    "curtailment_matches_final.csv"
+  ),
   show_col_types = FALSE
 ) |>
   arrange(desc(n_matches), desc(confidence), `RESOURCE ID`) |>
@@ -15,15 +14,18 @@ final_matches <- read_csv(
 selected_resources <- final_matches$`RESOURCE ID`
 
 match_detail <- read_csv(
-  "curtailment_match_detail.csv",
+  here::here(
+    "final_outputs",
+    "curtailment_match_detail.csv"
+  ),
   show_col_types = FALSE
 ) |>
   filter(`RESOURCE ID` %in% selected_resources)
 
-id_attrs <- read_parquet("ID_attributes.parquet") |>
+id_attrs <- arrow::read_parquet("ID_attributes.parquet") |>
   semi_join(final_matches, by = "RESOURCEBID_SEQ")
 
-outages_raw <- read_parquet("prior_trade_day_outages.parquet")
+outages_raw <- arrow::read_parquet("prior_trade_day_outages.parquet")
 
 curtailment_outages <- outages_raw |>
   mutate(
@@ -78,7 +80,7 @@ outages <- bind_rows(curtailment_outages, full_outage_events) |>
     )
   )
 
-dam_big_selected <- open_dataset("CAISO_dam_big.parquet") |>
+dam_big_selected <- arrow::open_dataset("CAISO_dam_big.parquet") |>
   filter(
     RESOURCEBID_SEQ %in% final_matches$RESOURCEBID_SEQ,
     MARKETPRODUCTTYPE == "EN"
@@ -180,7 +182,7 @@ rtm_outage_lookup <- full_outage_events |>
 rtm_windows <- rtm_outage_lookup |>
   select(RESOURCEBID_SEQ, window_start, window_stop)
 
-rtm_data <- open_dataset("CAISO_rtm_big.parquet") |>
+rtm_data <- arrow::open_dataset("CAISO_rtm_big.parquet") |>
   filter(
     RESOURCEBID_SEQ %in% unique(rtm_windows$RESOURCEBID_SEQ),
     MARKETPRODUCTTYPE == "EN"

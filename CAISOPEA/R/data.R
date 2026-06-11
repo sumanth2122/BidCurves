@@ -1,9 +1,6 @@
 #' Real CAISO sample data for package vignettes
 #'
-#' A compact real-data sample used by the package vignettes. It was built from
-#' repository-level CAISO prior-trade-day outage data, ID attributes,
-#' curtailment match outputs, and sampled rows from the big DAM and RTM parquet
-#' files.
+#' A compact real-data sample used by the package vignettes.
 #'
 #' @format A named list with:
 #' \describe{

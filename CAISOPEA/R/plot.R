@@ -25,7 +25,7 @@ plot_curves <- function(market_data, resource_id) {
     ) |>
     dplyr::mutate(
       STARTDATETIME = as.POSIXct(STARTTIME),
-      Hour = format(STARTDATETIME, "%H:%M:%S"),
+      Hour = as.character(as.integer(format(STARTDATETIME, "%H"))),
       x = as.numeric(SCH_BID_XAXISDATA),
       y = as.numeric(SCH_BID_Y1AXISDATA)
     ) |>
@@ -84,6 +84,11 @@ plot_curves <- function(market_data, resource_id) {
       ),
       color = "Hour"
     ) +
+    ggplot2::scale_color_manual(
+      values = setNames(
+        colorRampPalette(c("#85d9b1", "#357ba2ff", "#2B3E50"))(24),
+        0:23
+      )
+    ) +
     ggplot2::theme_bw()
-  # TODO: fix hours theme match dashboard
 }

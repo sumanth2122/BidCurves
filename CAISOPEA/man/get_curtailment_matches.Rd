@@ -12,6 +12,7 @@ get_curtailment_matches(
   pmax_tolerance = 0.1,
   min_matches = 2L,
   resolve_collisions = TRUE,
+  top_n = 5L,
   return_detail = FALSE
 )
 }
@@ -37,15 +38,21 @@ all-time observed \code{max_mw}.}
 \item{resolve_collisions}{If \code{TRUE}, resolve collisions where the same
 \code{RESOURCEBID_SEQ} is claimed by multiple named resources.}
 
+\item{top_n}{Maximum number of candidate seq IDs to retain per resource in
+\code{top_candidates} (returned when \code{return_detail = TRUE}). Candidates are
+ranked by score with no collision resolution applied, so the same
+\code{RESOURCEBID_SEQ} may appear for multiple resources.}
+
 \item{return_detail}{If \code{TRUE}, return final matches, per-day match detail,
-scores, and raw matches.}
+scores, top candidates, and raw matches.}
 }
 \value{
 If \code{return_detail = FALSE}, a tibble with the final deanonymization
 map: one row per named resource to seq ID pair, joined with resource
 nameplate PMAX and the seq ID's all-time observed max MW. If
 \code{return_detail = TRUE}, a named list with \code{final_matches}, \code{match_detail},
-\code{scores}, and \code{raw_matches}.
+\code{scores}, \code{top_candidates}, \code{raw_matches}, and \code{planned_partial} (all
+planned partial curtailment events, useful for computing total event counts).
 }
 \description{
 CAISO's Day-Ahead Market (DAM) bid data anonymizes generators using a numeric
