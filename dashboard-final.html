@@ -3428,7 +3428,7 @@ function throttle(func, wait) {
         
       </div>
     </div>
-<div id="dashboard-collapse" class="navbar-collapse collapse"><ul class="navbar-nav navbar-nav-scroll me-auto" role="tablist"><li class="nav-item" role="presentation"><a id="tab-about" class="nav-link active" data-bs-toggle="tab" role="tab" data-bs-target="#about" data-scrolling="false" href="#about" aria-controls="about" aria-selected="true"><span class="nav-link-text">About</span></a></li><li class="nav-item" role="presentation"><a id="tab-deanonymization-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#deanonymization-1" data-scrolling="false" href="#deanonymization-1" aria-controls="deanonymization-1" aria-selected="false"><span class="nav-link-text">Deanonymization</span></a></li><li class="nav-item" role="presentation"><a id="tab-id-matching-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#id-matching-1" data-scrolling="false" href="#id-matching-1" aria-controls="id-matching-1" aria-selected="false"><span class="nav-link-text">ID Matching</span></a></li><li class="nav-item" role="presentation"><a id="tab-test-page" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#test-page" data-scrolling="false" href="#test-page" aria-controls="test-page" aria-selected="false"><span class="nav-link-text">TEST PAGE</span></a></li><li class="nav-item" role="presentation"><a id="tab-new-test-page" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#new-test-page" data-scrolling="false" href="#new-test-page" aria-controls="new-test-page" aria-selected="false"><span class="nav-link-text">NEW TEST PAGE</span></a></li><li class="nav-item" role="presentation"><a id="tab-id-filter" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#id-filter" data-scrolling="false" href="#id-filter" aria-controls="id-filter" aria-selected="false"><span class="nav-link-text">ID FILTER</span></a></li><li class="nav-item" role="presentation"><a id="tab-average-bid-curve-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#average-bid-curve-1" data-scrolling="false" href="#average-bid-curve-1" aria-controls="average-bid-curve-1" aria-selected="false"><span class="nav-link-text">Average Bid Curve</span></a></li></ul></div></div>
+<div id="dashboard-collapse" class="navbar-collapse collapse"><ul class="navbar-nav navbar-nav-scroll me-auto" role="tablist"><li class="nav-item" role="presentation"><a id="tab-about" class="nav-link active" data-bs-toggle="tab" role="tab" data-bs-target="#about" data-scrolling="false" href="#about" aria-controls="about" aria-selected="true"><span class="nav-link-text">About</span></a></li><li class="nav-item" role="presentation"><a id="tab-deanonymization-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#deanonymization-1" data-scrolling="false" href="#deanonymization-1" aria-controls="deanonymization-1" aria-selected="false"><span class="nav-link-text">Deanonymization</span></a></li><li class="nav-item" role="presentation"><a id="tab-id-reuse" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#id-reuse" data-scrolling="false" href="#id-reuse" aria-controls="id-reuse" aria-selected="false"><span class="nav-link-text">ID Reuse</span></a></li><li class="nav-item" role="presentation"><a id="tab-average-bid-curve-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#average-bid-curve-1" data-scrolling="false" href="#average-bid-curve-1" aria-controls="average-bid-curve-1" aria-selected="false"><span class="nav-link-text">Average Bid Curve</span></a></li></ul></div></div>
 </nav>
 </header>
 <div class="page-layout-custom quarto-dashboard-content bslib-gap-spacing html-fill-container bslib-page-fill quarto-dashboard-pages">  
@@ -3623,7 +3623,7 @@ grid-auto-rows: minmax(0, 1fr);">
 </div>
 </div>
 </div>
-<div id="id-matching-1" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-id-matching-1">
+<div id="id-reuse" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-id-reuse">
 <div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content) minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
 <div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
@@ -3637,7 +3637,7 @@ grid-auto-rows: minmax(0, 1fr);">
 </div>
 </div>
 <div class="callout-body-container callout-body html-fill-item html-fill-container">
-<p>This page displays the most similar Resource IDs for the selected ID. The table on the left lists the top matching IDs ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. The table on the right displays the attributes used in the matching process, where you can compare the characteristics of the matched resources.</p>
+<p>This page displays the most similar Resource IDs for the selected ID. The table on the left lists attributes describing bidding behavior for the ID of interest. The table on the right displays matching IDs and their bidding behavior ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. Matched IDs are divided into IDs that were active before, during, and after the active period for the ID of interest.</p>
 <p>To view matches for a different resource, enter a new Resource ID on the <strong>About</strong> page and click <strong>Submit ID</strong>.</p>
 </div>
 </div>
@@ -3648,106 +3648,6 @@ grid-auto-rows: minmax(0, 1fr);">
         <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 26fr) minmax(3em, 24fr) minmax(3em, 50fr);
-grid-auto-rows: minmax(0, 1fr);">
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
-<div class="card html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
-<div class="card-body html-fill-item html-fill-container">
-<div class="h4">
-Attribute
-
-Definitions
-</div>
-<ul>
-<li><strong>Mean knots:</strong> The mean number of bids submitted in a curve.</li>
-<li><strong>Median knots:</strong> The median number of bids submitted in a curve.</li>
-<li><strong>Single-point curves:</strong> The percentage of bids that are single-point curves.</li>
-<li><strong>Null bids:</strong> Whether NULL bids are ever submitted.</li>
-<li><strong>Negative bids:</strong> Whether the ID submits negative bids.</li>
-<li><strong>Self-scheduled bids:</strong> The percentage of bids that are self-scheduled.</li>
-<li><strong>Max MW:</strong> The maximum MW quantity ever submitted in a bid.</li>
-</ul>
-</div>
-<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
-    <template>Expand</template>
-    <span class="bslib-full-screen-enter badge rounded-pill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
-    </span>
-</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div><div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
-<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
-<div class="card-body html-fill-item html-fill-container">
-<div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
-<div class="shiny-html-output gt_shiny html-fill-item html-fill-container" id="id_match_tbl"></div>
-</div>
-</div>
-<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
-    <template>Expand</template>
-    <span class="bslib-full-screen-enter badge rounded-pill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
-    </span>
-</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div><div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
-<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
-<div class="card-body html-fill-item html-fill-container">
-<div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
-<div class="shiny-html-output gt_shiny html-fill-item html-fill-container" id="id_features_tbl"></div>
-</div>
-</div>
-<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
-    <template>Expand</template>
-    <span class="bslib-full-screen-enter badge rounded-pill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
-    </span>
-</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div>
-</div>
-</div>
-</div>
-<div id="test-page" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-test-page">
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
-<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
-<div class="card-body html-fill-item html-fill-container">
-<div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
-<div id="id_match_words" class="shiny-html-output html-fill-item html-fill-container"></div>
-</div>
-</div>
-<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
-    <template>Expand</template>
-    <span class="bslib-full-screen-enter badge rounded-pill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
-    </span>
-</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div>
-</div>
-<div id="new-test-page" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-new-test-page">
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content) minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 1fr);
-grid-auto-rows: minmax(0, 1fr);">
-<div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
-<div class="card-body html-fill-item html-fill-container">
-<div class="callout callout-style-simple callout-note no-icon callout-titled" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;">
-<div class="callout-header d-flex align-content-center html-fill-item html-fill-container">
-<div class="callout-icon-container html-fill-item html-fill-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill html-fill-item html-fill-container">
-<span class="screen-reader-only">Note</span>ID to ID Matching
-</div>
-</div>
-<div class="callout-body-container callout-body html-fill-item html-fill-container">
-<p>This page displays the most similar Resource IDs for the selected ID. The table on the left lists the top matching IDs ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. The table on the right displays the attributes used in the matching process, where you can compare the characteristics of the matched resources.</p>
-<p>To view matches for a different resource, enter a new Resource ID on the <strong>About</strong> page and click <strong>Submit ID</strong>.</p>
-</div>
-</div>
-</div>
-<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
-    <template>Expand</template>
-    <span class="bslib-full-screen-enter badge rounded-pill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
-    </span>
-</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div>
 <div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 30fr) minmax(3em, 70fr);
 grid-auto-rows: minmax(0, 1fr);">
 <div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
@@ -3763,30 +3663,13 @@ grid-auto-rows: minmax(0, 1fr);">
         <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div><div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
-<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
-<div class="card-body html-fill-item html-fill-container">
-<div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
-<div id="match_cards" class="shiny-html-output html-fill-item html-fill-container"></div>
-</div>
-</div>
-<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
-    <template>Expand</template>
-    <span class="bslib-full-screen-enter badge rounded-pill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
-    </span>
-</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
-</div>
-</div>
-</div>
-</div>
-<div id="id-filter" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-id-filter">
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content); grid-auto-columns: minmax(0, 1fr);">
+</div><div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content); grid-auto-columns: minmax(0, 1fr);">
 <div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
-<div class="panel.tabset html-fill-item html-fill-container">
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 1fr);
-grid-auto-rows: minmax(0, 1fr);">
+<div class="panel-tabset html-fill-item html-fill-container">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href>Before</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href>During</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false" href>After</a></li></ul>
+<div class="tab-content html-fill-item html-fill-container">
+<div id="tabset-2-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
@@ -3800,8 +3683,7 @@ grid-auto-rows: minmax(0, 1fr);">
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
 </div>
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 1fr);
-grid-auto-rows: minmax(0, 1fr);">
+<div id="tabset-2-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
@@ -3815,8 +3697,7 @@ grid-auto-rows: minmax(0, 1fr);">
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
 </div>
-<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 1fr);
-grid-auto-rows: minmax(0, 1fr);">
+<div id="tabset-2-3" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-3-tab">
 <div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
@@ -3832,12 +3713,15 @@ grid-auto-rows: minmax(0, 1fr);">
 </div>
 </div>
 </div>
+</div>
 <bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
     <template>Expand</template>
     <span class="bslib-full-screen-enter badge rounded-pill">
         <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+</div>
+</div>
 </div>
 </div>
 <div id="average-bid-curve-1" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-average-bid-curve-1">
@@ -3875,9 +3759,9 @@ grid-auto-rows: minmax(0, 1fr);">
 <div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="panel-tabset html-fill-item html-fill-container">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href>Overall Daily Trend</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href>Hourly Curves</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href>Overall Daily Trend</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href>Hourly Curves</a></li></ul>
 <div class="tab-content html-fill-item html-fill-container">
-<div id="tabset-3-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-3-1-tab">
+<div id="tabset-4-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-4-1-tab">
 <div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container">
@@ -3896,11 +3780,11 @@ Note abt the graph
 
 ::: -->
 </div>
-<div id="tabset-3-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-3-2-tab">
+<div id="tabset-4-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-4-2-tab">
 <div class="panel-tabset html-fill-item html-fill-container">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href>Combined</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href>Separated</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href>Combined</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href>Separated</a></li></ul>
 <div class="tab-content html-fill-item html-fill-container">
-<div id="tabset-2-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div id="tabset-3-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-3-1-tab">
 <div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container">
@@ -3914,7 +3798,7 @@ Note abt the graph
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
 </div>
-<div id="tabset-2-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div id="tabset-3-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-3-2-tab">
 <div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container">
@@ -4062,6 +3946,9 @@ gen_matches_all <- read_csv("final_outputs/curtailment_top_candidates.csv")
 best_gen_match <- read_csv("final_outputs/curtailment_matches_final.csv")
 
 curtailment_events <- read_csv("final_outputs/curtailment_event_counts.csv")
+
+id_activity <- arrow::read_parquet("id_activity.parquet") |>
+  mutate(RESOURCEBID_SEQ = as.character(RESOURCEBID_SEQ))
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
@@ -4102,55 +3989,17 @@ average_bid_curve <- eventReactive(input$submit_id, {
 })
 
 best_matches <- eventReactive(input$submit_id, {
-    req(input$resource_id)
+  req(input$resource_id)
 
-    tibble(
-        matched_id = colnames(id_matches),
-        similarity = as.numeric(id_matches[as.character(input$resource_id), ])
-        ) |>
-        filter(matched_id != as.character(input$resource_id)) |>
-        slice_max(order_by = similarity, n = 5)
-    })
+  target_id <- as.character(input$resource_id)
 
-# gen_matches <- eventReactive(input$submit_id, {
-#     req(input$resource_id)
-
-#     gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$submit_id) |>
-#     select(-RESOURCEBID_SEQ, -`RESOURCE ID`) |>
-#     rename(
-#         # "Resource ID" = RESOURCEBID_SEQ,
-#            "Resource Name" = `RESOURCE NAME`,
-#            "Resource Pmax" = `RESOURCE PMAX MW`,
-#            "ID Max MW" = seq_max_mw,
-#            "# of Matches" = n_matches,
-#            "Mean % Error" = mean_pct_err,
-#            "Score" = score,
-#            "Confidence" = confidence) |>
-#     arrange(desc(!is.na(Confidence)), desc(Score)) |>
-#     slice_head(n = 5) |>
-#     pivot_longer(
-#         cols = `Resource Pmax`:Confidence,
-#         names_to = "Matching Attributes",
-#         values_to = "Value"
-#     ) |>
-#     mutate(Value = round(Value, 3),
-#            `Resource Name` = if_else(`Resource Name` == lag(`Resource Name`, default = ""), "", `Resource Name`)) 
-# })
-
-# gen_match_candidates <- eventReactive(input$submit_id, {
-#   req(input$resource_id)
-
-#   gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$resource_id) |>
-#     left_join(
-#       curtailment_events |>
-#         select(`RESOURCE ID`, total_curtailment_events),
-#       by = "RESOURCE ID"
-#     ) |>
-#     arrange(desc(!is.na(confidence)), desc(score)) |>
-#     slice_head(n = 5)
-# })
+  tibble(
+    matched_id = as.character(colnames(id_matches)),
+    similarity = as.numeric(id_matches[target_id, ])
+  ) |>
+    filter(matched_id != target_id) |>
+    slice_max(order_by = similarity, n = 5)
+})
 
 gen_match_candidates <- eventReactive(input$submit_id, {
   req(input$resource_id)
@@ -4202,9 +4051,11 @@ gen_match_candidates <- eventReactive(input$submit_id, {
 
 matches_by_period <- reactive({
 
+  req(input$resource_id)
+
   target_id <- as.character(input$resource_id)
 
-  target_dates <- features |>
+  target_dates <- id_activity |>
     filter(RESOURCEBID_SEQ == target_id) |>
     summarise(
       target_start = first(start),
@@ -4214,11 +4065,9 @@ matches_by_period <- reactive({
   target_start <- target_dates$target_start
   target_end <- target_dates$target_end
 
-  match_tbl <- best_matches()
-
-  match_tbl |>
+  best_matches() |>
     left_join(
-      features |>
+      id_activity |>
         select(RESOURCEBID_SEQ, start, end),
       by = c("matched_id" = "RESOURCEBID_SEQ")
     ) |>
@@ -4226,7 +4075,8 @@ matches_by_period <- reactive({
       period = case_when(
         end < target_start ~ "Before",
         start > target_end ~ "After",
-        start <= target_end & end >= target_start ~ "During"
+        start <= target_end & end >= target_start ~ "During",
+        TRUE ~ NA_character_
       )
     )
 })
@@ -4327,160 +4177,6 @@ matches_by_period <- reactive({
 #   ) |>
 #   # if no days included in avg. filter out
 #   filter(n_days_used != 0)
-</script>
- 
-<script type="application/shiny-prerendered" data-context="server">
-# output$gen_match_summary <- renderUI({
-
-#   req(input$resource_id)
-
-#   target_id <- as.character(input$resource_id)
-
-#   gen_row <- gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$resource_id) |>
-#     slice(1)
-
-#   validate(
-#     need(nrow(gen_row) > 0, "No deanonymization match found for this ID.")
-#   )
-
-#   resource_name <- gen_row$`RESOURCE NAME`
-#   resource_pmax <- round(gen_row$`RESOURCE PMAX MW`, 3)
-#   id_max_mw <- round(gen_row$seq_max_mw, 3)
-#   n_matches <- gen_row$n_matches
-#   score <- round(gen_row$score, 3)
-#   confidence <- round(gen_row$confidence, 3)
-
-#   HTML(glue::glue(
-#     '
-#     <div class="card" style="padding: 22px; font-size: 18px; line-height: 1.7;">
-#       <p>
-#         The most likely resource for anonymous ID <strong>{target_id}<\u002fstrong> is 
-#         <strong style="color#18BC9C;">{resource_name}<\u002fstrong>.
-#       <\u002fp>
-
-#       <p>
-#         Our final score for this match is <strong style="color:#3498DB;">{score}<\u002fstrong>, with a confidence of 
-#         <strong style="color:#F39C12;">{confidence}<\u002fstrong>.
-#       <\u002fp>
-
-#       <p>
-#         Why? The resource Pmax is <strong style="color:#a2c7ea;">{resource_pmax} MW<\u002fstrong>, and ID {target_id}’s
-#         maximum MW ever submitted in a bid is <strong style="color:#a2c7ea;">{id_max_mw} MW<\u002fstrong>.
-#         There were <strong>{n_matches}<\u002fstrong> curtailment events that matched this ID.
-#       <\u002fp>
-
-#     <\u002fdiv>
-#     '
-#   ))
-# })
-
-# output$gen_match_summary <- renderUI({
-
-#   req(input$resource_id)
-
-#   target_id <- as.character(input$resource_id)
-
-#   gen_row <- gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$resource_id) |>
-#     slice(1)
-
-#   resource_name <- gen_row$`RESOURCE NAME`
-#   resource_pmax <- round(gen_row$`RESOURCE PMAX MW`, 3)
-#   id_max_mw <- round(gen_row$seq_max_mw, 3)
-#   n_matches <- gen_row$n_matches
-#   score <- round(gen_row$score, 3)
-#   confidence <- round(gen_row$confidence, 3)
-
-#   div(
-#     class = "card",
-#     style = "padding: 22px; font-size: 18px; line-height: 1.7;",
-
-#     p(
-#       "The most likely ",
-#     #   tags$span(
-#     #     "resource ⓘ",
-#     #     title = "Official name of the matched resource.",
-#     #     style = "cursor: help;"
-#     #   ),
-#       tags$span(
-#         "resource",
-#         title = "Official name of the matched resource.",
-#         style = "
-#             color: #325D88;
-#             cursor: help;
-#         "
-#         ),
-#       " for anonymous ID ",
-#       tags$strong(target_id),
-#       " is ",
-#       tags$strong(
-#         resource_name,
-#         style = "color:#18BC9C;"
-#       ),
-#       "."
-#     ),
-
-#     p(
-#       "Our final ",
-#     #   tags$span(
-#     #     "score ⓘ",
-#     #     title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
-#     #     style = "cursor: help;"
-#     #   ),
-#       tags$span(
-#         "score",
-#         title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
-#         style = "
-#             color: #325D88;
-#             cursor: help;"
-#         ),
-#       " for this match is ",
-#       tags$strong(score, style = "color:#3498DB;"),
-#       ", with a ",
-#     #   tags$span(
-#     #     "confidence ⓘ",
-#     #     title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match.",
-#     #     style = "cursor: help;"
-#     #   ),
-#       tags$span(
-#         "confidence",
-#         title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match.",
-#         style = "
-#             color: #325D88;
-#             cursor: help;"
-#         ),
-#       " of ",
-#       tags$strong(confidence, style = "color:#F39C12;"),
-#       "."
-#     ),
-
-#     p(
-#       "Why? The resource",
-#     #   tags$span(
-#     #     "Pmax ⓘ",
-#     #     title = "CAISO reported physical maximum output for the matched resource.",
-#     #     style = "cursor: help;"
-#     #   ),
-#       tags$span(
-#         "Pmax",
-#         title = "CAISO reported physical maximum output for the matched resource.",
-#         style = "
-#             color: #325D88;
-#             cursor: help;"
-#         ),
-#       " is ",
-#       tags$strong(paste0(resource_pmax, " MW"), style = "color:#E74C3C;"),
-#       ", and ID ",
-#       target_id,
-#       "'s maximum MW ever submitted in a bid is ",
-#       tags$strong(paste0(id_max_mw, " MW"), style = "color:#E74C3C;"),
-#       ". There were ",
-#       tags$strong(n_matches),
-#       " curtailment events that matched this ID."
-#     )
-#   )
-# })
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
@@ -4586,186 +4282,21 @@ output$gen_match_summary <- renderUI({
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
-output$id_match_tbl <- render_gt({
-
-    target_id <- as.character(input$resource_id)
-
-    best_matches_tbl <- best_matches()
-
-    best_matches_tbl |>
-        gt() |>
-        cols_label(
-            matched_id = md("**Resource ID**"),
-            similarity = md("**Similarity**")
-            ) |>
-            tab_header(
-                title = glue::glue("ID Matches for {target_id}")
-                ) |>
-            tab_style(
-                style = list(cell_fill(color = "#325D88"),
-                            cell_text(color = "white")),
-                        locations = cells_title(groups = "title")
-            ) |>
-            tab_style(
-                style = cell_borders(sides = "right",
-                                    color = "lightgray",
-                                    weight = px(2)),
-                locations = list(cells_body(columns = matched_id),
-                                cells_column_labels(columns = matched_id))
-            ) |>
-            cols_align(align = "center")
-})
-</script>
- 
-<script type="application/shiny-prerendered" data-context="server">
-output$id_features_tbl <- render_gt({
-
-    target_id <- as.character(input$resource_id)
-
-    best_matches_tbl <- best_matches()
-
-    features |>
-    filter(RESOURCEBID_SEQ %in% best_matches_tbl$matched_id) |>
-        pivot_wider(
-            names_from = RESOURCEBID_SEQ,
-            values_from = Value
-        ) |>
-        select(
-            Feature,
-            all_of(best_matches_tbl$matched_id)
-            ) |>
-        gt() |>
-        cols_label(
-            Feature = md("**Attribute**")
-            ) |>
-        tab_spanner(
-            label = md("**Resource ID**"),
-            columns = -Feature
-        )  |>
-        tab_header(
-                title = glue::glue("Attributes of Top Matches for {target_id}")
-                )
-})
-</script>
- 
-<script type="application/shiny-prerendered" data-context="server">
-get_feature <- function(data, id, feature_name) {
-  data |>
-    filter(
-      RESOURCEBID_SEQ == id,
-      Feature == feature_name
-    ) |>
-    pull(Value) |>
-    first()
-}
-
-has_text <- function(value, id, label) {
-  if (value %in% c("Yes", "TRUE", TRUE, 1, "1")) {
-    glue::glue("{id} has submitted {label}.")
-  } else {
-    glue::glue("{id} has never submitted {label}.")
-  }
-}
-
-output$id_match_words <- renderUI({
-
-  req(input$resource_id)
-
-  target_id <- as.character(input$resource_id)
-  best_matches_tbl <- best_matches()
-
-  validate(
-    need(nrow(best_matches_tbl) > 0, "No ID matches found for this Resource ID.")
-  )
-
-  # target ID features
-  target_max_mw <- get_feature(features, target_id, "Max MW")
-  target_mean <- get_feature(features, target_id, "Mean knots")
-  target_median <- get_feature(features, target_id, "Median knots")
-  target_single <- get_feature(features, target_id, "Single-point curves")
-  target_self <- get_feature(features, target_id, "Self-scheduled bids")
-  target_null <- get_feature(features, target_id, "Null bids")
-  target_negative <- get_feature(features, target_id, "Negative bids")
-
-  target_null_sentence <- has_text(target_null, target_id, "NULL bids")
-  target_negative_sentence <- has_text(target_negative, target_id, "negative bids")
-
-  # make one paragraph per match
-  match_paragraphs <- purrr::map(seq_len(nrow(best_matches_tbl)), function(i) {
-
-    match_id <- best_matches_tbl$matched_id[i]
-    sim <- round(best_matches_tbl$similarity[i], 3)
-
-    match_max_mw <- get_feature(features, match_id, "Max MW")
-    match_mean <- get_feature(features, match_id, "Mean knots")
-    match_median <- get_feature(features, match_id, "Median knots")
-    match_single <- get_feature(features, match_id, "Single-point curves")
-    match_self <- get_feature(features, match_id, "Self-scheduled bids")
-    match_null <- get_feature(features, match_id, "Null bids")
-    match_negative <- get_feature(features, match_id, "Negative bids")
-
-    match_null_sentence <- has_text(match_null, match_id, "NULL bids")
-    match_negative_sentence <- has_text(match_negative, match_id, "negative bids")
-
-    tags$p(
-      tags$strong(glue::glue("Match {i}: ")),
-      glue::glue("ID {match_id} has a similarity of "),
-      tags$strong(style = "color:#325D88;", sim),
-      glue::glue(". This ID’s maximum MW submitted in a bid is "),
-      tags$strong(match_max_mw),
-      glue::glue(" MW. ID {match_id} submits on average "),
-      tags$strong(match_mean),
-      glue::glue(" bids in a curve, and the median number of bids submitted in a curve is "),
-      tags$strong(match_median),
-      glue::glue(". "),
-      tags$strong(match_single),
-      glue::glue("% of {match_id}'s bids are single-point curves. "),
-      tags$strong(match_self),
-      glue::glue("% of this ID’s bids are self-scheduled. "),
-      match_null_sentence,
-      " ",
-      match_negative_sentence
-    )
-  })
-
-  div(
-    class = "card",
-    style = "padding: 22px; font-size: 18px; line-height: 1.7;",
-
-    tags$h3(glue::glue("Bidding Behavior for ID {target_id}")),
-
-    tags$p(
-      glue::glue("ID {target_id} bidding behavior showed that the maximum MW quantity ever submitted in a bid was "),
-      tags$strong(target_max_mw),
-      " MW. The mean number of bids submitted in a curve is ",
-      tags$strong(target_mean),
-      " and the median number of bids submitted in a curve is ",
-      tags$strong(target_median),
-      ". ",
-      tags$strong(target_single),
-      glue::glue("% of {target_id}'s bids are single-point curves. "),
-      tags$strong(target_self),
-      "% of this ID’s bids are self-scheduled. ",
-      target_null_sentence,
-      " ",
-      target_negative_sentence
-    ),
-
-    tags$hr(),
-
-    tags$h3("Top Matching IDs"),
-
-    match_paragraphs
-  )
-})
-</script>
- 
-<script type="application/shiny-prerendered" data-context="server">
 output$target_id_summary <- renderUI({
 
   req(input$resource_id)
 
   target_id <- as.character(input$resource_id)
+
+  target_dates <- id_activity |>
+  filter(RESOURCEBID_SEQ == target_id) |>
+  summarise(
+    start = first(start),
+    end = first(end)
+  )
+
+  target_start <- target_dates$start
+  target_end <- target_dates$end
 
   target_max_mw <- get_feature(features, target_id, "Max MW")
   target_mean <- get_feature(features, target_id, "Mean knots")
@@ -4784,7 +4315,7 @@ output$target_id_summary <- renderUI({
       padding: 24px;
       background-color: #FFFFFF;
         border: 6px solid #a2c7ea;
-        border-radius: 8px;
+        border-radius: 6px;
     #   font-size: 17px;
     #   line-height: 1.7;
     ",
@@ -4792,6 +4323,15 @@ output$target_id_summary <- renderUI({
     tags$h4(
       style = "margin-top:0;",
       glue::glue("Bidding behavior for {target_id}:")
+    ),
+
+    tags$p(
+      style = "margin-top:-6px;",
+      "Active ",
+      tags$strong(format(target_start, "%Y-%m-%d")),
+      " to ",
+      tags$strong(format(target_end, "%Y-%m-%d")),
+      "."
     ),
 
     tags$p(
@@ -4827,75 +4367,42 @@ output$target_id_summary <- renderUI({
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
-output$match_cards <- renderUI({
+get_feature <- function(data, id, feature_name) {
+  data |>
+    filter(
+      RESOURCEBID_SEQ == as.character(id),
+      Feature == feature_name
+    ) |>
+    pull(Value) |>
+    first()
+}
 
-  req(input$resource_id)
+has_text <- function(value, id, label) {
+  if (value %in% c("Yes", "TRUE", TRUE, 1, "1")) {
+    glue::glue("{id} has submitted {label}.")
+  } else {
+    glue::glue("{id} has never submitted {label}.")
+  }
+}
 
-  best_matches_tbl <- best_matches()
-
-  cards <- purrr::map(seq_len(nrow(best_matches_tbl)), function(i) {
-
-    match_id <- best_matches_tbl$matched_id[i]
-    sim <- round(best_matches_tbl$similarity[i], 3)
-
-    match_max_mw <- get_feature(features, match_id, "Max MW")
-    match_mean <- get_feature(features, match_id, "Mean knots")
-    match_median <- get_feature(features, match_id, "Median knots")
-    match_single <- get_feature(features, match_id, "Single-point curves")
-    match_self <- get_feature(features, match_id, "Self-scheduled bids")
-    match_null <- get_feature(features, match_id, "Null bids")
-    match_negative <- get_feature(features, match_id, "Negative bids")
-
-    match_null_sentence <- has_text(match_null, match_id, "NULL bids")
-    match_negative_sentence <- has_text(match_negative, match_id, "negative bids")
-
-    div(
-    class = "card",
-    style = "
-        padding: 16px;
-        margin-bottom: 12px;
-        background-color: #ffffff;
-        border-left: 6px solid #a2c7ea;
-        # font-size: 15px;
-        # line-height: 1.5;
-    ",
-
-    tags$strong(
-        style = "font-size:16px; color=#18BC9C;",
-        glue::glue("Match {i}: ID {match_id}")
-    ),
-
-    tags$p(
-        style = "margin-top:8px; margin-bottom:0px;",
-
-        "This ID has a similarity of ",
-        tags$strong(style = "color:#3498DB;", sim),
-        ". The maximum MW submitted in a bid is ",
-        tags$strong(style = "color:#18BC9C;", match_max_mw),
-        " MW. ID ",
-        tags$strong(match_id),
-        " submits on average ",
-        tags$strong(style = "color:#F39C12;", match_mean),
-        " bids in a curve, with the median number being ",
-        tags$strong(style = "color:#EBBA5C;", match_median),
-        "bids. ",
-        tags$strong(style = "color:#E74C3C;", match_single),
-        "% of its bids are single-point curves and ",
-        tags$strong(style = "color:#E98A7F;", match_self),
-        "% are self-scheduled. ",
-        match_null_sentence,
-        " ",
-        match_negative_sentence
-    )
-    )
-  })
-
-  tagList(cards)
-})
-</script>
- 
-<script type="application/shiny-prerendered" data-context="server">
 build_match_cards <- function(match_data) {
+
+  if (nrow(match_data) == 0) {
+      return(
+        div(
+          class = "card",
+          style = "
+            padding:16px;
+            background-color:#FFFFFF;
+            border-left:6px solid #a2c7ea;
+          ",
+          tags$p(
+            style = "margin:0;",
+            "No IDs exist in this time frame."
+          )
+        )
+      )
+    }
 
   cards <- purrr::map(seq_len(nrow(match_data)), function(i) {
 
