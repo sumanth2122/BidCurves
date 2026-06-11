@@ -45,6 +45,9 @@ gen_matches_all <- read_csv("final_outputs/curtailment_top_candidates.csv")
 best_gen_match <- read_csv("final_outputs/curtailment_matches_final.csv")
 
 curtailment_events <- read_csv("final_outputs/curtailment_event_counts.csv")
+
+id_activity <- arrow::read_parquet("id_activity.parquet") |>
+  mutate(RESOURCEBID_SEQ = as.character(RESOURCEBID_SEQ))
 ```
 
 ```{r}
@@ -86,55 +89,17 @@ average_bid_curve <- eventReactive(input$submit_id, {
 })
 
 best_matches <- eventReactive(input$submit_id, {
-    req(input$resource_id)
+  req(input$resource_id)
 
-    tibble(
-        matched_id = colnames(id_matches),
-        similarity = as.numeric(id_matches[as.character(input$resource_id), ])
-        ) |>
-        filter(matched_id != as.character(input$resource_id)) |>
-        slice_max(order_by = similarity, n = 5)
-    })
+  target_id <- as.character(input$resource_id)
 
-# gen_matches <- eventReactive(input$submit_id, {
-#     req(input$resource_id)
-
-#     gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$submit_id) |>
-#     select(-RESOURCEBID_SEQ, -`RESOURCE ID`) |>
-#     rename(
-#         # "Resource ID" = RESOURCEBID_SEQ,
-#            "Resource Name" = `RESOURCE NAME`,
-#            "Resource Pmax" = `RESOURCE PMAX MW`,
-#            "ID Max MW" = seq_max_mw,
-#            "# of Matches" = n_matches,
-#            "Mean % Error" = mean_pct_err,
-#            "Score" = score,
-#            "Confidence" = confidence) |>
-#     arrange(desc(!is.na(Confidence)), desc(Score)) |>
-#     slice_head(n = 5) |>
-#     pivot_longer(
-#         cols = `Resource Pmax`:Confidence,
-#         names_to = "Matching Attributes",
-#         values_to = "Value"
-#     ) |>
-#     mutate(Value = round(Value, 3),
-#            `Resource Name` = if_else(`Resource Name` == lag(`Resource Name`, default = ""), "", `Resource Name`)) 
-# })
-
-# gen_match_candidates <- eventReactive(input$submit_id, {
-#   req(input$resource_id)
-
-#   gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$resource_id) |>
-#     left_join(
-#       curtailment_events |>
-#         select(`RESOURCE ID`, total_curtailment_events),
-#       by = "RESOURCE ID"
-#     ) |>
-#     arrange(desc(!is.na(confidence)), desc(score)) |>
-#     slice_head(n = 5)
-# })
+  tibble(
+    matched_id = as.character(colnames(id_matches)),
+    similarity = as.numeric(id_matches[target_id, ])
+  ) |>
+    filter(matched_id != target_id) |>
+    slice_max(order_by = similarity, n = 5)
+})
 
 gen_match_candidates <- eventReactive(input$submit_id, {
   req(input$resource_id)
@@ -186,9 +151,11 @@ gen_match_candidates <- eventReactive(input$submit_id, {
 
 matches_by_period <- reactive({
 
+  req(input$resource_id)
+
   target_id <- as.character(input$resource_id)
 
-  target_dates <- features |>
+  target_dates <- id_activity |>
     filter(RESOURCEBID_SEQ == target_id) |>
     summarise(
       target_start = first(start),
@@ -198,11 +165,9 @@ matches_by_period <- reactive({
   target_start <- target_dates$target_start
   target_end <- target_dates$target_end
 
-  match_tbl <- best_matches()
-
-  match_tbl |>
+  best_matches() |>
     left_join(
-      features |>
+      id_activity |>
         select(RESOURCEBID_SEQ, start, end),
       by = c("matched_id" = "RESOURCEBID_SEQ")
     ) |>
@@ -210,7 +175,8 @@ matches_by_period <- reactive({
       period = case_when(
         end < target_start ~ "Before",
         start > target_end ~ "After",
-        start <= target_end & end >= target_start ~ "During"
+        start <= target_end & end >= target_start ~ "During",
+        TRUE ~ NA_character_
       )
     )
 })
@@ -559,241 +525,13 @@ output$gen_match_summary <- renderUI({
   })
 ```
 
-# ID Matching
+# ID Reuse
 
 ::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
 
 ## ID to ID Matching
 
-This page displays the most similar Resource IDs for the selected ID. The table on the left lists the top matching IDs ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. The table on the right displays the attributes used in the matching process, where you can compare the characteristics of the matched resources.
-
-To view matches for a different resource, enter a new Resource ID on the **About** page and click **Submit ID**.
-:::
-
-
-## Row
-
-### Column {width="26%"}
-
-::: {.card}
-
-## Attribute Definitions
-
-- **Mean knots:** The mean number of bids submitted in a curve.
-- **Median knots:** The median number of bids submitted in a curve.
-- **Single-point curves:** The percentage of bids that are single-point curves.
-- **Null bids:** Whether NULL bids are ever submitted.
-- **Negative bids:** Whether the ID submits negative bids.
-- **Self-scheduled bids:** The percentage of bids that are self-scheduled.
-- **Max MW:** The maximum MW quantity ever submitted in a bid.
-
-:::
-
-### Column {width="24%"}
-
-```{r}
-gt_output("id_match_tbl")
-```
-
-```{r}
-#| context: server
-
-output$id_match_tbl <- render_gt({
-
-    target_id <- as.character(input$resource_id)
-
-    best_matches_tbl <- best_matches()
-
-    best_matches_tbl |>
-        gt() |>
-        cols_label(
-            matched_id = md("**Resource ID**"),
-            similarity = md("**Similarity**")
-            ) |>
-            tab_header(
-                title = glue::glue("ID Matches for {target_id}")
-                ) |>
-            tab_style(
-                style = list(cell_fill(color = "#325D88"),
-                            cell_text(color = "white")),
-                        locations = cells_title(groups = "title")
-            ) |>
-            tab_style(
-                style = cell_borders(sides = "right",
-                                    color = "lightgray",
-                                    weight = px(2)),
-                locations = list(cells_body(columns = matched_id),
-                                cells_column_labels(columns = matched_id))
-            ) |>
-            cols_align(align = "center")
-})
-```
-
-### Column {width="50%"}
-
-```{r}
-gt_output("id_features_tbl")
-```
-```{r}
-#| context: server
-
-output$id_features_tbl <- render_gt({
-
-    target_id <- as.character(input$resource_id)
-
-    best_matches_tbl <- best_matches()
-
-    features |>
-    filter(RESOURCEBID_SEQ %in% best_matches_tbl$matched_id) |>
-        pivot_wider(
-            names_from = RESOURCEBID_SEQ,
-            values_from = Value
-        ) |>
-        select(
-            Feature,
-            all_of(best_matches_tbl$matched_id)
-            ) |>
-        gt() |>
-        cols_label(
-            Feature = md("**Attribute**")
-            ) |>
-        tab_spanner(
-            label = md("**Resource ID**"),
-            columns = -Feature
-        )  |>
-        tab_header(
-                title = glue::glue("Attributes of Top Matches for {target_id}")
-                )
-})
-```
-
-# TEST PAGE
-```{r}
-uiOutput("id_match_words")
-```
-
-```{r}
-#| context: server
-
-get_feature <- function(data, id, feature_name) {
-  data |>
-    filter(
-      RESOURCEBID_SEQ == id,
-      Feature == feature_name
-    ) |>
-    pull(Value) |>
-    first()
-}
-
-has_text <- function(value, id, label) {
-  if (value %in% c("Yes", "TRUE", TRUE, 1, "1")) {
-    glue::glue("{id} has submitted {label}.")
-  } else {
-    glue::glue("{id} has never submitted {label}.")
-  }
-}
-
-output$id_match_words <- renderUI({
-
-  req(input$resource_id)
-
-  target_id <- as.character(input$resource_id)
-  best_matches_tbl <- best_matches()
-
-  validate(
-    need(nrow(best_matches_tbl) > 0, "No ID matches found for this Resource ID.")
-  )
-
-  # target ID features
-  target_max_mw <- get_feature(features, target_id, "Max MW")
-  target_mean <- get_feature(features, target_id, "Mean knots")
-  target_median <- get_feature(features, target_id, "Median knots")
-  target_single <- get_feature(features, target_id, "Single-point curves")
-  target_self <- get_feature(features, target_id, "Self-scheduled bids")
-  target_null <- get_feature(features, target_id, "Null bids")
-  target_negative <- get_feature(features, target_id, "Negative bids")
-
-  target_null_sentence <- has_text(target_null, target_id, "NULL bids")
-  target_negative_sentence <- has_text(target_negative, target_id, "negative bids")
-
-  # make one paragraph per match
-  match_paragraphs <- purrr::map(seq_len(nrow(best_matches_tbl)), function(i) {
-
-    match_id <- best_matches_tbl$matched_id[i]
-    sim <- round(best_matches_tbl$similarity[i], 3)
-
-    match_max_mw <- get_feature(features, match_id, "Max MW")
-    match_mean <- get_feature(features, match_id, "Mean knots")
-    match_median <- get_feature(features, match_id, "Median knots")
-    match_single <- get_feature(features, match_id, "Single-point curves")
-    match_self <- get_feature(features, match_id, "Self-scheduled bids")
-    match_null <- get_feature(features, match_id, "Null bids")
-    match_negative <- get_feature(features, match_id, "Negative bids")
-
-    match_null_sentence <- has_text(match_null, match_id, "NULL bids")
-    match_negative_sentence <- has_text(match_negative, match_id, "negative bids")
-
-    tags$p(
-      tags$strong(glue::glue("Match {i}: ")),
-      glue::glue("ID {match_id} has a similarity of "),
-      tags$strong(style = "color:#325D88;", sim),
-      glue::glue(". This ID’s maximum MW submitted in a bid is "),
-      tags$strong(match_max_mw),
-      glue::glue(" MW. ID {match_id} submits on average "),
-      tags$strong(match_mean),
-      glue::glue(" bids in a curve, and the median number of bids submitted in a curve is "),
-      tags$strong(match_median),
-      glue::glue(". "),
-      tags$strong(match_single),
-      glue::glue("% of {match_id}'s bids are single-point curves. "),
-      tags$strong(match_self),
-      glue::glue("% of this ID’s bids are self-scheduled. "),
-      match_null_sentence,
-      " ",
-      match_negative_sentence
-    )
-  })
-
-  div(
-    class = "card",
-    style = "padding: 22px; font-size: 18px; line-height: 1.7;",
-
-    tags$h3(glue::glue("Bidding Behavior for ID {target_id}")),
-
-    tags$p(
-      glue::glue("ID {target_id} bidding behavior showed that the maximum MW quantity ever submitted in a bid was "),
-      tags$strong(target_max_mw),
-      " MW. The mean number of bids submitted in a curve is ",
-      tags$strong(target_mean),
-      " and the median number of bids submitted in a curve is ",
-      tags$strong(target_median),
-      ". ",
-      tags$strong(target_single),
-      glue::glue("% of {target_id}'s bids are single-point curves. "),
-      tags$strong(target_self),
-      "% of this ID’s bids are self-scheduled. ",
-      target_null_sentence,
-      " ",
-      target_negative_sentence
-    ),
-
-    tags$hr(),
-
-    tags$h3("Top Matching IDs"),
-
-    match_paragraphs
-  )
-})
-```
-
-# NEW TEST PAGE
-
-## Row
-::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
-
-## ID to ID Matching
-
-This page displays the most similar Resource IDs for the selected ID. The table on the left lists the top matching IDs ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. The table on the right displays the attributes used in the matching process, where you can compare the characteristics of the matched resources.
+This page displays the most similar Resource IDs for the selected ID. The table on the left lists attributes describing bidding behavior for the ID of interest. The table on the right displays matching IDs and their bidding behavior ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. Matched IDs are divided into IDs that were active before, during, and after the active period for the ID of interest.
 
 To view matches for a different resource, enter a new Resource ID on the **About** page and click **Submit ID**.
 :::
@@ -814,6 +552,16 @@ output$target_id_summary <- renderUI({
 
   target_id <- as.character(input$resource_id)
 
+  target_dates <- id_activity |>
+  filter(RESOURCEBID_SEQ == target_id) |>
+  summarise(
+    start = first(start),
+    end = first(end)
+  )
+
+  target_start <- target_dates$start
+  target_end <- target_dates$end
+
   target_max_mw <- get_feature(features, target_id, "Max MW")
   target_mean <- get_feature(features, target_id, "Mean knots")
   target_median <- get_feature(features, target_id, "Median knots")
@@ -831,7 +579,7 @@ output$target_id_summary <- renderUI({
       padding: 24px;
       background-color: #FFFFFF;
         border: 6px solid #a2c7ea;
-        border-radius: 8px;
+        border-radius: 6px;
     #   font-size: 17px;
     #   line-height: 1.7;
     ",
@@ -839,6 +587,15 @@ output$target_id_summary <- renderUI({
     tags$h4(
       style = "margin-top:0;",
       glue::glue("Bidding behavior for {target_id}:")
+    ),
+
+    tags$p(
+      style = "margin-top:-6px;",
+      "Active ",
+      tags$strong(format(target_start, "%Y-%m-%d")),
+      " to ",
+      tags$strong(format(target_end, "%Y-%m-%d")),
+      "."
     ),
 
     tags$p(
@@ -874,106 +631,67 @@ output$target_id_summary <- renderUI({
 ```
 
 ### Column {width="70%"}
-```{r}
-uiOutput("match_cards")
-```
 
-```{r}
-#| context: server
+::: {.panel-tabset}
 
-output$match_cards <- renderUI({
-
-  req(input$resource_id)
-
-  best_matches_tbl <- best_matches()
-
-  cards <- purrr::map(seq_len(nrow(best_matches_tbl)), function(i) {
-
-    match_id <- best_matches_tbl$matched_id[i]
-    sim <- round(best_matches_tbl$similarity[i], 3)
-
-    match_max_mw <- get_feature(features, match_id, "Max MW")
-    match_mean <- get_feature(features, match_id, "Mean knots")
-    match_median <- get_feature(features, match_id, "Median knots")
-    match_single <- get_feature(features, match_id, "Single-point curves")
-    match_self <- get_feature(features, match_id, "Self-scheduled bids")
-    match_null <- get_feature(features, match_id, "Null bids")
-    match_negative <- get_feature(features, match_id, "Negative bids")
-
-    match_null_sentence <- has_text(match_null, match_id, "NULL bids")
-    match_negative_sentence <- has_text(match_negative, match_id, "negative bids")
-
-    div(
-    class = "card",
-    style = "
-        padding: 16px;
-        margin-bottom: 12px;
-        background-color: #ffffff;
-        border-left: 6px solid #a2c7ea;
-        # font-size: 15px;
-        # line-height: 1.5;
-    ",
-
-    tags$strong(
-        style = "font-size:16px; color=#18BC9C;",
-        glue::glue("Match {i}: ID {match_id}")
-    ),
-
-    tags$p(
-        style = "margin-top:8px; margin-bottom:0px;",
-
-        "This ID has a similarity of ",
-        tags$strong(style = "color:#3498DB;", sim),
-        ". The maximum MW submitted in a bid is ",
-        tags$strong(style = "color:#18BC9C;", match_max_mw),
-        " MW. ID ",
-        tags$strong(match_id),
-        " submits on average ",
-        tags$strong(style = "color:#F39C12;", match_mean),
-        " bids in a curve, with the median number being ",
-        tags$strong(style = "color:#EBBA5C;", match_median),
-        "bids. ",
-        tags$strong(style = "color:#E74C3C;", match_single),
-        "% of its bids are single-point curves and ",
-        tags$strong(style = "color:#E98A7F;", match_self),
-        "% are self-scheduled. ",
-        match_null_sentence,
-        " ",
-        match_negative_sentence
-    )
-    )
-  })
-
-  tagList(cards)
-})
-```
-
-# ID FILTER
-
-::: {.panel.tabset}
-
-## Before
+#### Before
 
 ```{r}
 uiOutput("before_match_cards")
 ```
 
-## During
+#### During
 
 ```{r}
 uiOutput("during_match_cards")
 ```
 
-## After
+#### After
 
 ```{r}
 uiOutput("after_match_cards")
 ```
 
+:::
 ```{r}
 #| context: server
 
+get_feature <- function(data, id, feature_name) {
+  data |>
+    filter(
+      RESOURCEBID_SEQ == as.character(id),
+      Feature == feature_name
+    ) |>
+    pull(Value) |>
+    first()
+}
+
+has_text <- function(value, id, label) {
+  if (value %in% c("Yes", "TRUE", TRUE, 1, "1")) {
+    glue::glue("{id} has submitted {label}.")
+  } else {
+    glue::glue("{id} has never submitted {label}.")
+  }
+}
+
 build_match_cards <- function(match_data) {
+
+  if (nrow(match_data) == 0) {
+      return(
+        div(
+          class = "card",
+          style = "
+            padding:16px;
+            background-color:#FFFFFF;
+            border-left:6px solid #a2c7ea;
+          ",
+          tags$p(
+            style = "margin:0;",
+            "No IDs exist in this time frame."
+          )
+        )
+      )
+    }
 
   cards <- purrr::map(seq_len(nrow(match_data)), function(i) {
 
@@ -1066,7 +784,6 @@ output$after_match_cards <- renderUI({
 })
 ```
 
-:::
 
 # Average Bid Curve
 
