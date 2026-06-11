@@ -10,7 +10,6 @@ execute:
 ```{r}
 #| label: setup
 #| message: false
-
 library(CAISOPEA)
 library(duckdb)
 library(arrow)
@@ -24,17 +23,25 @@ library(here)
 ```{r}
 #| label: load-data
 #| message: false
-
 con <- dbConnect(duckdb())
-tbl_pointer <- tbl(con, "read_parquet('/Users/sumanth/Desktop/BidCurves/CAISO_dam_big.parquet')")
+tbl_pointer <- tbl(
+  con,
+  "read_parquet('/Users/sumanth/Desktop/BidCurves/CAISO_dam_big.parquet')"
+)
 
 dam_data <- tbl_pointer |>
   select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SELFSCHEDMW) |>
   collect()
 
 # Read as Arrow Tables so duckplyr can convert them without datetime type issues
-outages  <- arrow::read_parquet(here("prior_trade_day_outages.parquet"), as_data_frame = FALSE)
-id_attrs <- arrow::read_parquet(here("ID_attributes.parquet"), as_data_frame = FALSE) |>
+outages <- arrow::read_parquet(
+  here("prior_trade_day_outages.parquet"),
+  as_data_frame = FALSE
+)
+id_attrs <- arrow::read_parquet(
+  here("ID_attributes.parquet"),
+  as_data_frame = FALSE
+) |>
   select(RESOURCEBID_SEQ, max_mw)
 ```
 
@@ -43,23 +50,33 @@ id_attrs <- arrow::read_parquet(here("ID_attributes.parquet"), as_data_frame = F
 ```{r}
 #| label: run-matching
 #| message: false
-
 results <- get_curtailment_matches(
-  dam_data          = dam_data,
-  outages           = outages,
-  id_attrs          = id_attrs,
-  tolerance         = 0.05,
-  pmax_tolerance    = 0.10,
-  min_matches       = 2L,
+  dam_data = dam_data,
+  outages = outages,
+  id_attrs = id_attrs,
+  tolerance = 0.05,
+  pmax_tolerance = 0.10,
+  min_matches = 2L,
   resolve_collisions = TRUE,
-  top_n             = 5L,
-  return_detail     = TRUE
+  top_n = 5L,
+  return_detail = TRUE
 )
 
-cat("Final unique matches (collision-resolved): ", nrow(results$final_matches), "\n")
-cat("Top-candidate rows (up to 5 per resource): ", nrow(results$top_candidates), "\n")
-cat("Resources with candidates:                 ",
-    n_distinct(results$top_candidates$`RESOURCE ID`), "\n")
+cat(
+  "Final unique matches (collision-resolved): ",
+  nrow(results$final_matches),
+  "\n"
+)
+cat(
+  "Top-candidate rows (up to 5 per resource): ",
+  nrow(results$top_candidates),
+  "\n"
+)
+cat(
+  "Resources with candidates:                 ",
+  n_distinct(results$top_candidates$`RESOURCE ID`),
+  "\n"
+)
 ```
 
 ## Final Matches
@@ -68,7 +85,6 @@ One row per named resource — best seq ID after collision resolution.
 
 ```{r}
 #| label: final-matches
-
 results$final_matches
 ```
 
@@ -79,7 +95,6 @@ resolution applied. The same `RESOURCEBID_SEQ` may appear for multiple resources
 
 ```{r}
 #| label: top-candidates
-
 results$top_candidates
 ```
 
@@ -89,7 +104,6 @@ results$top_candidates
 #| label: plot-confidence
 #| fig-width: 8
 #| fig-height: 4
-
 plot_data <- results$final_matches |>
   filter(is.finite(confidence), confidence < 1)
 
@@ -99,12 +113,26 @@ ggplot(plot_data, aes(x = 1 / (1 - confidence))) +
   geom_histogram(bins = 40, fill = "steelblue", color = "white") +
   geom_vline(xintercept = 2, linetype = "dashed", color = "firebrick") +
   scale_x_log10(labels = scales::comma) +
-  annotate("text", x = 2.2, y = Inf,
-           label = "ratio > 2  (confidence \u2265 0.5)",
-           hjust = 0, vjust = 1.5, color = "firebrick", size = 3.5) +
-  annotate("text", x = Inf, y = Inf,
-           label = paste0(n_unambiguous, " unambiguous matches\n(confidence = 1.0)"),
-           hjust = 1.05, vjust = 1.5, size = 3.5, color = "grey40") +
+  annotate(
+    "text",
+    x = 2.2,
+    y = Inf,
+    label = "ratio > 2  (confidence \u2265 0.5)",
+    hjust = 0,
+    vjust = 1.5,
+    color = "firebrick",
+    size = 3.5
+  ) +
+  annotate(
+    "text",
+    x = Inf,
+    y = Inf,
+    label = paste0(n_unambiguous, " unambiguous matches\n(confidence = 1.0)"),
+    hjust = 1.05,
+    vjust = 1.5,
+    size = 3.5,
+    color = "grey40"
+  ) +
   labs(
     title = "Distribution of Raw Confidence Ratios (log scale)",
     subtitle = "Excludes unambiguous matches (confidence = 1.0)",
@@ -119,7 +147,6 @@ ggplot(plot_data, aes(x = 1 / (1 - confidence))) +
 ```{r}
 #| label: export
 #| message: false
-
 dir.create(here("final_outputs"), showWarnings = FALSE)
 
 write.csv(
@@ -143,18 +170,44 @@ write.csv(
 # Total curtailment events per resource vs how many matched
 write.csv(
   results$planned_partial |>
-    dplyr::count(`RESOURCE ID`, `RESOURCE NAME`, name = "total_curtailment_events") |>
+    dplyr::count(
+      `RESOURCE ID`,
+      `RESOURCE NAME`,
+      name = "total_curtailment_events"
+    ) |>
     dplyr::left_join(
       results$final_matches |>
-        dplyr::select(`RESOURCE ID`, RESOURCEBID_SEQ, n_matches, confidence, score),
+        dplyr::select(
+          `RESOURCE ID`,
+          RESOURCEBID_SEQ,
+          n_matches,
+          confidence,
+          score
+        ),
       by = "RESOURCE ID"
     ),
   here("final_outputs", "curtailment_event_counts.csv"),
   row.names = FALSE
 )
 
-cat("Wrote final_outputs/curtailment_matches_final.csv    —", nrow(results$final_matches), "rows\n")
-cat("Wrote final_outputs/curtailment_top_candidates.csv   —", nrow(results$top_candidates), "rows\n")
-cat("Wrote final_outputs/curtailment_match_detail.csv     —", nrow(results$match_detail), "rows\n")
-cat("Wrote final_outputs/curtailment_event_counts.csv     —", n_distinct(results$planned_partial$`RESOURCE ID`), "resources\n")
+cat(
+  "Wrote final_outputs/curtailment_matches_final.csv    —",
+  nrow(results$final_matches),
+  "rows\n"
+)
+cat(
+  "Wrote final_outputs/curtailment_top_candidates.csv   —",
+  nrow(results$top_candidates),
+  "rows\n"
+)
+cat(
+  "Wrote final_outputs/curtailment_match_detail.csv     —",
+  nrow(results$match_detail),
+  "rows\n"
+)
+cat(
+  "Wrote final_outputs/curtailment_event_counts.csv     —",
+  n_distinct(results$planned_partial$`RESOURCE ID`),
+  "resources\n"
+)
 ```

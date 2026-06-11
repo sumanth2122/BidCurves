@@ -10,7 +10,6 @@ execute:
 ```{r}
 #| label: setup
 #| message: false
-
 library(CAISOPEA)
 library(duckdb)
 library(arrow)
@@ -23,7 +22,6 @@ library(here)
 ```{r}
 #| label: load-data
 #| message: false
-
 con <- duckdb::dbConnect(duckdb::duckdb())
 
 # Keep RTM data as a lazy DuckDB table — never collected into R memory.
@@ -51,20 +49,27 @@ outages <- arrow::read_parquet(
 ```{r}
 #| label: run-matching
 #| message: false
-
 rtm_results <- get_outage_rtm_matches(
-  rtm_data           = rtm_data,
-  outages            = outages,
-  generators         = NULL,
-  edge_minutes       = 5,
-  min_matches        = 1L,
+  rtm_data = rtm_data,
+  outages = outages,
+  generators = NULL,
+  edge_minutes = 5,
+  min_matches = 1L,
   resolve_collisions = TRUE,
-  top_n              = 5L,
-  return_detail      = TRUE
+  top_n = 5L,
+  return_detail = TRUE
 )
 
-cat("Final unique matches (collision-resolved): ", nrow(rtm_results$final_matches), "\n")
-cat("Top-candidate rows (up to 5 per generator):", nrow(rtm_results$top_candidates), "\n")
+cat(
+  "Final unique matches (collision-resolved): ",
+  nrow(rtm_results$final_matches),
+  "\n"
+)
+cat(
+  "Top-candidate rows (up to 5 per generator):",
+  nrow(rtm_results$top_candidates),
+  "\n"
+)
 ```
 
 ## Final Matches
@@ -73,7 +78,6 @@ One row per named generator — best seq ID after collision resolution.
 
 ```{r}
 #| label: final-matches
-
 rtm_results$final_matches
 ```
 
@@ -84,7 +88,6 @@ resolution applied.
 
 ```{r}
 #| label: top-candidates
-
 rtm_results$top_candidates
 ```
 
@@ -93,7 +96,6 @@ rtm_results$top_candidates
 ```{r}
 #| label: export
 #| message: false
-
 dir.create(here("final_outputs"), showWarnings = FALSE)
 
 write.csv(
@@ -114,7 +116,19 @@ write.csv(
   row.names = FALSE
 )
 
-cat("Wrote final_outputs/outage_rtm_matches_final.csv    —", nrow(rtm_results$final_matches), "rows\n")
-cat("Wrote final_outputs/outage_rtm_top_candidates.csv   —", nrow(rtm_results$top_candidates), "rows\n")
-cat("Wrote final_outputs/outage_rtm_match_detail.csv     —", nrow(rtm_results$match_detail), "rows\n")
+cat(
+  "Wrote final_outputs/outage_rtm_matches_final.csv    —",
+  nrow(rtm_results$final_matches),
+  "rows\n"
+)
+cat(
+  "Wrote final_outputs/outage_rtm_top_candidates.csv   —",
+  nrow(rtm_results$top_candidates),
+  "rows\n"
+)
+cat(
+  "Wrote final_outputs/outage_rtm_match_detail.csv     —",
+  nrow(rtm_results$match_detail),
+  "rows\n"
+)
 ```
