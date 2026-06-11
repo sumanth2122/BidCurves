@@ -1,10 +1,3 @@
-## uv
+DAM Dashboard: <https://nicoleeyee-bid-curve-shenanigans.share.connect.posit.cloud/>
 
-```bash
-uv sync
-uv add $PKG
-```
-
-<https://docs.astral.sh/uv/>
-
-Data is at `CAISO_dam_big.parquet` and `CAISO_rtm_big.parquet`
+RTM Dashboard: <https://visruth-rtm-bid-curve-shenanigans.share.connect.posit.cloud>
