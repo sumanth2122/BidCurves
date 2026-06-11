@@ -159,6 +159,31 @@ write.csv(
   row.names = FALSE
 )
 
+# Total outage windows per generator vs how many matched
+write.csv(
+  rtm_results$outages |>
+    dplyr::count(
+      generator,
+      name = "total_outage_events"
+    ) |>
+    dplyr::left_join(
+      rtm_results$final_matches |>
+        dplyr::select(
+          generator,
+          generator_name,
+          RESOURCEBID_SEQ,
+          n_matches,
+          pmax_mw,
+          max_mw,
+          confidence,
+          score
+        ),
+      by = "generator"
+    ),
+  here("final_outputs", "outage_rtm_event_counts.csv"),
+  row.names = FALSE
+)
+
 cat(
   "Wrote final_outputs/outage_rtm_matches_final.csv    —",
   nrow(rtm_results$final_matches),
