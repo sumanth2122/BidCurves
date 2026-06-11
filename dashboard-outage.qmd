@@ -32,6 +32,10 @@ library(Matrix)
 #| label: load-data
 #| include: false
 #| context: setup
+con <- dbConnect(duckdb())
+tbl_pointer <- tbl(con, "read_parquet('CAISO_rtm_big.parquet')")
+interp_tbl <- arrow::open_dataset("interp_dataset_rtm")
+
 gen_matches_all <- read_csv("final_outputs/outage_rtm_top_candidates.csv") |>
   mutate(
     `RESOURCE ID` = generator,
@@ -54,6 +58,44 @@ outage_events <- read_csv("final_outputs/outage_rtm_event_counts.csv")
 
 ```{r}
 #| context: server
+max_mw <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  tbl_pointer |>
+    filter(RESOURCEBID_SEQ == input$resource_id) |>
+    summarise(max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE)) |>
+    collect() |>
+    pull(max_mw)
+})
+
+
+average_bid_curve <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  max_mw2 <- max_mw()
+
+  interp_tbl |>
+    filter(
+      RESOURCEBID_SEQ == input$resource_id,
+      date(date) >= input$dates[1],
+      date(date) <= input$dates[2]
+    ) |>
+    # group by each hour each day
+    group_by(hour, pct_grid, daily_x) |>
+    summarise(
+      avg_price = mean(price_interp, na.rm = TRUE),
+      sd = sd(price_interp, na.rm = TRUE),
+      # number of days included in the average
+      n_days_used = sum(!is.na(price_interp)),
+      .groups = "drop"
+    ) |>
+    # if no days included in avg. filter out
+    filter(n_days_used != 0) |>
+    collect() |>
+    mutate(orig_MW = (pct_grid / 100) * max_mw2)
+})
+
+
 gen_match_candidates <- eventReactive(input$submit_id, {
   req(input$resource_id)
 
@@ -106,7 +148,7 @@ output$id_warning <- renderUI({
 ::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
 ## CAISO RTM Outage Matching
 
-Here you can view outage-based deanonymization results for market participants in CAISO's Real-Time Market (RTM). Enter an ID to view potential resource-name matches for January 2023 to June 2025 in the **Deanonymization** tab. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.
+Here you can view average bid curves and outage-based deanonymization results for market participants in CAISO. Enter an ID to view its average bid curve in the **Average Bid Curve** tab and potential resource-name matches for January 2023 to June 2025 in the **Deanonymization** tab. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.
 :::
 
 
@@ -114,7 +156,7 @@ Here you can view outage-based deanonymization results for market participants i
 ::: {.card width="20%"}
 ## Explore a Resource ID
 
-To populate Deanonymization with results, first submit the anonymized RTM ID you want to view results for.
+To populate the Average Bid Curve and Deanonymization with results, first submit the anonymized RTM ID you want to view results for.
 
 ```{r}
 numericInput(
@@ -138,10 +180,309 @@ uiOutput("id_warning")
 
 ## **Navigate the dashboard**
 
+::: {.panel-tabset}
+
+# Average Bid Curve
+
+To compare bid curves across days, each ID's MW values are rescaled to a common percentage scale and averaged across daily bidding patterns. We average RTM bids to hour resolution.
+
+1. **Rescale MW values**  
+   Convert each submitted MW quantity into a percentage of the resource’s maximum submitted MW.
+
+2. **Round to a 1% grid**  
+   Round each MW percentage to the nearest whole percent.
+
+3. **Interpolate within each hourly curve**  
+   For each day-hour curve, fill in prices on a 0–100% MW grid.
+
+   - Use the actual submitted price when one exists.
+   - Otherwise, use the closest lower submitted MW percentage.
+   - Do not extrapolate beyond the observed MW range for that hour.
+
+4. **Stack hourly curves into a daily curve**  
+   Combine the 24 hourly curves into one continuous daily curve.
+
+5. **Average across days**  
+   Average prices across all days at each hour-percent combination to create the resource’s typical 24-hour bid curve.
+
+# Deanonymization
+
 When a generator has a reported full outage, its RTM bid submissions should disappear for the outage window. This pipeline matches reported outage windows to gaps in RTM bid submissions for anonymous IDs. Further filtering is based on the number of matched outage events, the closeness of the ID's max bid MW to the resource's pmax, and timing offsets around outage stop and restart. A score and a confidence are given for the matches. The score is based on the mean absolute percentage error of bids across all matching days along with the number of matches. The confidence (0-1 scale) is based on how much the top score is better than the runner up. A score of 1 represents an unambiguous match.
 
 :::
 
+:::
+
+# Average Bid Curve
+
+##
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## Average Bid Curve
+
+Here you can view the average bid curve for market participants. This represents the typical daily bid behavior for a resource. Hover over plots to see more information.
+
+To view the average bid curve for for a different resource, enter a new Resource ID on the **About** page and click **Submit ID**.
+:::
+
+##
+### {.sidebar width="300px"}
+
+```{r}
+dateRangeInput(
+  inputId = "dates",
+  label = "Date range to compute average:",
+  start = "2023-01-01",
+  end = "2025-06-07",
+  separator = "to",
+  min = "2023-01-01",
+  max = "2025-06-07"
+)
+
+sliderInput(
+  "num_sd",
+  label = "Choose the number of standard deviations to determine outliers.",
+  min = 1,
+  max = 4,
+  value = 2
+)
+
+checkboxGroupInput(
+  inputId = "plot_display",
+  label = "Choose the features to display on the plots.",
+  choices = list("Standard deviation bands" = 1, "Outlier bids" = 2),
+  selected = c(1, 2)
+)
+
+selectizeInput(
+  inputId = "hours_display",
+  label = "Choose hours:",
+  choices = setNames(0:23, sprintf("%02d:00", 0:23)),
+  selected = 16:20,
+  multiple = TRUE
+)
+```
+
+###
+
+::: {.panel-tabset}
+
+#### Overall Daily Trend
+
+```{r}
+plotlyOutput("overall_plot")
+```
+
+```{r}
+#| context: server
+output$overall_plot <- renderPlotly({
+  num_sd <- as.numeric(input$num_sd)
+  avg_curve <- average_bid_curve()
+
+  rects <- data.frame(
+    xmin = seq(0, 2300, by = 200),
+    xmax = seq(100, 2400, by = 200),
+    ymin = -Inf,
+    ymax = Inf
+  )
+  overall_plot <- ggplot() +
+    geom_rect(
+      data = rects,
+      aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+      fill = "grey50",
+      alpha = 0.1,
+      inherit.aes = FALSE
+    )
+
+  if (1 %in% input$plot_display) {
+    overall_plot <- overall_plot +
+      geom_ribbon(
+        data = avg_curve,
+        aes(
+          x = daily_x,
+          ymin = avg_price - sd * num_sd,
+          ymax = avg_price + sd * num_sd
+        ),
+        fill = "#3498DB",
+        alpha = 0.2
+      )
+  }
+
+  overall_plot <- overall_plot +
+    geom_step(
+      data = avg_curve,
+      aes(
+        x = daily_x,
+        y = avg_price,
+        group = 1,
+        text = glue::glue(
+          "Hour: {hour}<br>",
+          "Quantity: {orig_MW} MW<br>",
+          "Price: ${round(avg_price, 2)}"
+        )
+      )
+    ) +
+    theme_bw() +
+    labs(
+      x = "Hour",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Daily Bid Curve for {input$resource_id}")
+    ) +
+    scale_x_continuous(
+      breaks = seq(0, 2300, by = 100),
+      labels = seq(0, 23, by = 1),
+      expand = c(0, 0)
+    ) +
+    theme(panel.grid.minor.x = element_blank())
+
+  ggplotly(overall_plot, tooltip = "text")
+})
+```
+
+<!-- ::: {.callout-note appearance="minimal"}
+
+Note abt the graph
+
+::: -->
+
+#### Hourly Curves
+
+::: {.panel-tabset}
+
+##### Combined
+
+```{r}
+plotlyOutput("hourly_plot")
+```
+
+```{r}
+#| context: server
+#| height: "100%"
+#| fill: true
+n_colors <- 24
+gradient_colors <- c("#85d9b1", "#357ba2ff", "#2B3E50")
+discrete_colors <- setNames(colorRampPalette(gradient_colors)(n_colors), 0:23)
+
+output$hourly_plot <- renderPlotly({
+  avg_curve <- average_bid_curve() |>
+    filter(hour %in% as.numeric(input$hours_display))
+
+  hourly_plot <- avg_curve |>
+    ggplot(aes(
+      x = orig_MW,
+      y = avg_price,
+      group = hour,
+      color = as.factor(hour)
+    )) +
+    geom_step(
+      aes(
+        text = glue::glue(
+          "Hour: {hour}<br>",
+          "Quantity: {orig_MW} MW<br>",
+          "Price: ${round(avg_price, 2)}"
+        )
+      ),
+      linewidth = 0.5
+    ) +
+    theme_bw() +
+    labs(
+      x = "Quantity (MW)",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Bid Curve by Hour for {input$resource_id}"),
+      color = "Hour"
+    ) +
+    scale_color_manual(values = discrete_colors) +
+    theme(panel.grid.minor.x = element_blank())
+
+  ggplotly(hourly_plot, tooltip = "text")
+})
+```
+
+##### Separated
+
+```{r}
+plotlyOutput("faceted_p")
+```
+```{r}
+#| context: server
+hour_labels <- c(
+  `0` = "00:00",
+  `1` = "1:00",
+  `2` = "2:00",
+  `3` = "3:00",
+  `4` = "4:00",
+  `5` = "5:00",
+  `6` = "6:00",
+  `7` = "7:00",
+  `8` = "8:00",
+  `9` = "9:00",
+  `10` = "10:00",
+  `11` = "11:00",
+  `12` = "12:00",
+  `13` = "13:00",
+  `14` = "14:00",
+  `15` = "15:00",
+  `16` = "16:00",
+  `17` = "17:00",
+  `18` = "18:00",
+  `19` = "19:00",
+  `20` = "20:00",
+  `21` = "21:00",
+  `22` = "22:00",
+  `23` = "23:00"
+)
+
+output$faceted_p <- renderPlotly({
+  num_sd <- as.numeric(input$num_sd)
+  avg_curve <- average_bid_curve()
+
+  faceted_plot <- avg_curve |>
+    ggplot(aes(x = orig_MW, y = avg_price, group = hour)) +
+    geom_step(aes(
+      text = glue::glue(
+        "Price: ${round(avg_price)}<br>",
+        "Quantity: {orig_MW} MW"
+      )
+    )) +
+    theme_bw() +
+    labs(
+      x = "Quantity (MW)",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Daily Bid Curve for {input$resource_id}")
+    ) +
+    facet_wrap(~hour, nrow = 3, labeller = as_labeller(hour_labels)) +
+    theme(panel.grid.minor.x = element_blank())
+
+  if (1 %in% input$plot_display) {
+    faceted_plot <- faceted_plot +
+      geom_ribbon(
+        data = avg_curve,
+        aes(
+          x = orig_MW,
+          ymin = if_else(
+            avg_price - num_sd * sd < 0,
+            0,
+            avg_price - num_sd * sd
+          ),
+          ymax = avg_price + 2 * sd
+        ),
+        fill = "#3498DB",
+        alpha = 0.2
+      )
+  }
+
+  ggplotly(faceted_plot, tooltip = "text") |> config(responsive = TRUE)
+})
+```
+
+<!-- ::: {.callout-note appearance="minimal"}
+
+Note abt the graph
+
+::: -->
+
+:::
+
+:::
 # Deanonymization
 
 ::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}

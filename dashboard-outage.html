@@ -3428,7 +3428,7 @@ function throttle(func, wait) {
         
       </div>
     </div>
-<div id="dashboard-collapse" class="navbar-collapse collapse"><ul class="navbar-nav navbar-nav-scroll me-auto" role="tablist"><li class="nav-item" role="presentation"><a id="tab-about" class="nav-link active" data-bs-toggle="tab" role="tab" data-bs-target="#about" data-scrolling="false" href="#about" aria-controls="about" aria-selected="true"><span class="nav-link-text">About</span></a></li><li class="nav-item" role="presentation"><a id="tab-deanonymization" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#deanonymization" data-scrolling="false" href="#deanonymization" aria-controls="deanonymization" aria-selected="false"><span class="nav-link-text">Deanonymization</span></a></li></ul></div></div>
+<div id="dashboard-collapse" class="navbar-collapse collapse"><ul class="navbar-nav navbar-nav-scroll me-auto" role="tablist"><li class="nav-item" role="presentation"><a id="tab-about" class="nav-link active" data-bs-toggle="tab" role="tab" data-bs-target="#about" data-scrolling="false" href="#about" aria-controls="about" aria-selected="true"><span class="nav-link-text">About</span></a></li><li class="nav-item" role="presentation"><a id="tab-average-bid-curve-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#average-bid-curve-1" data-scrolling="false" href="#average-bid-curve-1" aria-controls="average-bid-curve-1" aria-selected="false"><span class="nav-link-text">Average Bid Curve</span></a></li><li class="nav-item" role="presentation"><a id="tab-deanonymization-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#deanonymization-1" data-scrolling="false" href="#deanonymization-1" aria-controls="deanonymization-1" aria-selected="false"><span class="nav-link-text">Deanonymization</span></a></li></ul></div></div>
 </nav>
 </header>
 <div class="page-layout-custom quarto-dashboard-content bslib-gap-spacing html-fill-container bslib-page-fill quarto-dashboard-pages">  
@@ -3455,7 +3455,7 @@ background-color: #c42e1d !important;
 </div>
 </div>
 <div class="callout-body-container callout-body html-fill-item html-fill-container">
-<p>Here you can view outage-based deanonymization results for market participants in CAISO’s Real-Time Market (RTM). Enter an ID to view potential resource-name matches for January 2023 to June 2025 in the <strong>Deanonymization</strong> tab. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.</p>
+<p>Here you can view average bid curves and outage-based deanonymization results for market participants in CAISO. Enter an ID to view its average bid curve in the <strong>Average Bid Curve</strong> tab and potential resource-name matches for January 2023 to June 2025 in the <strong>Deanonymization</strong> tab. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.</p>
 </div>
 </div>
 </div>
@@ -3478,7 +3478,7 @@ Resource
 
 ID
 </div>
-<p>To populate Deanonymization with results, first submit the anonymized RTM ID you want to view results for.</p>
+<p>To populate the Average Bid Curve and Deanonymization with results, first submit the anonymized RTM ID you want to view results for.</p>
 </div>
 <div class="cell card-body html-fill-item html-fill-container">
 <div class="cell-output-display html-fill-item html-fill-container">
@@ -3504,7 +3504,34 @@ ID
 <div class="h4">
 <strong>Navigate the dashboard</strong>
 </div>
+<div class="panel-tabset html-fill-item html-fill-container">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>Average Bid Curve</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Deanonymization</a></li></ul>
+<div class="tab-content html-fill-item html-fill-container">
+<div id="tabset-1-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>To compare bid curves across days, each ID’s MW values are rescaled to a common percentage scale and averaged across daily bidding patterns. We average RTM bids to hour resolution.</p>
+<ol type="1">
+<li><p><strong>Rescale MW values</strong><br>
+Convert each submitted MW quantity into a percentage of the resource’s maximum submitted MW.</p></li>
+<li><p><strong>Round to a 1% grid</strong><br>
+Round each MW percentage to the nearest whole percent.</p></li>
+<li><p><strong>Interpolate within each hourly curve</strong><br>
+For each day-hour curve, fill in prices on a 0–100% MW grid.</p>
+<ul>
+<li>Use the actual submitted price when one exists.</li>
+<li>Otherwise, use the closest lower submitted MW percentage.</li>
+<li>Do not extrapolate beyond the observed MW range for that hour.</li>
+</ul></li>
+<li><p><strong>Stack hourly curves into a daily curve</strong><br>
+Combine the 24 hourly curves into one continuous daily curve.</p></li>
+<li><p><strong>Average across days</strong><br>
+Average prices across all days at each hour-percent combination to create the resource’s typical 24-hour bid curve.</p></li>
+</ol>
+</div>
+<div id="tabset-1-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <p>When a generator has a reported full outage, its RTM bid submissions should disappear for the outage window. This pipeline matches reported outage windows to gaps in RTM bid submissions for anonymous IDs. Further filtering is based on the number of matched outage events, the closeness of the ID’s max bid MW to the resource’s pmax, and timing offsets around outage stop and restart. A score and a confidence are given for the matches. The score is based on the mean absolute percentage error of bids across all matching days along with the number of matches. The confidence (0-1 scale) is based on how much the top score is better than the runner up. A score of 1 represents an unambiguous match.</p>
+</div>
+</div>
+</div>
 </div>
 <bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
     <template>Expand</template>
@@ -3515,7 +3542,196 @@ ID
 </div>
 </div>
 </div>
-<div id="deanonymization" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-deanonymization">
+<div id="average-bid-curve-1" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-average-bid-curve-1">
+<div class="html-fill-item html-fill-container bslib-grid dashboard-sidebar-container" style="display: grid; grid-template-rows: minmax(3em, max-content) minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
+<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 1fr);
+grid-auto-rows: minmax(0, 1fr);">
+<div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="callout callout-style-simple callout-note no-icon callout-titled" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;">
+<div class="callout-header d-flex align-content-center html-fill-item html-fill-container">
+<div class="callout-icon-container html-fill-item html-fill-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill html-fill-item html-fill-container">
+<span class="screen-reader-only">Note</span>Average Bid Curve
+</div>
+</div>
+<div class="callout-body-container callout-body html-fill-item html-fill-container">
+<p>Here you can view the average bid curve for market participants. This represents the typical daily bid behavior for a resource. Hover over plots to see more information.</p>
+<p>To view the average bid curve for for a different resource, enter a new Resource ID on the <strong>About</strong> page and click <strong>Submit ID</strong>.</p>
+</div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+</div>
+<div class="bslib-sidebar-layout html-fill-item html-fill-container" data-bslib-sidebar-open="desktop" data-bslib-sidebar-init="true" style=" --bslib-sidebar-width: 300px"><div class="main html-fill-container html-fill-item"><div class="sidebar-content html-fill-item html-fill-container">
+<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 1fr);
+grid-auto-rows: minmax(0, 1fr);">
+<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content); grid-auto-columns: minmax(0, 1fr);">
+<div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="panel-tabset html-fill-item html-fill-container">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href>Overall Daily Trend</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href>Hourly Curves</a></li></ul>
+<div class="tab-content html-fill-item html-fill-container">
+<div id="tabset-3-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-3-1-tab">
+<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="cell-output-display html-fill-item html-fill-container">
+<div class="plotly html-widget html-widget-output shiny-report-size shiny-report-theme html-fill-item html-fill-container" id="overall_plot" style="width:100%;height:400px;"></div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+<!-- ::: {.callout-note appearance="minimal"}
+
+Note abt the graph
+
+::: -->
+</div>
+<div id="tabset-3-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-3-2-tab">
+<div class="panel-tabset html-fill-item html-fill-container">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href>Combined</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href>Separated</a></li></ul>
+<div class="tab-content html-fill-item html-fill-container">
+<div id="tabset-2-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="cell-output-display html-fill-item html-fill-container">
+<div class="plotly html-widget html-widget-output shiny-report-size shiny-report-theme html-fill-item html-fill-container" id="hourly_plot" style="width:100%;height:400px;"></div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+</div>
+<div id="tabset-2-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="cell-output-display html-fill-item html-fill-container">
+<div class="plotly html-widget html-widget-output shiny-report-size shiny-report-theme html-fill-item html-fill-container" id="faceted_p" style="width:100%;height:400px;"></div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+<!-- ::: {.callout-note appearance="minimal"}
+
+Note abt the graph
+
+::: -->
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+</div>
+</div>
+</div></div><aside id="bslib-sidebar-1" class="sidebar html-fill-container html-fill-item"><div class="html-fill-item html-fill-container">
+<div class="cell-output-display">
+<div id="dates" class="shiny-date-range-input form-group shiny-input-container">
+<label class="control-label" id="dates-label" for="dates">Date range to compute average:</label>
+<div class="input-daterange input-group input-group-sm">
+<input class="form-control" type="text" aria-labelledby="dates-label" title="Date format: yyyy-mm-dd" data-date-language="en" data-date-week-start="0" data-date-format="yyyy-mm-dd" data-date-start-view="month" data-min-date="2023-01-01" data-max-date="2025-06-07" data-initial-date="2023-01-01" data-date-autoclose="true">
+<span class="input-group-addon input-group-prepend input-group-append">
+<span class="input-group-text">to</span>
+</span>
+<input class="form-control" type="text" aria-labelledby="dates-label" title="Date format: yyyy-mm-dd" data-date-language="en" data-date-week-start="0" data-date-format="yyyy-mm-dd" data-date-start-view="month" data-min-date="2023-01-01" data-max-date="2025-06-07" data-initial-date="2025-06-07" data-date-autoclose="true">
+</div>
+</div>
+</div>
+<div class="cell-output-display">
+<div class="form-group shiny-input-container no-baseline">
+<label class="control-label" id="num_sd-label" for="num_sd">Choose the number of standard deviations to determine outliers.</label>
+<input class="js-range-slider" id="num_sd" data-skin="shiny" data-min="1" data-max="4" data-from="2" data-step="1" data-grid="true" data-grid-num="3" data-grid-snap="false" data-prettify-separator="," data-prettify-enabled="true" data-keyboard="true" data-data-type="number">
+</div>
+</div>
+<div class="cell-output-display">
+<div id="plot_display" class="form-group shiny-input-checkboxgroup shiny-input-container" role="group" aria-labelledby="plot_display-label">
+<label class="control-label" id="plot_display-label" for="plot_display">Choose the features to display on the plots.</label>
+<div class="shiny-options-group">
+<div class="checkbox">
+<label>
+<input type="checkbox" name="plot_display" value="1" checked="checked">
+<span>Standard deviation bands</span>
+</label>
+</div>
+<div class="checkbox">
+<label>
+<input type="checkbox" name="plot_display" value="2" checked="checked">
+<span>Outlier bids</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<div class="cell-output-display no-overflow-x">
+<div class="form-group shiny-input-container">
+<label class="control-label" id="hours_display-label" for="hours_display">Choose hours:</label>
+<div>
+<select class="shiny-input-select form-control" id="hours_display" multiple="multiple"><option value="0">00:00</option>
+<option value="1">01:00</option>
+<option value="2">02:00</option>
+<option value="3">03:00</option>
+<option value="4">04:00</option>
+<option value="5">05:00</option>
+<option value="6">06:00</option>
+<option value="7">07:00</option>
+<option value="8">08:00</option>
+<option value="9">09:00</option>
+<option value="10">10:00</option>
+<option value="11">11:00</option>
+<option value="12">12:00</option>
+<option value="13">13:00</option>
+<option value="14">14:00</option>
+<option value="15">15:00</option>
+<option value="16" selected>16:00</option>
+<option value="17" selected>17:00</option>
+<option value="18" selected>18:00</option>
+<option value="19" selected>19:00</option>
+<option value="20" selected>20:00</option>
+<option value="21">21:00</option>
+<option value="22">22:00</option>
+<option value="23">23:00</option></select>
+<script type="application/json" data-for="hours_display">{"plugins":["selectize-plugin-a11y"]}</script>
+</div>
+</div>
+</div>
+</div></aside>
+<button class="collapse-toggle" type="button" title="Toggle sidebar" aria-expanded="true" aria-controls="bslib-sidebar-1">
+    <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 16 16" class="bi bi-chevron-left collapse-icon" style="fill:currentColor;" aria-hidden="true" role="img">
+      <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
+    </svg>
+</button>
+<script data-bslib-sidebar-init>
+bslib.Sidebar.initCollapsibleAll()
+</script>
+</div>
+</div>
+</div>
+<div id="deanonymization-1" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-deanonymization-1">
 <div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content) minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
 <div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
 <div class="card-body html-fill-item html-fill-container">
@@ -3586,6 +3802,10 @@ library(Matrix)
 </script>
  
 <script type="application/shiny-prerendered" data-context="server-start">
+con <- dbConnect(duckdb())
+tbl_pointer <- tbl(con, "read_parquet('CAISO_rtm_big.parquet')")
+interp_tbl <- arrow::open_dataset("interp_dataset_rtm")
+
 gen_matches_all <- read_csv("final_outputs/outage_rtm_top_candidates.csv") |>
   mutate(
     `RESOURCE ID` = generator,
@@ -3607,6 +3827,44 @@ outage_events <- read_csv("final_outputs/outage_rtm_event_counts.csv")
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
+max_mw <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  tbl_pointer |>
+    filter(RESOURCEBID_SEQ == input$resource_id) |>
+    summarise(max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE)) |>
+    collect() |>
+    pull(max_mw)
+})
+
+
+average_bid_curve <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  max_mw2 <- max_mw()
+
+  interp_tbl |>
+    filter(
+      RESOURCEBID_SEQ == input$resource_id,
+      date(date) >= input$dates[1],
+      date(date) <= input$dates[2]
+    ) |>
+    # group by each hour each day
+    group_by(hour, pct_grid, daily_x) |>
+    summarise(
+      avg_price = mean(price_interp, na.rm = TRUE),
+      sd = sd(price_interp, na.rm = TRUE),
+      # number of days included in the average
+      n_days_used = sum(!is.na(price_interp)),
+      .groups = "drop"
+    ) |>
+    # if no days included in avg. filter out
+    filter(n_days_used != 0) |>
+    collect() |>
+    mutate(orig_MW = (pct_grid / 100) * max_mw2)
+})
+
+
 gen_match_candidates <- eventReactive(input$submit_id, {
   req(input$resource_id)
 
@@ -3651,6 +3909,182 @@ output$id_warning <- renderUI({
       "Please enter a valid RTM ID with outage matching results."
     )
   }
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+output$overall_plot <- renderPlotly({
+  num_sd <- as.numeric(input$num_sd)
+  avg_curve <- average_bid_curve()
+
+  rects <- data.frame(
+    xmin = seq(0, 2300, by = 200),
+    xmax = seq(100, 2400, by = 200),
+    ymin = -Inf,
+    ymax = Inf
+  )
+  overall_plot <- ggplot() +
+    geom_rect(
+      data = rects,
+      aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+      fill = "grey50",
+      alpha = 0.1,
+      inherit.aes = FALSE
+    )
+
+  if (1 %in% input$plot_display) {
+    overall_plot <- overall_plot +
+      geom_ribbon(
+        data = avg_curve,
+        aes(
+          x = daily_x,
+          ymin = avg_price - sd * num_sd,
+          ymax = avg_price + sd * num_sd
+        ),
+        fill = "#3498DB",
+        alpha = 0.2
+      )
+  }
+
+  overall_plot <- overall_plot +
+    geom_step(
+      data = avg_curve,
+      aes(
+        x = daily_x,
+        y = avg_price,
+        group = 1,
+        text = glue::glue(
+          "Hour: {hour}<br>",
+          "Quantity: {orig_MW} MW<br>",
+          "Price: ${round(avg_price, 2)}"
+        )
+      )
+    ) +
+    theme_bw() +
+    labs(
+      x = "Hour",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Daily Bid Curve for {input$resource_id}")
+    ) +
+    scale_x_continuous(
+      breaks = seq(0, 2300, by = 100),
+      labels = seq(0, 23, by = 1),
+      expand = c(0, 0)
+    ) +
+    theme(panel.grid.minor.x = element_blank())
+
+  ggplotly(overall_plot, tooltip = "text")
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+n_colors <- 24
+gradient_colors <- c("#85d9b1", "#357ba2ff", "#2B3E50")
+discrete_colors <- setNames(colorRampPalette(gradient_colors)(n_colors), 0:23)
+
+output$hourly_plot <- renderPlotly({
+  avg_curve <- average_bid_curve() |>
+    filter(hour %in% as.numeric(input$hours_display))
+
+  hourly_plot <- avg_curve |>
+    ggplot(aes(
+      x = orig_MW,
+      y = avg_price,
+      group = hour,
+      color = as.factor(hour)
+    )) +
+    geom_step(
+      aes(
+        text = glue::glue(
+          "Hour: {hour}<br>",
+          "Quantity: {orig_MW} MW<br>",
+          "Price: ${round(avg_price, 2)}"
+        )
+      ),
+      linewidth = 0.5
+    ) +
+    theme_bw() +
+    labs(
+      x = "Quantity (MW)",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Bid Curve by Hour for {input$resource_id}"),
+      color = "Hour"
+    ) +
+    scale_color_manual(values = discrete_colors) +
+    theme(panel.grid.minor.x = element_blank())
+
+  ggplotly(hourly_plot, tooltip = "text")
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+hour_labels <- c(
+  `0` = "00:00",
+  `1` = "1:00",
+  `2` = "2:00",
+  `3` = "3:00",
+  `4` = "4:00",
+  `5` = "5:00",
+  `6` = "6:00",
+  `7` = "7:00",
+  `8` = "8:00",
+  `9` = "9:00",
+  `10` = "10:00",
+  `11` = "11:00",
+  `12` = "12:00",
+  `13` = "13:00",
+  `14` = "14:00",
+  `15` = "15:00",
+  `16` = "16:00",
+  `17` = "17:00",
+  `18` = "18:00",
+  `19` = "19:00",
+  `20` = "20:00",
+  `21` = "21:00",
+  `22` = "22:00",
+  `23` = "23:00"
+)
+
+output$faceted_p <- renderPlotly({
+  num_sd <- as.numeric(input$num_sd)
+  avg_curve <- average_bid_curve()
+
+  faceted_plot <- avg_curve |>
+    ggplot(aes(x = orig_MW, y = avg_price, group = hour)) +
+    geom_step(aes(
+      text = glue::glue(
+        "Price: ${round(avg_price)}<br>",
+        "Quantity: {orig_MW} MW"
+      )
+    )) +
+    theme_bw() +
+    labs(
+      x = "Quantity (MW)",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Daily Bid Curve for {input$resource_id}")
+    ) +
+    facet_wrap(~hour, nrow = 3, labeller = as_labeller(hour_labels)) +
+    theme(panel.grid.minor.x = element_blank())
+
+  if (1 %in% input$plot_display) {
+    faceted_plot <- faceted_plot +
+      geom_ribbon(
+        data = avg_curve,
+        aes(
+          x = orig_MW,
+          ymin = if_else(
+            avg_price - num_sd * sd < 0,
+            0,
+            avg_price - num_sd * sd
+          ),
+          ymax = avg_price + 2 * sd
+        ),
+        fill = "#3498DB",
+        alpha = 0.2
+      )
+  }
+
+  ggplotly(faceted_plot, tooltip = "text") |> config(responsive = TRUE)
 })
 </script>
  
@@ -3801,12 +4235,12 @@ ojs_define <- function(..., .session = shiny::getDefaultReactiveDomain()) {
 </p>
 <!--html_preserve-->
 <script type="application/shiny-prerendered" data-context="dependencies">
-{"type":"list","attributes":{},"value":[]}
+{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap-datepicker-js"]},{"type":"character","attributes":{},"value":["1.10.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/datepicker"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/bootstrap-datepicker.min.js"]},{"type":"NULL"},{"type":"character","attributes":{},"value":["<script>(function() {\n        var datepicker = $.fn.datepicker.noConflict();\n        $.fn.bsDatepicker = datepicker;\n      })();\n     <\/script>"]},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap-datepicker-css"]},{"type":"character","attributes":{},"value":["1.10.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/datepicker"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/bootstrap-datepicker3.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider-javascript"]},{"type":"character","attributes":{},"value":["2.3.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/ion.rangeSlider.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["strftime"]},{"type":"character","attributes":{},"value":["0.9.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/strftime"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["strftime-min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider-css"]},{"type":"character","attributes":{},"value":["2.3.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/ion.rangeSlider.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["selectize"]},{"type":"character","attributes":{},"value":["0.15.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/selectize"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/selectize.min.js","accessibility/js/selectize-plugin-a11y.min.js"]},{"type":"character","attributes":{},"value":["css/selectize.bootstrap3.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]}]}
 </script>
 <!--/html_preserve-->
 <!--html_preserve-->
 <script type="application/shiny-prerendered" data-context="execution_dependencies">
-{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["packages"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["packages","version"]},"class":{"type":"character","attributes":{},"value":["data.frame"]},"row.names":{"type":"integer","attributes":{},"value":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76]}},"value":[{"type":"character","attributes":{},"value":["base","bit","bit64","cli","compiler","crayon","data.table","datasets","DBI","digest","dplyr","duckdb","evaluate","farver","fastmap","forcats","fs","generics","ggplot2","glue","graphics","grDevices","grid","gt","gtable","hms","htmltools","htmlwidgets","httpuv","httr","jsonlite","knitr","later","lattice","lazyeval","lifecycle","lubridate","magrittr","Matrix","methods","mime","otel","parallel","pillar","pkgconfig","plotly","promises","purrr","R6","RColorBrewer","Rcpp","readr","rlang","rmarkdown","S7","scales","shiny","stats","stringi","stringr","tibble","tidyr","tidyselect","tidyverse","timechange","tools","tzdb","utils","vctrs","viridisLite","vroom","withr","xfun","xml2","xtable","yaml"]},{"type":"character","attributes":{},"value":["4.6.0","4.6.0","4.8.2","3.6.6","4.6.0","1.5.3","1.18.2.1","4.6.0","1.3.0","0.6.39","1.2.1","1.5.2","1.0.5","2.1.2","1.2.0","1.0.1","2.1.0","0.1.4","4.0.3","1.8.1","4.6.0","4.6.0","4.6.0","1.3.0","0.3.6","1.1.4","0.5.9","1.6.4","1.6.17","1.4.8","2.0.0","1.51","1.4.8","0.22-9","0.2.3","1.0.5","1.9.5","2.0.5","1.7-5","4.6.0","0.13","0.2.0","4.6.0","1.11.1","2.0.3","4.12.0","1.5.0","1.2.2","2.6.1","1.1-3","1.1.1-1.1","2.2.0","1.2.0","2.31","0.2.2","1.4.0","1.13.0","4.6.0","1.8.7","1.6.0","3.3.1","1.3.2","1.2.1","2.0.0","0.4.0","4.6.0","0.5.0","4.6.0","0.7.3","0.4.3","1.7.1","3.0.2","0.57","1.5.2","1.8-8","2.3.12"]}]}]}
+{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["packages"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["packages","version"]},"class":{"type":"character","attributes":{},"value":["data.frame"]},"row.names":{"type":"integer","attributes":{},"value":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]}},"value":[{"type":"character","attributes":{},"value":["arrow","assertthat","base","bit","bit64","bslib","cachem","cli","compiler","crayon","data.table","datasets","DBI","dbplyr","digest","dplyr","duckdb","evaluate","farver","fastmap","forcats","fs","generics","ggplot2","glue","graphics","grDevices","grid","gt","gtable","hms","htmltools","htmlwidgets","httpuv","httr","jquerylib","jsonlite","knitr","later","lattice","lazyeval","lifecycle","lubridate","magrittr","Matrix","memoise","methods","mime","otel","parallel","pillar","pkgconfig","plotly","promises","purrr","R6","RColorBrewer","Rcpp","readr","rlang","rmarkdown","S7","sass","scales","shiny","stats","stringi","stringr","tibble","tidyr","tidyselect","tidyverse","timechange","tools","tzdb","utils","vctrs","viridisLite","vroom","withr","xfun","xml2","xtable","yaml"]},{"type":"character","attributes":{},"value":["24.0.0","0.2.1","4.6.0","4.6.0","4.8.2","0.10.0","1.1.0","3.6.6","4.6.0","1.5.3","1.18.2.1","4.6.0","1.3.0","2.5.2","0.6.39","1.2.1","1.5.2","1.0.5","2.1.2","1.2.0","1.0.1","2.1.0","0.1.4","4.0.3","1.8.1","4.6.0","4.6.0","4.6.0","1.3.0","0.3.6","1.1.4","0.5.9","1.6.4","1.6.17","1.4.8","0.1.4","2.0.0","1.51","1.4.8","0.22-9","0.2.3","1.0.5","1.9.5","2.0.5","1.7-5","2.0.1","4.6.0","0.13","0.2.0","4.6.0","1.11.1","2.0.3","4.12.0","1.5.0","1.2.2","2.6.1","1.1-3","1.1.1-1.1","2.2.0","1.2.0","2.31","0.2.2","0.4.10","1.4.0","1.13.0","4.6.0","1.8.7","1.6.0","3.3.1","1.3.2","1.2.1","2.0.0","0.4.0","4.6.0","0.5.0","4.6.0","0.7.3","0.4.3","1.7.1","3.0.2","0.57","1.5.2","1.8-8","2.3.12"]}]}]}
 </script>
 <!--/html_preserve-->
 
