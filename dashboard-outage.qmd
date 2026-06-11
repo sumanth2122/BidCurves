@@ -1,0 +1,284 @@
+---
+title: "Bid Curve Shenanigans"
+subtitle: ""
+format: 
+  dashboard:
+    orientation: rows
+    theme: flatly
+server: shiny
+embed-resources: true
+---
+
+<style>
+.navbar,
+.quarto-dashboard-header,
+header {
+  background-color: #c42e1d !important;
+}
+</style>
+
+```{r}
+#| label: load-packages
+#| include: false
+#| context: setup
+library(tidyverse)
+library(plotly)
+library(duckdb)
+library(gt)
+library(Matrix)
+```
+
+```{r}
+#| label: load-data
+#| include: false
+#| context: setup
+gen_matches_all <- read_csv("final_outputs/outage_rtm_top_candidates.csv") |>
+  mutate(
+    `RESOURCE ID` = generator,
+    `RESOURCE NAME` = generator,
+    `RESOURCE PMAX MW` = pmax_mw,
+    seq_max_mw = max_mw,
+    confidence = NA_real_
+  )
+
+best_gen_match <- read_csv("final_outputs/outage_rtm_matches_final.csv") |>
+  mutate(
+    `RESOURCE ID` = generator,
+    `RESOURCE NAME` = generator,
+    `RESOURCE PMAX MW` = pmax_mw,
+    seq_max_mw = max_mw
+  )
+
+outage_events <- read_csv("final_outputs/outage_rtm_event_counts.csv")
+```
+
+```{r}
+#| context: server
+gen_match_candidates <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  target_id <- as.numeric(input$resource_id)
+
+  best_match <- best_gen_match |>
+    filter(RESOURCEBID_SEQ == input$resource_id)
+
+  exclude_id <- best_match$`RESOURCE ID`
+
+  other_matches <- gen_matches_all |>
+    filter(
+      RESOURCEBID_SEQ == input$resource_id,
+      !(`RESOURCE ID` %in% exclude_id)
+    ) |>
+    arrange(desc(!is.na(confidence)), desc(score)) |>
+    slice_head(n = 4)
+
+  bind_rows(
+    best_match,
+    other_matches
+  ) |>
+    left_join(
+      outage_events |>
+        select(`RESOURCE ID`, total_outage_events),
+      by = "RESOURCE ID"
+    )
+})
+
+output$id_warning <- renderUI({
+  req(input$resource_id)
+
+  valid_ids <- c(
+    best_gen_match$RESOURCEBID_SEQ,
+    gen_matches_all$RESOURCEBID_SEQ
+  ) |>
+    unique()
+
+  if (!(input$resource_id %in% valid_ids)) {
+    div(
+      style = "color: red; font-weight: bold;",
+      "Please enter a valid RTM ID with outage matching results."
+    )
+  }
+})
+```
+
+# About
+
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## CAISO RTM Outage Matching
+
+Here you can view outage-based deanonymization results for market participants in CAISO's Real-Time Market (RTM). Enter an ID to view potential resource-name matches for January 2023 to June 2025 in the **Deanonymization** tab. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.
+:::
+
+
+## Row
+::: {.card width="20%"}
+## Explore a Resource ID
+
+To populate Deanonymization with results, first submit the anonymized RTM ID you want to view results for.
+
+```{r}
+numericInput(
+  inputId = "resource_id",
+  label = "Please enter a RTM Resource ID:",
+  value = NULL
+)
+
+actionButton(
+  inputId = "submit_id",
+  label = "Submit ID",
+  class = "btn-primary"
+)
+
+uiOutput("id_warning")
+```
+
+:::
+
+::: {.card}
+
+## **Navigate the dashboard**
+
+When a generator has a reported full outage, its RTM bid submissions should disappear for the outage window. This pipeline matches reported outage windows to gaps in RTM bid submissions for anonymous IDs. Further filtering is based on the number of matched outage events, the closeness of the ID's max bid MW to the resource's pmax, and timing offsets around outage stop and restart. A score and a confidence are given for the matches. The score is based on the mean absolute percentage error of bids across all matching days along with the number of matches. The confidence (0-1 scale) is based on how much the top score is better than the runner up. A score of 1 represents an unambiguous match.
+
+:::
+
+# Deanonymization
+
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## ID to Resource Name
+
+This page displays the most similar resources for the selected ID using outage matching. Matches are ordered in terms of confidence. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.
+
+To view matches for a different ID, enter a new Resource ID on the **About** page and click **Submit ID**.
+:::
+<!-- 
+he table on the left lists definitions of the attributes using in matching. The table on the right displays the matched resource along with matching scores and information about the resource used in the matching process. -->
+
+## Row
+
+<!-- ### Column  -->
+
+<!-- ::: {.card}
+
+## Matching Attribute Definitions
+
+- **Resource Name:** Official name of the matched resource.
+- **Resource Pmax:** CAISO reported Physical Maximum output for the matched resource.
+- **ID Max MW:** Anonymized ID’s all time maximum MW bid
+- **# of Matches:** Number of matched outage events.
+- **Score:** Number of Matches x (1 - mean absolute percentage error across all matching days)
+- **Confidence:** 0-1 scale of how much better the top score compared to the runner up (1 being an unambiguous match)
+
+::: -->
+
+### Column
+
+```{r}
+uiOutput("gen_match_summary")
+```
+
+```{r}
+#| context: server
+output$gen_match_summary <- renderUI({
+  req(input$resource_id)
+
+  target_id <- as.character(input$resource_id) |> str_trim()
+
+  gen_rows <- gen_match_candidates()
+
+  validate(
+    need(nrow(gen_rows) > 0, "No deanonymization matches found for this ID.")
+  )
+
+  rank_labels <- c(
+    "most likely",
+    "second most likely",
+    "third most likely",
+    "fourth most likely",
+    "fifth most likely"
+  )
+  cards <- purrr::map(seq_len(nrow(gen_rows)), function(i) {
+    row <- gen_rows[i, ]
+
+    resource_name <- row$`RESOURCE NAME`
+    resource_pmax <- round(row$`RESOURCE PMAX MW`, 3)
+    id_max_mw <- round(row$seq_max_mw, 3)
+    n_matches <- row$n_matches
+    total_events <- row$total_outage_events
+    score <- round(row$score, 3)
+    confidence <- round(row$confidence, 3)
+
+    confidence_text <- if (!is.na(confidence)) {
+      tagList(
+        ", with a ",
+        tags$span(
+          "confidence",
+          title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match. Confidence is only used between the top two matches.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " of ",
+        tags$strong(confidence, style = "color:#3498DB;")
+      )
+    } else {
+      NULL
+    }
+
+    div(
+      class = "card",
+      style = "
+        padding: 18px;
+        margin-bottom: 14px;
+        background-color: #FFFFFF;
+        border-left: 6px solid #a2c7ea;
+        font-size: 16px;
+        line-height: 1.6;
+      ",
+
+      p(
+        style = "margin-top:8px; margin-bottom:0;",
+
+        "The ",
+        rank_labels[i],
+        " ",
+        tags$span(
+          "resource",
+          title = "Official name of the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for anonymous ID ",
+        tags$strong(target_id),
+        " is ",
+        tags$strong(resource_name, style = "color:#F39C12;"),
+        ". Our final ",
+        tags$span(
+          "score",
+          title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for this match is ",
+        tags$strong(score, style = "color:#3498DB;"),
+        confidence_text,
+        ". Why? The resource ",
+        tags$span(
+          "Pmax",
+          title = "CAISO reported physical maximum output for the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " is ",
+        tags$strong(paste0(resource_pmax, " MW"), style = "color:#18BC9C;"),
+        ", and ID ",
+        target_id,
+        "'s maximum MW ever submitted in a bid is ",
+        tags$strong(paste0(id_max_mw, " MW"), style = "color:#18BC9C;"),
+        ". Out of ",
+        tags$strong(style = "color:#E74C3C;", total_events),
+        " total outage events, ",
+        tags$strong(style = "color:#E98A7F;", n_matches),
+        " matched this anonymous ID."
+      )
+    )
+  })
+
+  tagList(cards)
+})
+```
