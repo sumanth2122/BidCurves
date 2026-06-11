@@ -1,0 +1,1092 @@
+---
+title: "Bid Curve Shenanigans"
+subtitle: ""
+format: 
+  dashboard:
+    orientation: rows
+    theme: flatly
+server: shiny
+embed-resources: true
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+#| context: setup
+
+library(tidyverse)
+library(plotly)
+library(duckdb)
+library(gt)
+library(Matrix)
+```
+
+```{r}
+#| label: load-data
+#| include: false
+#| context: setup
+
+con <- dbConnect(duckdb())
+tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
+
+interp_tbl <- arrow::open_dataset("interp_dataset")
+
+id_matches <- readRDS(here::here("cos_sim.rds"))
+
+features <- arrow::read_parquet("feature_vectors.parquet")
+
+gen_matches_all <- read_csv("final_outputs/curtailment_top_candidates.csv")
+
+best_gen_match <- read_csv("final_outputs/curtailment_matches_final.csv")
+
+curtailment_events <- read_csv("final_outputs/curtailment_event_counts.csv")
+
+id_activity <- arrow::read_parquet("id_activity.parquet") |>
+  mutate(RESOURCEBID_SEQ = as.character(RESOURCEBID_SEQ))
+
+valid_ids <- interp_tbl |>
+  select(RESOURCEBID_SEQ) |>
+  distinct() |>
+  collect() |>
+  pull(RESOURCEBID_SEQ)
+```
+
+```{r}
+#| context: server
+max_mw <- eventReactive(input$submit_id, {
+    req(input$resource_id)
+
+    tbl_pointer |>
+    filter(RESOURCEBID_SEQ == input$resource_id) |>
+    summarise(max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE)) |>
+    collect() |>
+    pull(max_mw)
+})
+
+
+average_bid_curve <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  max_mw2 <- max_mw()
+
+  interp_tbl |>
+    filter(RESOURCEBID_SEQ == input$resource_id,
+           date(date) >= input$dates[1],
+           date(date) <= input$dates[2]) |>
+    # group by each hour each day
+    group_by(hour, pct_grid, daily_x) |>
+    summarise(
+      avg_price = mean(price_interp, na.rm = TRUE),
+      sd = sd(price_interp, na.rm = TRUE),
+      # number of days included in the average
+      n_days_used = sum(!is.na(price_interp)),
+      .groups = "drop"
+    ) |>
+    # if no days included in avg. filter out
+    filter(n_days_used != 0) |>
+    collect() |>
+    mutate(orig_MW = (pct_grid/100)*max_mw2)
+    # mutate(orig_MW = pct_grid) |>
+})
+
+best_matches <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  target_id <- as.character(input$resource_id)
+
+  tibble(
+    matched_id = as.character(colnames(id_matches)),
+    similarity = as.numeric(id_matches[target_id, ])
+  ) |>
+    filter(matched_id != target_id) |>
+    slice_max(order_by = similarity, n = 5)
+})
+
+gen_match_candidates <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  target_id <- as.numeric(input$resource_id)
+
+
+  best_match <- best_gen_match |>
+    filter(RESOURCEBID_SEQ == input$resource_id)
+
+  exclude_id <- best_match$`RESOURCE ID`
+
+  other_matches <- gen_matches_all |>
+    filter(
+      RESOURCEBID_SEQ == input$resource_id,
+      !(`RESOURCE ID` %in% exclude_id)
+    ) |>
+    arrange(desc(!is.na(confidence)), desc(score)) |>
+    slice_head(n = 4)
+
+  bind_rows(
+    best_match,
+    other_matches
+  ) |>
+    left_join(
+      curtailment_events |>
+        select(`RESOURCE ID`, total_curtailment_events),
+      by = "RESOURCE ID"
+    ) 
+})
+
+matches_by_period <- reactive({
+
+  req(input$resource_id)
+
+  target_id <- as.character(input$resource_id)
+
+  target_dates <- id_activity |>
+    filter(RESOURCEBID_SEQ == target_id) |>
+    summarise(
+      target_start = first(start),
+      target_end = first(end)
+    )
+
+  target_start <- target_dates$target_start
+  target_end <- target_dates$target_end
+
+  best_matches() |>
+    left_join(
+      id_activity |>
+        select(RESOURCEBID_SEQ, start, end),
+      by = c("matched_id" = "RESOURCEBID_SEQ")
+    ) |>
+    mutate(
+      period = case_when(
+        end < target_start ~ "Before",
+        start > target_end ~ "After",
+        start <= target_end & end >= target_start ~ "During",
+        TRUE ~ NA_character_
+      )
+    )
+})
+```
+
+```{r}
+#| label: prep-data
+#| include: false
+#| context: server
+
+outlier_bids <- eventReactive(input$submit_id, {
+  req(input$resource_id, input$dates)
+
+  target_id <-  input$resource_id
+  avg_curve <- average_bid_curve()
+  num_SD <- input$num_sd
+
+  tbl_pointer |>
+    mutate(
+      SCH_BID_XAXISDATA = coalesce(as.double(SELFSCHEDMW), SCH_BID_XAXISDATA)
+    ) |>
+    filter(RESOURCEBID_SEQ == target_id) |>
+    select(RESOURCEBID_SEQ, SCH_BID_XAXISDATA, SCH_BID_Y1AXISDATA, STARTTIME) |>
+    mutate(
+      date = as_datetime(STARTTIME),
+      hour = hour(date),
+      mw_pct = (SCH_BID_XAXISDATA / max(SCH_BID_XAXISDATA, na.rm = TRUE)) * 100,
+      mw_pct_round = round(mw_pct)
+    ) |>
+    filter(
+      !is.na(mw_pct_round),
+      !is.na(SCH_BID_Y1AXISDATA)
+    ) |>
+    group_by(date, hour, mw_pct_round) |>
+    summarise(
+      SCH_BID_Y1AXISDATA = mean(SCH_BID_Y1AXISDATA),
+      bid_mw = mean(SCH_BID_XAXISDATA, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    collect() |>
+    left_join(
+      avg_curve,
+      by = join_by(hour, mw_pct_round == pct_grid)
+    ) |>
+    filter(
+      SCH_BID_Y1AXISDATA > (avg_price +(num_SD * sd)) | SCH_BID_Y1AXISDATA < (avg_price - (num_SD * sd))
+    )
+})
+
+```
+
+```{r}
+#| context: server
+
+# output$id_warning <- renderUI({
+
+#   req(input$submit_id)
+
+#   valid_ids <- interp_tbl |>
+#     select(RESOURCEBID_SEQ) |>
+#     distinct() |>
+#     collect() |>
+#     pull(RESOURCEBID_SEQ)
+
+#   if (!(input$resource_id %in% valid_ids)) {
+
+#     div(
+#       style = "color: red; font-weight: bold;",
+#       "Please enter a valid 6-digit ID that exists in the DAM during 1/2023 - 6/2025."
+#     )
+
+#   }
+
+# })
+output$id_warning <- renderUI({
+  id <- input$resource_id
+
+  req(!is.null(id), !is.na(id), id != "")
+
+  if (!(id %in% valid_ids)) {
+    div(
+      style = "color: red; font-weight: bold;",
+      "Please enter a valid 6-digit ID that exists in the DAM during 1/2023 - 6/2025."
+    )
+  }
+})
+```
+
+# About
+
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## CAISO Bid Curves
+
+Here you can view details about market participants in CAISO's Day-Ahead Market (DAM). Enter an ID below then explore the dashboard for related information. In the **Deanonymization** tab, you can view potential named resouce matches to the ID based on curtailment matching. The **ID Reuse** tab contains ID-to-ID matches. The **Average Bid Curve** tab contains the average bid curve and potential outliers in bidding patterns for January 2023 to June 2025. Hover over plots to see more information.
+:::
+
+
+## Row
+::: {.card width="20%"}
+## Explore a Resource ID
+
+To populate the Average Bid Curve, ID Matching, and Deanonymization with results, first submit the anonymized DAM ID you want to view results for.
+
+```{r}
+numericInput(
+    inputId = "resource_id",
+    label = "Please enter a Resource ID:",
+    value = NULL
+)
+
+actionButton(
+  inputId = "submit_id",
+  label = "Submit ID",
+  class = "btn-primary"
+)
+
+uiOutput("id_warning")
+```
+
+:::
+
+::: {.card}
+
+## **Navigate the dashboard**
+
+::: {.panel-tabset}
+
+# Average Bid Curve
+
+To compare bid curves across days, each ID's MW values are rescaled to a common percentage scale and averaged across daily bidding patterns.
+
+1. **Rescale MW values**  
+   Convert each submitted MW quantity into a percentage of the resource’s maximum submitted MW.
+
+2. **Round to a 1% grid**  
+   Round each MW percentage to the nearest whole percent.
+
+3. **Interpolate within each hourly curve**  
+   For each day-hour curve, fill in prices on a 0–100% MW grid.
+
+   - Use the actual submitted price when one exists.
+   - Otherwise, use the closest lower submitted MW percentage.
+   - Do not extrapolate beyond the observed MW range for that hour.
+
+4. **Stack hourly curves into a daily curve**  
+   Combine the 24 hourly curves into one continuous daily curve.
+
+5. **Average across days**  
+   Average prices across all days at each hour-percent combination to create the resource’s typical 24-hour bid curve.
+
+# ID Matching
+
+Anonymous IDs usually do not always last throughout the lifetime of the dataset, suggesting that IDs get shuffled or changed for at least some plants. Following the assumption that Resources will have similar behavior throughout their lifetime, this pipeline aims to match deprecated IDs to new IDs that pop up after them, based on some features we determined were important. These include Max MW bid, Mean and median # bids submitted throughout the lifetime, Single-point bid frequency, Null bid percentage, self-scheduled percentage, the hours bid and negative bids. The output is an ID to ID match and similarity. 
+
+# Deanonymization
+
+When a generator files a planned partial curtailment, it knows its reduced operating limit before the DAM closes. Its day-ahead bid curve should therefore reflect a maximum MW of approximately its PMax - Curtailment MW, to give an expected available capacity. If we find an anonymous resource whose daily max bid MW closely matches this expected available capacity, then it is a candidate match for the named resource. Further filtering is based on the number of matched curtailment events and the closeness of the max bid to the resource’s pmax. A score and a confidence are given for the matches. The score is based on the mean absolute percentage error of bids across all matching days along with the number of matches. The confidence (0-1 scale) is based on how much the top score is better than the runner up. A score of 1 represents an unambiguous match.
+:::
+
+
+:::
+
+# Deanonymization
+
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## ID to Resource Name
+
+This page displays the most similar resources for the selected ID using curtailment matching. Matches are ordered in terms of confidence. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.
+
+To view matches for a different ID, enter a new Resource ID on the **About** page and click **Submit ID**.
+:::
+
+## Row
+
+<!-- ### Column  -->
+
+<!-- ::: {.card}
+
+## Matching Attribute Definitions
+
+- **Resource Name:** Official name of the matched resource.
+- **Resource Pmax:** CAISO reported Physical Maximum output for the matched resource.
+- **ID Max MW:** Anonymized ID’s all time maximum MW bid
+- **# of Matches:** Number of matched curtailment events.
+- **Score:** Number of Matches x (1 - mean absolute percentage error across all matching days)
+- **Confidence:** 0-1 scale of how much better the top score compared to the runner up (1 being an unambiguous match)
+
+::: -->
+
+### Column
+
+```{r}
+uiOutput("gen_match_summary")
+```
+
+```{r}
+#| context: server
+
+output$gen_match_summary <- renderUI({
+
+  req(input$resource_id)
+
+  target_id <- as.character(input$resource_id)
+
+  gen_rows <- gen_match_candidates()
+
+  validate(
+    need(nrow(gen_rows) > 0, "No deanonymization matches found for this ID based on curtailment data.")
+  )
+
+  rank_labels <- c("most likely", "second most likely", "third most likely", "fourth most likely", "fifth most likely")
+  cards <- purrr::map(seq_len(nrow(gen_rows)), function(i) {
+
+    row <- gen_rows[i, ]
+
+    resource_name <- row$`RESOURCE NAME`
+    resource_pmax <- round(row$`RESOURCE PMAX MW`, 3)
+    id_max_mw <- round(row$seq_max_mw, 3)
+    n_matches <- row$n_matches
+    total_events <- row$total_curtailment_events
+    score <- round(row$score, 3)
+    confidence <- round(row$confidence, 3)
+
+    confidence_text <- if (!is.na(confidence)) {
+      tagList(
+        ", with a ",
+        tags$span(
+          "confidence",
+          title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match. Confidence is only used between the top two matches.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " of ",
+        tags$strong(confidence, style = "color:#3498DB;")
+      )
+    } else {
+      NULL
+    }
+
+    div(
+      class = "card",
+      style = "
+        padding: 18px;
+        margin-bottom: 14px;
+        background-color: #FFFFFF;
+        border-left: 6px solid #a2c7ea;
+        font-size: 16px;
+        line-height: 1.6;
+      ",
+
+      p(
+        style = "margin-top:8px; margin-bottom:0;",
+
+        "The ",
+        rank_labels[i],
+        " ",
+        tags$span(
+          "resource",
+          title = "Official name of the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for anonymous ID ",
+        tags$strong(target_id),
+        " is ",
+        tags$strong(resource_name, style = "color:#F39C12;"),
+        ". Our final ",
+        tags$span(
+          "score",
+          title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for this match is ",
+        tags$strong(score, style = "color:#3498DB;"),
+        confidence_text,
+        ". Why? The resource ",
+        tags$span(
+          "Pmax",
+          title = "CAISO reported physical maximum output for the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " is ",
+        tags$strong(paste0(resource_pmax, " MW"), style = "color:#18BC9C;"),
+        ", and ID ",
+        target_id,
+        "'s maximum MW ever submitted in a bid is ",
+        tags$strong(paste0(id_max_mw, " MW"), style = "color:#18BC9C;"),
+        ". Out of ",
+        tags$strong(style = "color:#E74C3C;", total_events),
+        " total curtailment events, ",
+        tags$strong(style = "color:#E98A7F;", n_matches),
+        " matched this anonymous ID."
+      )
+    )
+  })
+
+    tagList(cards)
+
+  })
+```
+
+# ID Reuse
+
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+
+## ID-to-ID Matching
+
+This page displays the most similar anonymous IDs for the selected ID. The table on the left lists attributes describing bidding behavior for the ID of interest. The table on the right displays matching IDs and their bidding behavior ranked by similarity score. Similarity scores range from 0 to 1, with values closer to 1 indicating more similar bidding behavior. Matched IDs are divided into IDs that were active before, during, and after the active period for the ID of interest.
+
+To view matches for a different resource, enter a new Resource ID on the **About** page and click **Submit ID**.
+:::
+## Row
+
+### Column {width="30%"}
+
+```{r}
+uiOutput("target_id_summary")
+```
+
+```{r}
+#| context: server
+
+output$target_id_summary <- renderUI({
+
+  req(input$resource_id)
+
+  target_id <- as.character(input$resource_id)
+
+  target_dates <- id_activity |>
+  filter(RESOURCEBID_SEQ == target_id) |>
+  summarise(
+    start = first(start),
+    end = first(end)
+  )
+
+  target_start <- target_dates$start
+  target_end <- target_dates$end
+
+  target_max_mw <- get_feature(features, target_id, "Max MW")
+  target_mean <- get_feature(features, target_id, "Mean knots")
+  target_median <- get_feature(features, target_id, "Median knots")
+  target_single <- get_feature(features, target_id, "Single-point curves")
+  target_self <- get_feature(features, target_id, "Self-scheduled bids")
+  target_null <- get_feature(features, target_id, "Null bids")
+  target_negative <- get_feature(features, target_id, "Negative bids")
+
+  target_null_sentence <- has_text(target_null, target_id, "NULL bids")
+  target_negative_sentence <- has_text(target_negative, target_id, "negative bids")
+
+  div(
+    class = "card",
+    style = "
+      padding: 24px;
+      background-color: #FFFFFF;
+        border: 6px solid #a2c7ea;
+        border-radius: 6px;
+    #   font-size: 17px;
+    #   line-height: 1.7;
+    ",
+
+    tags$h4(
+      style = "margin-top:0;",
+      glue::glue("Bidding behavior for {target_id}:")
+    ),
+
+    tags$p(
+      style = "margin-top:-6px;",
+      "Active ",
+      tags$strong(format(target_start, "%Y-%m-%d")),
+      " to ",
+      tags$strong(format(target_end, "%Y-%m-%d")),
+      "."
+    ),
+
+    tags$p(
+      glue::glue(
+        "The maximum MW quantity ever submitted in a bid was "
+      ),
+      tags$strong(style = "color:#18BC9C;", target_max_mw),
+      " MW."
+    ),
+
+    tags$p(
+      "The mean number of bids submitted in a curve is ",
+      tags$strong(style = "color:#F39C12;", target_mean),
+      " and the median number of bids submitted in a curve is ",
+      tags$strong(style = "color:#EBBA5C;", target_median),
+      "."
+    ),
+
+    tags$p(
+      tags$strong(style = "color:#E74C3C;", target_single),
+      glue::glue("% of ID {target_id}'s bids are single-point curves.")
+    ),
+
+    tags$p(
+      tags$strong(style = "color:#E98A7F;", target_self),
+      "% of this ID's bids are self-scheduled."
+    ),
+
+    tags$p(target_null_sentence),
+    tags$p(target_negative_sentence)
+  )
+})
+```
+
+### Column {width="70%"}
+
+::: {.panel-tabset}
+
+#### Before
+
+```{r}
+uiOutput("before_match_cards")
+```
+
+#### During
+
+```{r}
+uiOutput("during_match_cards")
+```
+
+#### After
+
+```{r}
+uiOutput("after_match_cards")
+```
+
+:::
+```{r}
+#| context: server
+
+get_feature <- function(data, id, feature_name) {
+  data |>
+    filter(
+      RESOURCEBID_SEQ == as.character(id),
+      Feature == feature_name
+    ) |>
+    pull(Value) |>
+    first()
+}
+
+has_text <- function(value, id, label) {
+  if (value %in% c("Yes", "TRUE", TRUE, 1, "1")) {
+    glue::glue("{id} has submitted {label}.")
+  } else {
+    glue::glue("{id} has never submitted {label}.")
+  }
+}
+
+build_match_cards <- function(match_data) {
+
+  if (nrow(match_data) == 0) {
+      return(
+        div(
+          class = "card",
+          style = "
+            padding:16px;
+            background-color:#FFFFFF;
+            border-left:6px solid #a2c7ea;
+          ",
+          tags$p(
+            style = "margin:0;",
+            "No IDs exist in this time frame."
+          )
+        )
+      )
+    }
+
+  cards <- purrr::map(seq_len(nrow(match_data)), function(i) {
+
+    match_id <- match_data$matched_id[i]
+    sim <- round(match_data$similarity[i], 3)
+
+    start_date <- format(match_data$start[i], "%Y-%m-%d")
+    end_date <- format(match_data$end[i], "%Y-%m-%d")
+
+    match_max_mw <- get_feature(features, match_id, "Max MW")
+    match_mean <- get_feature(features, match_id, "Mean knots")
+    match_median <- get_feature(features, match_id, "Median knots")
+    match_single <- get_feature(features, match_id, "Single-point curves")
+    match_self <- get_feature(features, match_id, "Self-scheduled bids")
+
+    match_null <- get_feature(features, match_id, "Null bids")
+    match_negative <- get_feature(features, match_id, "Negative bids")
+
+    match_null_sentence <- has_text(match_null, match_id, "NULL bids")
+    match_negative_sentence <- has_text(match_negative, match_id, "negative bids")
+
+    div(
+      class = "card",
+      style = "
+        padding:16px;
+        margin-bottom:12px;
+        background-color:#FFFFFF;
+        border-left:6px solid #a2c7ea;
+      ",
+
+      tags$strong(
+        style = "font-size:16px;",
+        glue::glue("ID {match_id}")
+      ),
+
+      tags$p(
+        style = "margin-top:8px; margin-bottom:0px;",
+
+        "This ID existed from ",
+        tags$strong(start_date),
+        " through ",
+        tags$strong(end_date),
+        ". It has a similarity of ",
+        tags$strong(style = "color:#3498DB;", sim),
+        ". The maximum MW submitted in a bid is ",
+        tags$strong(style = "color:#18BC9C;", match_max_mw),
+        " MW. ID ",
+        tags$strong(match_id),
+        " submits on average ",
+        tags$strong(style = "color:#F39C12;", match_mean),
+        " bids in a curve, with the median number being ",
+        tags$strong(style = "color:#EBBA5C;", match_median),
+        ". ",
+        tags$strong(style = "color:#E74C3C;", match_single),
+        "% of its bids are single-point curves and ",
+        tags$strong(style = "color:#E98A7F;", match_self),
+        "% are self-scheduled. ",
+        match_null_sentence,
+        " ",
+        match_negative_sentence
+      )
+    )
+  })
+
+  tagList(cards)
+}
+
+output$before_match_cards <- renderUI({
+
+  matches <- matches_by_period() |>
+    filter(period == "Before")
+
+  build_match_cards(matches)
+})
+
+output$during_match_cards <- renderUI({
+
+  matches <- matches_by_period() |>
+    filter(period == "During")
+
+  build_match_cards(matches)
+})
+
+output$after_match_cards <- renderUI({
+
+  matches <- matches_by_period() |>
+    filter(period == "After")
+
+  build_match_cards(matches)
+})
+```
+
+
+# Average Bid Curve
+
+##
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## Average Bid Curve
+
+Here you can view the average bid curve for market participants. This represents the typical daily bid behavior for a resource. Hover over plots to see more information.
+
+To view the average bid curve for for a different resource, enter a new Resource ID on the **About** page and click **Submit ID**.
+:::
+
+##
+### {.sidebar width="300px"}
+
+```{r}
+dateRangeInput(
+    inputId = "dates",
+    label = "Date range to compute average:",
+    start = "2023-01-01",
+    end = "2025-06-07",
+    separator = "to",
+    min = "2023-01-01",
+    max = "2025-06-07")
+
+sliderInput("num_sd", 
+            label = "Choose the number of standard deviations to determine outliers.", min = 1, 
+            max = 5, 
+            value = 2)
+
+checkboxGroupInput(
+    inputId = "plot_display",
+    label = "Choose the features to display on the plots.",
+    choices = list("Standard deviation bands" = 1,
+                   "Outlier bids" = 2),
+    selected = c(1)
+)
+
+selectizeInput(
+  inputId = "hours_display",
+  label = "Choose hours:",
+  choices = setNames(0:23, sprintf("%02d:00", 0:23)),
+  selected = 16:20,
+  multiple = TRUE
+)
+```
+
+###
+
+::: {.panel-tabset}
+
+#### Overall Daily Trend
+
+```{r}
+plotlyOutput("overall_plot")
+```
+
+```{r}
+#| context: server
+
+output$overall_plot <- renderPlotly({
+
+    num_sd <- as.numeric(input$num_sd)
+    avg_curve <- average_bid_curve()
+    outliers <- outlier_bids()
+
+    rects <- data.frame(
+        xmin = seq(0, 2300, by = 200),
+        xmax = seq(100, 2400, by = 200),
+        ymin = -Inf,
+        ymax = Inf
+    )
+    overall_plot <- ggplot() +
+      geom_rect(data = rects,
+                aes(xmin = xmin, xmax = xmax, ymin=ymin, ymax = ymax),
+                  fill = "grey50",
+                    alpha = 0.1,
+                    inherit.aes = FALSE) 
+    
+    if (1 %in% input$plot_display){
+      overall_plot <- overall_plot +
+        geom_ribbon(data = avg_curve, 
+                    aes(x = daily_x,
+                        ymin = avg_price - sd*num_sd,
+                        ymax = avg_price + sd*num_sd),
+                    fill = "#3498DB",
+                    alpha = 0.2)
+    }
+
+    if (2 %in% input$plot_display) {
+      overall_plot <- overall_plot +
+        geom_point(
+          data = outliers,
+          aes(
+            x = hour * 100 + mw_pct_round,
+            y = SCH_BID_Y1AXISDATA,
+            text = glue::glue(
+              "Outlier Bid<br>",
+              "Date: {format(date, '%Y-%m-%d')}<br>",
+              "Hour: {hour}<br>",
+              "Quantity: {round(bid_mw, 2)} MW<br>",
+              "Price: ${round(SCH_BID_Y1AXISDATA, 2)}"
+            )
+          ),
+          color = "red",
+          size = 1,
+          alpha = 0.7,
+          inherit.aes = FALSE
+        )
+    }
+
+    overall_plot <- overall_plot +
+      geom_step(data = avg_curve, 
+                aes(x = daily_x, 
+                    y = avg_price,
+                    group = 1,
+                    text = glue::glue("Hour: {hour}<br>",
+                                      "Quantity: {orig_MW} MW<br>",
+                                      "Price: ${round(avg_price, 2)}"))) +
+      theme_bw() +
+      labs(
+        x = "Hour",
+        y = "Price ($/MWh)",
+        title = glue::glue("Average Daily Bid Curve for {input$resource_id}")
+        # subtitle = glue::glue("Resource ID: {input$resource_id}")
+      ) +
+      scale_x_continuous(breaks = seq(0, 2300, by = 100),
+                      labels = seq(0, 23, by = 1),
+                  expand = c(0, 0)) +
+      theme(panel.grid.minor.x = element_blank(),
+            # plot.title = element_text(size = 20),
+            # axis.text = element_text(size = 16),
+            # axis.title = element_text(size = 18)
+            )   
+
+    ggplotly(overall_plot, tooltip = "text") 
+
+})
+
+```
+
+#### Hourly Curves
+
+::: {.panel-tabset}
+
+##### Combined
+
+```{r}
+plotlyOutput("hourly_plot")
+```
+
+```{r}
+#| context: server
+#| height: "100%"
+#| fill: true
+
+n_colors <- 24
+gradient_colors <- c("#85d9b1", "#357ba2ff", "#2B3E50")
+discrete_colors <- setNames(colorRampPalette(gradient_colors)(n_colors), 0:23)
+
+hour_labels <- c(
+       `0` = "00:00",
+       `1` = "1:00",
+       `2` = "2:00",
+       `3` = "3:00",
+       `4` = "4:00",
+       `5` = "5:00",
+       `6` = "6:00",
+       `7` = "7:00",
+       `8` = "8:00",
+       `9` = "9:00",
+       `10` = "10:00",
+       `11` = "11:00",
+       `12` = "12:00",
+       `13` = "13:00",
+       `14` = "14:00",
+       `15` = "15:00",
+       `16` = "16:00",
+       `17` = "17:00",
+       `18` = "18:00",
+       `19` = "19:00",
+       `20` = "20:00",
+       `21` = "21:00",
+       `22` = "22:00",
+       `23` = "23:00"
+)
+
+output$hourly_plot <- renderPlotly({
+
+  avg_curve <- average_bid_curve() |>
+    filter(hour %in% as.numeric(input$hours_display)) |>
+    mutate(
+        hour_label = factor(
+        hour_labels[as.character(hour)],
+        levels = hour_labels[as.character(sort(unique(hour)))]
+        )
+    )
+
+  outliers <- outlier_bids() |>
+    filter(hour %in% as.numeric(input$hours_display))
+
+  hourly_plot <- ggplot(
+    avg_curve,
+    aes(
+      x = orig_MW,
+      y = avg_price,
+      group = hour_label,
+    #   color = as.factor(hour)
+    color = hour_label
+    )
+  )
+
+  if (2 %in% input$plot_display) {
+
+    hourly_plot <- hourly_plot +
+      geom_point(
+        data = outliers,
+        aes(
+          x = bid_mw,
+          y = SCH_BID_Y1AXISDATA,
+          text = glue::glue(
+            "Outlier Bid<br>",
+            "Date: {format(date, '%Y-%m-%d')}<br>",
+            "Hour: {hour_labels[as.character(hour)]}<br>",
+            "Quantity: {round(bid_mw, 2)} MW<br>",
+            "Price: ${round(SCH_BID_Y1AXISDATA, 2)}"
+          )
+        ),
+        inherit.aes = FALSE,
+        color = "red",
+        size = 1,
+        alpha = 0.7
+      )
+  }
+
+  hourly_plot <- hourly_plot +
+    geom_step(
+      aes(
+        text = glue::glue(
+          "Hour: {hour}<br>",
+          "Quantity: {round(orig_MW, 2)} MW<br>",
+          "Price: ${round(avg_price, 2)}"
+        )
+      ),
+      linewidth = 0.5
+    ) +
+    theme_bw() +
+    labs(
+      x = "Quantity (MW)",
+      y = "Price ($/MWh)",
+      title = glue::glue(
+        "Average Bid Curve by Hour for {input$resource_id}"
+      ),
+      color = "Hour"
+    ) +
+    # scale_color_manual(values = discrete_colors,
+    #                    labels = hour_labels,
+    #                    breaks = names(hour_labels)) +
+
+    # scale_color_manual(
+    #     values = discrete_colors[input$hours_display],
+    #     breaks = input$hours_display,
+    #     labels = hour_labels[input$hours_display],
+    #     name = "Hour"
+    # ) +
+    scale_color_manual(
+    values = setNames(discrete_colors[as.character(sort(unique(avg_curve$hour)))],
+                        hour_labels[as.character(sort(unique(avg_curve$hour)))]),
+    name = "Hour"
+    ) +
+    theme(panel.grid.minor.x = element_blank())
+
+  ggplotly(hourly_plot, tooltip = "text")
+})
+```
+
+##### Separated
+
+```{r}
+plotlyOutput("faceted_p")
+```
+```{r}
+#| context: server
+hour_labels <- c(
+       `0` = "00:00",
+       `1` = "1:00",
+       `2` = "2:00",
+       `3` = "3:00",
+       `4` = "4:00",
+       `5` = "5:00",
+       `6` = "6:00",
+       `7` = "7:00",
+       `8` = "8:00",
+       `9` = "9:00",
+       `10` = "10:00",
+       `11` = "11:00",
+       `12` = "12:00",
+       `13` = "13:00",
+       `14` = "14:00",
+       `15` = "15:00",
+       `16` = "16:00",
+       `17` = "17:00",
+       `18` = "18:00",
+       `19` = "19:00",
+       `20` = "20:00",
+       `21` = "21:00",
+       `22` = "22:00",
+       `23` = "23:00"
+)
+
+output$faceted_p <- renderPlotly({
+
+  num_sd <- as.numeric(input$num_sd)
+  avg_curve <- average_bid_curve()
+  outliers <- outlier_bids()
+
+  faceted_plot <- avg_curve |>
+    ggplot(aes(x = orig_MW, y = avg_price, group = hour)) +
+    geom_step(aes(text = glue::glue("Price: ${round(avg_price)}<br>",
+                                    "Quantity: {orig_MW} MW"))) +
+    theme_bw() +
+    labs(
+      x = "Quantity (MW)",
+      y = "Price ($/MWh)",
+      title = glue::glue("Average Daily Bid Curve for {input$resource_id}")
+    ) +
+    facet_wrap(~hour, 
+              nrow = 3,
+              labeller = as_labeller(hour_labels)) +
+    # scale_x_continuous(breaks = seq(0, 100, by = 20)) +
+    theme(panel.grid.minor.x = element_blank())
+
+  if (1 %in% input$plot_display){
+      faceted_plot <- faceted_plot +
+        geom_ribbon(data = avg_curve, 
+                    aes(x = orig_MW,
+                        ymin = if_else(avg_price - num_sd*sd < 0, 0, avg_price - num_sd*sd),
+                        ymax = avg_price + 2*sd),
+                    fill = "#3498DB",
+                    alpha = 0.2)
+    }
+
+  if (2 %in% input$plot_display) {
+    faceted_plot <- faceted_plot +
+      geom_point(
+        data = outliers,
+        aes(
+          x = bid_mw,
+          y = SCH_BID_Y1AXISDATA,
+          text = glue::glue(
+            "Outlier Bid<br>",
+            "Date: {format(date, '%Y-%m-%d')}<br>",
+            "Hour: {hour_labels[as.character(hour)]}<br>",
+            "Quantity: {round(bid_mw, 2)} MW<br>",
+            "Price: ${round(SCH_BID_Y1AXISDATA, 2)}"
+          )
+        ),
+        color = "red",
+        size = 1,
+        alpha = 0.7,
+        inherit.aes = FALSE
+      )
+  }
+
+  ggplotly(faceted_plot, tooltip = "text") |> config(responsive = TRUE)
+})
+
+```
+
+:::
+
+:::
