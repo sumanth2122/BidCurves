@@ -7,4 +7,5 @@ NQC_data_all.parquet
 CAISO_dam_daily/
 CAISO_rtm_daily/
 interp_dataset/
+interp_dataset_rtm/
 .DS_Store
