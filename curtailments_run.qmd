@@ -24,10 +24,7 @@ library(here)
 #| label: load-data
 #| message: false
 con <- dbConnect(duckdb())
-tbl_pointer <- tbl(
-  con,
-  "read_parquet('/Users/sumanth/Desktop/BidCurves/CAISO_dam_big.parquet')"
-)
+tbl_pointer <- tbl(con, "read_parquet('CAISO_dam_big.parquet')")
 
 dam_data <- tbl_pointer |>
   select(RESOURCEBID_SEQ, STARTTIME, SCH_BID_XAXISDATA, SELFSCHEDMW) |>
