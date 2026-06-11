@@ -3428,7 +3428,7 @@ function throttle(func, wait) {
         
       </div>
     </div>
-<div id="dashboard-collapse" class="navbar-collapse collapse"><ul class="navbar-nav navbar-nav-scroll me-auto" role="tablist"><li class="nav-item" role="presentation"><a id="tab-about" class="nav-link active" data-bs-toggle="tab" role="tab" data-bs-target="#about" data-scrolling="false" href="#about" aria-controls="about" aria-selected="true"><span class="nav-link-text">About</span></a></li><li class="nav-item" role="presentation"><a id="tab-average-bid-curve-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#average-bid-curve-1" data-scrolling="false" href="#average-bid-curve-1" aria-controls="average-bid-curve-1" aria-selected="false"><span class="nav-link-text">Average Bid Curve</span></a></li><li class="nav-item" role="presentation"><a id="tab-deanonymization-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#deanonymization-1" data-scrolling="false" href="#deanonymization-1" aria-controls="deanonymization-1" aria-selected="false"><span class="nav-link-text">Deanonymization</span></a></li></ul></div></div>
+<div id="dashboard-collapse" class="navbar-collapse collapse"><ul class="navbar-nav navbar-nav-scroll me-auto" role="tablist"><li class="nav-item" role="presentation"><a id="tab-about" class="nav-link active" data-bs-toggle="tab" role="tab" data-bs-target="#about" data-scrolling="false" href="#about" aria-controls="about" aria-selected="true"><span class="nav-link-text">About</span></a></li><li class="nav-item" role="presentation"><a id="tab-average-bid-curve-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#average-bid-curve-1" data-scrolling="false" href="#average-bid-curve-1" aria-controls="average-bid-curve-1" aria-selected="false"><span class="nav-link-text">Average Bid Curve</span></a></li><li class="nav-item" role="presentation"><a id="tab-deanonymization-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#deanonymization-1" data-scrolling="false" href="#deanonymization-1" aria-controls="deanonymization-1" aria-selected="false"><span class="nav-link-text">Deanonymization</span></a></li><li class="nav-item" role="presentation"><a id="tab-resource-name-to-id-1" class="nav-link" data-bs-toggle="tab" role="tab" data-bs-target="#resource-name-to-id-1" data-scrolling="false" href="#resource-name-to-id-1" aria-controls="resource-name-to-id-1" aria-selected="false"><span class="nav-link-text">Resource Name to ID</span></a></li></ul></div></div>
 </nav>
 </header>
 <div class="page-layout-custom quarto-dashboard-content bslib-gap-spacing html-fill-container bslib-page-fill quarto-dashboard-pages">  
@@ -3505,7 +3505,7 @@ ID
 <strong>Navigate the dashboard</strong>
 </div>
 <div class="panel-tabset html-fill-item html-fill-container">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>Average Bid Curve</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Deanonymization</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>Average Bid Curve</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Deanonymization</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href>Resource Name to ID</a></li></ul>
 <div class="tab-content html-fill-item html-fill-container">
 <div id="tabset-1-1" class="tab-pane active html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <p>To compare bid curves across days, each ID’s MW values are rescaled to a common percentage scale and averaged across daily bidding patterns. We average RTM bids to hour resolution.</p>
@@ -3529,6 +3529,9 @@ Average prices across all days at each hour-percent combination to create the re
 </div>
 <div id="tabset-1-2" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <p>When a generator has a reported full outage, its RTM bid submissions should disappear for the outage window. This pipeline matches reported outage windows to gaps in RTM bid submissions for anonymous IDs. Further filtering is based on the number of matched outage events, the closeness of the ID’s max bid MW to the resource’s pmax, and timing offsets around outage stop and restart. A score and a confidence are given for the matches. The score is based on the mean absolute percentage error of bids across all matching days along with the number of matches. The confidence (0-1 scale) is based on how much the top score is better than the runner up. A score of 1 represents an unambiguous match.</p>
+</div>
+<div id="tabset-1-3" class="tab-pane html-fill-item html-fill-container" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>Select a reported resource name to view the anonymous RTM IDs most likely associated with that generator. This is the opposite of the <strong>Deanonymization</strong> tab, but essentially uses the same logic.</p>
 </div>
 </div>
 </div>
@@ -3784,6 +3787,1276 @@ grid-auto-rows: minmax(0, 1fr);">
         <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
     </span>
 </bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+</div>
+</div>
+</div>
+</div>
+<div id="resource-name-to-id-1" class="dashboard-page tab-pane grid-skip html-fill-item html-fill-container" data-orientation="rows" aria-labelledby="tab-resource-name-to-id-1">
+<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, max-content) minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
+<div class="card html-fill-item html-fill-container bslib-card" data-fill="false" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="callout callout-style-simple callout-note no-icon callout-titled" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;">
+<div class="callout-header d-flex align-content-center html-fill-item html-fill-container">
+<div class="callout-icon-container html-fill-item html-fill-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill html-fill-item html-fill-container">
+<span class="screen-reader-only">Note</span>Resource Name to ID
+</div>
+</div>
+<div class="callout-body-container callout-body html-fill-item html-fill-container">
+<p>This page displays the most similar anonymous RTM IDs for the selected resource using outage matching. The selected final match is shown first when available. Candidate IDs are ordered by score. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.</p>
+<p>To view matches for a different resource, select a new Resource Name below and click <strong>Submit Resource</strong>.</p>
+</div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
+<div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-columns: minmax(3em, 20fr) minmax(3em, 80fr);
+grid-auto-rows: minmax(0, 1fr);">
+<div class="card html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="h4">
+Explore
+
+a
+
+Resource
+
+Name
+</div>
+</div>
+<div class="cell card-body html-fill-item html-fill-container">
+<div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
+<div class="form-group shiny-input-container html-fill-item html-fill-container">
+<label class="control-label" id="generator_name-label" for="generator_name">Please select a Resource Name:</label>
+<div class="html-fill-item html-fill-container">
+<select class="shiny-input-select form-control" id="generator_name"><option value="7STDRD_1_SOLAR1" selected>7STDRD_1_SOLAR1</option>
+<option value="ACACIA_6_SOLAR">ACACIA_6_SOLAR</option>
+<option value="ADERA_1_SOLAR1">ADERA_1_SOLAR1</option>
+<option value="ADLIN_1_UNITS">ADLIN_1_UNITS</option>
+<option value="ADMEST_6_SOLAR">ADMEST_6_SOLAR</option>
+<option value="ADOBEE_1_SOLAR">ADOBEE_1_SOLAR</option>
+<option value="AGRICO_6_PL3N5">AGRICO_6_PL3N5</option>
+<option value="AGRICO_7_UNIT">AGRICO_7_UNIT</option>
+<option value="AGUCAL_5_SOLAR1">AGUCAL_5_SOLAR1</option>
+<option value="AKINGS_6_AMESR1">AKINGS_6_AMESR1</option>
+<option value="ALAMIT_2_AESBT2">ALAMIT_2_AESBT2</option>
+<option value="ALAMIT_2_PL1X3">ALAMIT_2_PL1X3</option>
+<option value="ALAMIT_7_ES1">ALAMIT_7_ES1</option>
+<option value="ALAMIT_7_UNIT 3">ALAMIT_7_UNIT 3</option>
+<option value="ALAMIT_7_UNIT 4">ALAMIT_7_UNIT 4</option>
+<option value="ALAMIT_7_UNIT 5">ALAMIT_7_UNIT 5</option>
+<option value="ALAMO_6_UNIT">ALAMO_6_UNIT</option>
+<option value="ALHMBR_1_ALHSLR">ALHMBR_1_ALHSLR</option>
+<option value="ALMASL_2_AL6BT6">ALMASL_2_AL6BT6</option>
+<option value="ALMASL_2_GS1SR1">ALMASL_2_GS1SR1</option>
+<option value="ALMASL_2_GS4SR4">ALMASL_2_GS4SR4</option>
+<option value="ALMASL_2_GS6SR6">ALMASL_2_GS6SR6</option>
+<option value="ALMASL_2_GS7SR7">ALMASL_2_GS7SR7</option>
+<option value="ALMEGT_1_UNIT 1">ALMEGT_1_UNIT 1</option>
+<option value="ALMEGT_1_UNIT 2">ALMEGT_1_UNIT 2</option>
+<option value="ALPSLR_1_NTHSLR">ALPSLR_1_NTHSLR</option>
+<option value="ALPSLR_1_SPSSLR">ALPSLR_1_SPSSLR</option>
+<option value="ALT6DN_2_WIND7">ALT6DN_2_WIND7</option>
+<option value="ALT6DS_2_WIND9">ALT6DS_2_WIND9</option>
+<option value="ALTA3A_2_CPCE4">ALTA3A_2_CPCE4</option>
+<option value="ALTA3A_2_CPCE8">ALTA3A_2_CPCE8</option>
+<option value="ALTA4A_2_CPCW1">ALTA4A_2_CPCW1</option>
+<option value="ALTA4B_2_CPCW2">ALTA4B_2_CPCW2</option>
+<option value="ALTA4B_2_CPCW3">ALTA4B_2_CPCW3</option>
+<option value="ALTA4B_2_CPCW6">ALTA4B_2_CPCW6</option>
+<option value="ALTA6E_2_WIND10">ALTA6E_2_WIND10</option>
+<option value="ALTWD_2_COAWD1">ALTWD_2_COAWD1</option>
+<option value="ANAHM_2_CANYN1">ANAHM_2_CANYN1</option>
+<option value="ANAHM_2_CANYN2">ANAHM_2_CANYN2</option>
+<option value="ANAHM_2_CANYN3">ANAHM_2_CANYN3</option>
+<option value="ANAHM_2_CANYN4">ANAHM_2_CANYN4</option>
+<option value="ANZA_6_SOLAR1">ANZA_6_SOLAR1</option>
+<option value="APLHIL_1_SFKHY1">APLHIL_1_SFKHY1</option>
+<option value="AQUAWS_2_AQWSR1">AQUAWS_2_AQWSR1</option>
+<option value="ARBWD_6_QF">ARBWD_6_QF</option>
+<option value="ARCOGN_2_UNITS">ARCOGN_2_UNITS</option>
+<option value="ARKANS_1_ARKSLR">ARKANS_1_ARKSLR</option>
+<option value="ARLNTN_2_AR1SR1">ARLNTN_2_AR1SR1</option>
+<option value="ARLNTN_2_ASUSR1">ARLNTN_2_ASUSR1</option>
+<option value="ARLVAL_5_SOLAR">ARLVAL_5_SOLAR</option>
+<option value="ARVINN_6_ORION1">ARVINN_6_ORION1</option>
+<option value="ARVINN_6_ORION2">ARVINN_6_ORION2</option>
+<option value="ASTORA_2_SOLAR1">ASTORA_2_SOLAR1</option>
+<option value="ASTORA_2_SOLAR2">ASTORA_2_SOLAR2</option>
+<option value="ATHOS_5_AP1X2">ATHOS_5_AP1X2</option>
+<option value="ATHOS_5_AP2X2">ATHOS_5_AP2X2</option>
+<option value="ATWEL2_1_SOLAR1">ATWEL2_1_SOLAR1</option>
+<option value="ATWELL_1_SOLAR">ATWELL_1_SOLAR</option>
+<option value="AVENAL_6_AVPARK">AVENAL_6_AVPARK</option>
+<option value="AVENAL_6_AVSLR1">AVENAL_6_AVSLR1</option>
+<option value="AVENAL_6_AVSLR2">AVENAL_6_AVSLR2</option>
+<option value="AVENAL_6_SANDDG">AVENAL_6_SANDDG</option>
+<option value="AVENAL_6_SUNCTY">AVENAL_6_SUNCTY</option>
+<option value="AVSOLR_2_SOLAR">AVSOLR_2_SOLAR</option>
+<option value="BALCHS_7_UNIT 1">BALCHS_7_UNIT 1</option>
+<option value="BALCHS_7_UNIT 2">BALCHS_7_UNIT 2</option>
+<option value="BALCHS_7_UNIT 3">BALCHS_7_UNIT 3</option>
+<option value="BANKPP_2_NSPIN">BANKPP_2_NSPIN</option>
+<option value="BARRE_2_ALASB1">BARRE_2_ALASB1</option>
+<option value="BARRE_6_PEAKER">BARRE_6_PEAKER</option>
+<option value="BASICE_2_UNITS">BASICE_2_UNITS</option>
+<option value="BDGRCK_1_UNITS">BDGRCK_1_UNITS</option>
+<option value="BEARDS_7_UNIT 1">BEARDS_7_UNIT 1</option>
+<option value="BEARMT_1_UNIT">BEARMT_1_UNIT</option>
+<option value="BEJNLS_5_BV2SCEDYN">BEJNLS_5_BV2SCEDYN</option>
+<option value="BEKWJS_5_BV1SCEDYN">BEKWJS_5_BV1SCEDYN</option>
+<option value="BELDEN_7_UNIT 1">BELDEN_7_UNIT 1</option>
+<option value="BERCYN_2_BCEBT1">BERCYN_2_BCEBT1</option>
+<option value="BGSKYN_2_AS2SR1">BGSKYN_2_AS2SR1</option>
+<option value="BGSKYN_2_ASPSR2">BGSKYN_2_ASPSR2</option>
+<option value="BGSKYN_2_ASSR1B">BGSKYN_2_ASSR1B</option>
+<option value="BGSKYN_2_ASSR3A">BGSKYN_2_ASSR3A</option>
+<option value="BGSKYN_2_ASSR3B">BGSKYN_2_ASSR3B</option>
+<option value="BGSKYN_2_BS3SR3">BGSKYN_2_BS3SR3</option>
+<option value="BIGCRK_2_EXESWD">BIGCRK_2_EXESWD</option>
+<option value="BIGSKY_2_AS2BT1">BIGSKY_2_AS2BT1</option>
+<option value="BIGSKY_2_ASLBT2">BIGSKY_2_ASLBT2</option>
+<option value="BIGSKY_2_BSKSR6">BIGSKY_2_BSKSR6</option>
+<option value="BIGSKY_2_BSKSR7">BIGSKY_2_BSKSR7</option>
+<option value="BIGSKY_2_BSKSR8">BIGSKY_2_BSKSR8</option>
+<option value="BIGSKY_2_SOLAR1">BIGSKY_2_SOLAR1</option>
+<option value="BIGSKY_2_SOLAR2">BIGSKY_2_SOLAR2</option>
+<option value="BIGSKY_2_SOLAR3">BIGSKY_2_SOLAR3</option>
+<option value="BIGSKY_2_SOLAR4">BIGSKY_2_SOLAR4</option>
+<option value="BIGSKY_2_SOLAR5">BIGSKY_2_SOLAR5</option>
+<option value="BIGSKY_2_SOLAR6">BIGSKY_2_SOLAR6</option>
+<option value="BIGSKY_2_SOLAR7">BIGSKY_2_SOLAR7</option>
+<option value="BIOMAS_1_UNIT 1">BIOMAS_1_UNIT 1</option>
+<option value="BISHOP_1_ALAMO">BISHOP_1_ALAMO</option>
+<option value="BKRFLD_2_SOLAR1">BKRFLD_2_SOLAR1</option>
+<option value="BLACK_7_UNIT 1">BLACK_7_UNIT 1</option>
+<option value="BLACK_7_UNIT 2">BLACK_7_UNIT 2</option>
+<option value="BLAST_1_WIND">BLAST_1_WIND</option>
+<option value="BLCKBT_2_STONEY">BLCKBT_2_STONEY</option>
+<option value="BLCKWL_6_SOLAR1">BLCKWL_6_SOLAR1</option>
+<option value="BLKCRK_2_GMCBT1">BLKCRK_2_GMCBT1</option>
+<option value="BLKCRK_2_SOLAR1">BLKCRK_2_SOLAR1</option>
+<option value="BLKDIA_2_BDEBT1">BLKDIA_2_BDEBT1</option>
+<option value="BLM W_2_COSBT1">BLM W_2_COSBT1</option>
+<option value="BLVRDE_6_BLVBT1">BLVRDE_6_BLVBT1</option>
+<option value="BLYTHE_1_SOLAR1">BLYTHE_1_SOLAR1</option>
+<option value="BLYTHE_1_SOLAR2">BLYTHE_1_SOLAR2</option>
+<option value="BNNIEN_7_ALTAPH">BNNIEN_7_ALTAPH</option>
+<option value="BOGUE_1_UNITA1">BOGUE_1_UNITA1</option>
+<option value="BORDER_6_UNITA1">BORDER_6_UNITA1</option>
+<option value="BOWMN_6_HYDRO">BOWMN_6_HYDRO</option>
+<option value="BRDSLD_2_HIWIND">BRDSLD_2_HIWIND</option>
+<option value="BRDSLD_2_MTZUM2">BRDSLD_2_MTZUM2</option>
+<option value="BRDSLD_2_MTZUMA">BRDSLD_2_MTZUMA</option>
+<option value="BRDSLD_2_SHILO2">BRDSLD_2_SHILO2</option>
+<option value="BRDSLD_2_SHLO3A">BRDSLD_2_SHLO3A</option>
+<option value="BRDSLD_2_SHLO3B">BRDSLD_2_SHLO3B</option>
+<option value="BREGGO_6_DEGRSL">BREGGO_6_DEGRSL</option>
+<option value="BREGGO_6_SOLAR">BREGGO_6_SOLAR</option>
+<option value="BRODIE_2_WIND">BRODIE_2_WIND</option>
+<option value="BUCKBL_2_PL1X3">BUCKBL_2_PL1X3</option>
+<option value="BUCKCK_7_PL1X2">BUCKCK_7_PL1X2</option>
+<option value="BUCKWD_1_NPALM1">BUCKWD_1_NPALM1</option>
+<option value="BUCKWD_1_QF">BUCKWD_1_QF</option>
+<option value="BUCKWD_7_WINTCV">BUCKWD_7_WINTCV</option>
+<option value="BURNYF_2_UNIT 1">BURNYF_2_UNIT 1</option>
+<option value="BUTTVL_7_UNIT 1">BUTTVL_7_UNIT 1</option>
+<option value="CABALO_2_M2BSR1">CABALO_2_M2BSR1</option>
+<option value="CABALO_2_M2WSR2">CABALO_2_M2WSR2</option>
+<option value="CABZON_1_WINDA1">CABZON_1_WINDA1</option>
+<option value="CALFTN_2_CFSBT1">CALFTN_2_CFSBT1</option>
+<option value="CALFTN_2_SOLAR">CALFTN_2_SOLAR</option>
+<option value="CALFTS_2_CFSSR1">CALFTS_2_CFSSR1</option>
+<option value="CALGEN_1_UNITS">CALGEN_1_UNITS</option>
+<option value="CALPIN_1_AGNEW">CALPIN_1_AGNEW</option>
+<option value="CALPSS_6_SOLAR1">CALPSS_6_SOLAR1</option>
+<option value="CAMCHE_1_PL1X3">CAMCHE_1_PL1X3</option>
+<option value="CAMDEN_6_RDDBM1">CAMDEN_6_RDDBM1</option>
+<option value="CAMERN_6_BSPBT1">CAMERN_6_BSPBT1</option>
+<option value="CAMERN_6_BSPSR1">CAMERN_6_BSPSR1</option>
+<option value="CAMLOT_2_SOLAR1">CAMLOT_2_SOLAR1</option>
+<option value="CAMLOT_2_SOLAR2">CAMLOT_2_SOLAR2</option>
+<option value="CAMPFW_7_FARWST">CAMPFW_7_FARWST</option>
+<option value="CANTUA_1_SOLAR">CANTUA_1_SOLAR</option>
+<option value="CARBOU_7_PL2X3">CARBOU_7_PL2X3</option>
+<option value="CARBOU_7_PL4X5">CARBOU_7_PL4X5</option>
+<option value="CARBOU_7_UNIT 1">CARBOU_7_UNIT 1</option>
+<option value="CARLS1_2_CARCT1">CARLS1_2_CARCT1</option>
+<option value="CARLS2_1_CARCT1">CARLS2_1_CARCT1</option>
+<option value="CASADB_1_CD4GT1">CASADB_1_CD4GT1</option>
+<option value="CASCES_6_CESBT1">CASCES_6_CESBT1</option>
+<option value="CASCES_6_CESBT2">CASCES_6_CESBT2</option>
+<option value="CATLNA_2_SOLAR">CATLNA_2_SOLAR</option>
+<option value="CATLNA_2_SOLAR2">CATLNA_2_SOLAR2</option>
+<option value="CAVLSR_2_BSOLAR">CAVLSR_2_BSOLAR</option>
+<option value="CAVLSR_2_RSOLAR">CAVLSR_2_RSOLAR</option>
+<option value="CAYTNO_2_VASCO">CAYTNO_2_VASCO</option>
+<option value="CDWR07_2_GEN">CDWR07_2_GEN</option>
+<option value="CEDRCK_6_UNIT">CEDRCK_6_UNIT</option>
+<option value="CEDUCR_2_SOLAR1">CEDUCR_2_SOLAR1</option>
+<option value="CEDUCR_2_SOLAR2">CEDUCR_2_SOLAR2</option>
+<option value="CEDUCR_2_SOLAR3">CEDUCR_2_SOLAR3</option>
+<option value="CEDUCR_2_SOLAR4">CEDUCR_2_SOLAR4</option>
+<option value="CENT40_1_C40SR1">CENT40_1_C40SR1</option>
+<option value="CENTER_2_RHONDO">CENTER_2_RHONDO</option>
+<option value="CENTER_2_SOLAR1">CENTER_2_SOLAR1</option>
+<option value="CENTER_6_PEAKER">CENTER_6_PEAKER</option>
+<option value="CENTPD_2_BMSSX2">CENTPD_2_BMSSX2</option>
+<option value="CENTPD_2_BMSX2">CENTPD_2_BMSX2</option>
+<option value="CENTRY_6_PL1X4">CENTRY_6_PL1X4</option>
+<option value="CHALK_1_UNIT">CHALK_1_UNIT</option>
+<option value="CHARMN_2_PGONG1">CHARMN_2_PGONG1</option>
+<option value="CHESTN_2_CHWBX2">CHESTN_2_CHWBX2</option>
+<option value="CHESTN_2_CHWSX2">CHESTN_2_CHWSX2</option>
+<option value="CHEVCD_6_UNIT">CHEVCD_6_UNIT</option>
+<option value="CHEVCO_6_UNIT 1">CHEVCO_6_UNIT 1</option>
+<option value="CHEVCO_6_UNIT 2">CHEVCO_6_UNIT 2</option>
+<option value="CHEVCY_1_UNIT">CHEVCY_1_UNIT</option>
+<option value="CHEVMN_2_UNITS">CHEVMN_2_UNITS</option>
+<option value="CHICPK_7_UNIT 1">CHICPK_7_UNIT 1</option>
+<option value="CHILLS_1_SYCENG">CHILLS_1_SYCENG</option>
+<option value="CHILLS_7_UNITA1">CHILLS_7_UNITA1</option>
+<option value="CHINO_2_APEBT1">CHINO_2_APEBT1</option>
+<option value="CHINO_2_PESBT1">CHINO_2_PESBT1</option>
+<option value="CHINO_6_CIMGEN">CHINO_6_CIMGEN</option>
+<option value="CHWCHL_1_AVSSR1">CHWCHL_1_AVSSR1</option>
+<option value="CHWCHL_1_AVSSR2">CHWCHL_1_AVSSR2</option>
+<option value="CHWCHL_1_BIOMAS">CHWCHL_1_BIOMAS</option>
+<option value="CHWCHL_1_UNIT">CHWCHL_1_UNIT</option>
+<option value="CLINESCO_3_PVDYN">CLINESCO_3_PVDYN</option>
+<option value="CLINESCO_3_WBDYN">CLINESCO_3_WBDYN</option>
+<option value="CLOVER_2_UNIT">CLOVER_2_UNIT</option>
+<option value="CLRMNT_6_CLEBT1">CLRMNT_6_CLEBT1</option>
+<option value="CMBLND_2_DS2BT1">CMBLND_2_DS2BT1</option>
+<option value="CMBLND_2_DS2BT2">CMBLND_2_DS2BT2</option>
+<option value="CMBLND_2_DS2BT3">CMBLND_2_DS2BT3</option>
+<option value="CMBLND_2_DS2SR1">CMBLND_2_DS2SR1</option>
+<option value="CMBLND_2_DS2SR2">CMBLND_2_DS2SR2</option>
+<option value="CMBLND_2_DS2SR3">CMBLND_2_DS2SR3</option>
+<option value="CNTNLA_2_SOLAR1">CNTNLA_2_SOLAR1</option>
+<option value="CNTNLA_2_SOLAR2">CNTNLA_2_SOLAR2</option>
+<option value="COCOPP_2_CTG1">COCOPP_2_CTG1</option>
+<option value="COCOPP_2_CTG2">COCOPP_2_CTG2</option>
+<option value="COCOPP_2_CTG3">COCOPP_2_CTG3</option>
+<option value="COCOPP_2_CTG4">COCOPP_2_CTG4</option>
+<option value="COCOSB_6_SOLAR">COCOSB_6_SOLAR</option>
+<option value="COGNAT_1_UNIT">COGNAT_1_UNIT</option>
+<option value="COLEMN_2_UNIT">COLEMN_2_UNIT</option>
+<option value="COLGAT_7_UNIT 1">COLGAT_7_UNIT 1</option>
+<option value="COLGAT_7_UNIT 2">COLGAT_7_UNIT 2</option>
+<option value="COLGNS_2_CNSSR1">COLGNS_2_CNSSR1</option>
+<option value="COLPIN_6_COLLNS">COLPIN_6_COLLNS</option>
+<option value="COLTON_6_AGUAM1">COLTON_6_AGUAM1</option>
+<option value="COLUSA_2_PL1X3">COLUSA_2_PL1X3</option>
+<option value="COLVIL_7_PL1X2">COLVIL_7_PL1X2</option>
+<option value="CONDOR_2_CDRBT1">CONDOR_2_CDRBT1</option>
+<option value="CONTRL_1_CASAD1">CONTRL_1_CASAD1</option>
+<option value="CONTRL_1_CASAD2">CONTRL_1_CASAD2</option>
+<option value="CONTRL_1_CASAD3">CONTRL_1_CASAD3</option>
+<option value="CONTRL_1_LUNDY">CONTRL_1_LUNDY</option>
+<option value="CONTRL_1_OXBOW">CONTRL_1_OXBOW</option>
+<option value="CONTRL_1_POOLE">CONTRL_1_POOLE</option>
+<option value="CONTRL_1_QF">CONTRL_1_QF</option>
+<option value="CONTRL_1_RUSHCK">CONTRL_1_RUSHCK</option>
+<option value="COPMT2_2_SOLAR2">COPMT2_2_SOLAR2</option>
+<option value="COPMTN_2_CM10">COPMTN_2_CM10</option>
+<option value="COPMTN_2_SOLAR1">COPMTN_2_SOLAR1</option>
+<option value="CORCAN_1_SOLAR1">CORCAN_1_SOLAR1</option>
+<option value="CORCAN_1_SOLAR2">CORCAN_1_SOLAR2</option>
+<option value="CORONS_6_CLRWTR">CORONS_6_CLRWTR</option>
+<option value="CORRAL_6_SJOAQN">CORRAL_6_SJOAQN</option>
+<option value="COTTLE_2_FRNKNH">COTTLE_2_FRNKNH</option>
+<option value="COVERD_2_HCKHY1">COVERD_2_HCKHY1</option>
+<option value="COVERD_2_MCKHY1">COVERD_2_MCKHY1</option>
+<option value="COVERD_2_QFUNTS">COVERD_2_QFUNTS</option>
+<option value="COVERD_2_RCKHY1">COVERD_2_RCKHY1</option>
+<option value="COWCRK_2_UNIT">COWCRK_2_UNIT</option>
+<option value="CPVERD_2_SOLAR">CPVERD_2_SOLAR</option>
+<option value="CRELMN_6_AABBT1">CRELMN_6_AABBT1</option>
+<option value="CRELMN_6_RAMON1">CRELMN_6_RAMON1</option>
+<option value="CRELMN_6_RAMON2">CRELMN_6_RAMON2</option>
+<option value="CRELMN_6_RAMSR3">CRELMN_6_RAMSR3</option>
+<option value="CRESTA_7_PL1X2">CRESTA_7_PL1X2</option>
+<option value="CRIMSN_2_CRMBT1">CRIMSN_2_CRMBT1</option>
+<option value="CRIMSN_2_CRMBT2">CRIMSN_2_CRMBT2</option>
+<option value="CRNEVL_6_CRNVA">CRNEVL_6_CRNVA</option>
+<option value="CRNEVL_6_SJQN 2">CRNEVL_6_SJQN 2</option>
+<option value="CROKET_7_UNIT">CROKET_7_UNIT</option>
+<option value="CRSTWD_6_KUMYAY">CRSTWD_6_KUMYAY</option>
+<option value="CRWCKS_1_SOLAR1">CRWCKS_1_SOLAR1</option>
+<option value="CSCCOG_1_UNIT 1">CSCCOG_1_UNIT 1</option>
+<option value="CSCGNR_1_UNIT 1">CSCGNR_1_UNIT 1</option>
+<option value="CSCGNR_1_UNIT 2">CSCGNR_1_UNIT 2</option>
+<option value="CSLR4S_2_SOLAR">CSLR4S_2_SOLAR</option>
+<option value="CSTOGA_6_LNDFIL">CSTOGA_6_LNDFIL</option>
+<option value="CSTRVL_7_PL1X2">CSTRVL_7_PL1X2</option>
+<option value="CSTRVL_7_QFUNTS">CSTRVL_7_QFUNTS</option>
+<option value="CUMBIA_1_SOLAR">CUMBIA_1_SOLAR</option>
+<option value="CUYAMA_6_SB3SB1">CUYAMA_6_SB3SB1</option>
+<option value="CUYAMS_6_CUYSR1">CUYAMS_6_CUYSR1</option>
+<option value="DAIRLD_1_CR1BM1">DAIRLD_1_CR1BM1</option>
+<option value="DEADCK_1_UNIT">DEADCK_1_UNIT</option>
+<option value="DEERCR_6_UNIT 1">DEERCR_6_UNIT 1</option>
+<option value="DELAMO_2_ALASB2">DELAMO_2_ALASB2</option>
+<option value="DELSUR_6_HORSR1">DELSUR_6_HORSR1</option>
+<option value="DELSUR_6_SOLAR1">DELSUR_6_SOLAR1</option>
+<option value="DELTA_2_PL1X4">DELTA_2_PL1X4</option>
+<option value="DEVERS_1_SOLAR">DEVERS_1_SOLAR</option>
+<option value="DEVERS_1_SOLAR1">DEVERS_1_SOLAR1</option>
+<option value="DEVERS_1_SOLAR2">DEVERS_1_SOLAR2</option>
+<option value="DEVERS_2_DHSPG2">DEVERS_2_DHSPG2</option>
+<option value="DEXZEL_1_UNIT">DEXZEL_1_UNIT</option>
+<option value="DISCOV_1_CHEVRN">DISCOV_1_CHEVRN</option>
+<option value="DIXNLD_1_LNDFL">DIXNLD_1_LNDFL</option>
+<option value="DONNLS_7_UNIT">DONNLS_7_UNIT</option>
+<option value="DOSMGO_2_NSPIN">DOSMGO_2_NSPIN</option>
+<option value="DOSPAL_1_DPSSR1">DOSPAL_1_DPSSR1</option>
+<option value="DOUBLC_1_UNITS">DOUBLC_1_UNITS</option>
+<option value="DRACKR_2_D4SR4B">DRACKR_2_D4SR4B</option>
+<option value="DRACKR_2_DS3SR3">DRACKR_2_DS3SR3</option>
+<option value="DRACKR_2_DS4SR4">DRACKR_2_DS4SR4</option>
+<option value="DRACKR_2_DSUBT1">DRACKR_2_DSUBT1</option>
+<option value="DRACKR_2_DSUBT2">DRACKR_2_DSUBT2</option>
+<option value="DRACKR_2_DSUBT3">DRACKR_2_DSUBT3</option>
+<option value="DRACKR_2_DSUBT4">DRACKR_2_DSUBT4</option>
+<option value="DRACKR_2_SOLAR1">DRACKR_2_SOLAR1</option>
+<option value="DRACKR_2_SOLAR2">DRACKR_2_SOLAR2</option>
+<option value="DREWS_6_PL1X4">DREWS_6_PL1X4</option>
+<option value="DREWSR_2_BHSSR1">DREWSR_2_BHSSR1</option>
+<option value="DRUM_7_PL1X2">DRUM_7_PL1X2</option>
+<option value="DRUM_7_PL3X4">DRUM_7_PL3X4</option>
+<option value="DRUM_7_UNIT 5">DRUM_7_UNIT 5</option>
+<option value="DSABLA_7_UNIT">DSABLA_7_UNIT</option>
+<option value="DSFLWR_2_W9CSB1">DSFLWR_2_W9CSB1</option>
+<option value="DSFLWR_2_W9CSB2">DSFLWR_2_W9CSB2</option>
+<option value="DSFLWR_2_WS2SR1">DSFLWR_2_WS2SR1</option>
+<option value="DSRTHV_2_DH1SR1">DSRTHV_2_DH1SR1</option>
+<option value="DSRTHV_2_DH2BT1">DSRTHV_2_DH2BT1</option>
+<option value="DSRTHV_2_DH2SR2">DSRTHV_2_DH2SR2</option>
+<option value="DSRTSL_2_SOLAR1">DSRTSL_2_SOLAR1</option>
+<option value="DSRTSN_2_DS2BX2">DSRTSN_2_DS2BX2</option>
+<option value="DSRTSN_2_DS2X2">DSRTSN_2_DS2X2</option>
+<option value="DSRTSN_2_SOLAR1">DSRTSN_2_SOLAR1</option>
+<option value="DSRTSN_2_SOLAR2">DSRTSN_2_SOLAR2</option>
+<option value="DTCHWD_2_BT3WND">DTCHWD_2_BT3WND</option>
+<option value="DTCHWD_2_BT4WND">DTCHWD_2_BT4WND</option>
+<option value="DUANE_1_PL1X3">DUANE_1_PL1X3</option>
+<option value="DURNMESA_3_WBDYN">DURNMESA_3_WBDYN</option>
+<option value="DUTCH1_7_UNIT 1">DUTCH1_7_UNIT 1</option>
+<option value="DUTCH2_7_UNIT 1">DUTCH2_7_UNIT 1</option>
+<option value="DVLCYN_1_UNITS">DVLCYN_1_UNITS</option>
+<option value="DYERSM_6_DSWWD1">DYERSM_6_DSWWD1</option>
+<option value="DYLAN_2_BMTBT1">DYLAN_2_BMTBT1</option>
+<option value="EASTWD_7_UNIT">EASTWD_7_UNIT</option>
+<option value="EDWARD_2_E21SB1">EDWARD_2_E21SB1</option>
+<option value="EDWARD_2_E23SB1">EDWARD_2_E23SB1</option>
+<option value="EDWARD_2_ES2BT3">EDWARD_2_ES2BT3</option>
+<option value="EDWARD_2_ESSSB1">EDWARD_2_ESSSB1</option>
+<option value="EDWARD_2_ESSSB2">EDWARD_2_ESSSB2</option>
+<option value="EEKTMN_6_SOLAR1">EEKTMN_6_SOLAR1</option>
+<option value="ELCABO_5_ECWSCEDYN">ELCABO_5_ECWSCEDYN</option>
+<option value="ELCAJN_6_EB1BT1">ELCAJN_6_EB1BT1</option>
+<option value="ELCAJN_6_LM6K">ELCAJN_6_LM6K</option>
+<option value="ELCAJN_6_UNITA1">ELCAJN_6_UNITA1</option>
+<option value="ELDORO_7_UNIT 1">ELDORO_7_UNIT 1</option>
+<option value="ELDORO_7_UNIT 2">ELDORO_7_UNIT 2</option>
+<option value="ELECTR_7_PL1X3">ELECTR_7_PL1X3</option>
+<option value="ELKCRK_6_STONYG">ELKCRK_6_STONYG</option>
+<option value="ELKHIL_2_PL1X3">ELKHIL_2_PL1X3</option>
+<option value="ELKHRN_1_EESX3">ELKHRN_1_EESX3</option>
+<option value="ELLIOT_6_ELIBT1">ELLIOT_6_ELIBT1</option>
+<option value="ELNIDO_1_ECRSR1">ELNIDO_1_ECRSR1</option>
+<option value="ELNIDP_6_BIOMAS">ELNIDP_6_BIOMAS</option>
+<option value="ELSEGN_2_UN1011">ELSEGN_2_UN1011</option>
+<option value="ELSEGN_2_UN2021">ELSEGN_2_UN2021</option>
+<option value="ENERSJ_2_WIND">ENERSJ_2_WIND</option>
+<option value="ENERSJ_5_ESJWD2">ENERSJ_5_ESJWD2</option>
+<option value="ENWIND_2_WIND1">ENWIND_2_WIND1</option>
+<option value="ENWIND_2_WIND2">ENWIND_2_WIND2</option>
+<option value="ESCNDO_6_EB1BT1">ESCNDO_6_EB1BT1</option>
+<option value="ESCNDO_6_EB2BT2">ESCNDO_6_EB2BT2</option>
+<option value="ESCNDO_6_EB3BT3">ESCNDO_6_EB3BT3</option>
+<option value="ESCNDO_6_PL1X2">ESCNDO_6_PL1X2</option>
+<option value="ESCNDO_6_UNITB1">ESCNDO_6_UNITB1</option>
+<option value="ESCO_6_GLMQF">ESCO_6_GLMQF</option>
+<option value="ESNHWR_2_WC1BT1">ESNHWR_2_WC1BT1</option>
+<option value="ESQUON_6_LNDFIL">ESQUON_6_LNDFIL</option>
+<option value="ESTWND_2_OPPWD1">ESTWND_2_OPPWD1</option>
+<option value="ETIWND_2_FONTNA">ETIWND_2_FONTNA</option>
+<option value="ETIWND_2_SEPBT1">ETIWND_2_SEPBT1</option>
+<option value="ETIWND_2_UNIT1">ETIWND_2_UNIT1</option>
+<option value="ETIWND_6_GRPLND">ETIWND_6_GRPLND</option>
+<option value="ETIWND_6_INEBT1">ETIWND_6_INEBT1</option>
+<option value="EXCHEC_7_UNIT 1">EXCHEC_7_UNIT 1</option>
+<option value="FALBRK_6_FESBT1">FALBRK_6_FESBT1</option>
+<option value="FIFTHS_2_FSSBT">FIFTHS_2_FSSBT</option>
+<option value="FIFTHS_2_FSSR1">FIFTHS_2_FSSR1</option>
+<option value="FILIPPI_2_QZSSRX">FILIPPI_2_QZSSRX</option>
+<option value="FLOWD_2_RT2WD2">FLOWD_2_RT2WD2</option>
+<option value="FLOWD_2_WIND1">FLOWD_2_WIND1</option>
+<option value="FLOWD2_2_FPLWND">FLOWD2_2_FPLWND</option>
+<option value="FMEADO_6_HELLHL">FMEADO_6_HELLHL</option>
+<option value="FMEADO_7_UNIT">FMEADO_7_UNIT</option>
+<option value="FORBST_7_UNIT 1">FORBST_7_UNIT 1</option>
+<option value="FORKBU_6_UNIT">FORKBU_6_UNIT</option>
+<option value="FRESHW_1_SOLAR1">FRESHW_1_SOLAR1</option>
+<option value="FRIANT_6_UNITS">FRIANT_6_UNITS</option>
+<option value="FRNTBW_6_SOLAR1">FRNTBW_6_SOLAR1</option>
+<option value="FROGTN_1_UTICAA">FROGTN_1_UTICAA</option>
+<option value="FROGTN_1_UTICAM">FROGTN_1_UTICAM</option>
+<option value="FTSWRD_6_TRFORK">FTSWRD_6_TRFORK</option>
+<option value="FTSWRD_7_QFUNTS">FTSWRD_7_QFUNTS</option>
+<option value="GALE_1_SR3SR3">GALE_1_SR3SR3</option>
+<option value="GANSO_1_WSTBM1">GANSO_1_WSTBM1</option>
+<option value="GARLND_2_GARBT1">GARLND_2_GARBT1</option>
+<option value="GARLND_2_GASLR">GARLND_2_GASLR</option>
+<option value="GARLND_2_GASLRA">GARLND_2_GASLRA</option>
+<option value="GARNET_1_SOLAR">GARNET_1_SOLAR</option>
+<option value="GARNET_1_SOLAR2">GARNET_1_SOLAR2</option>
+<option value="GARNET_1_WIND">GARNET_1_WIND</option>
+<option value="GARNET_1_WINDS">GARNET_1_WINDS</option>
+<option value="GARNET_1_WT3WND">GARNET_1_WT3WND</option>
+<option value="GARNET_2_COAWD2">GARNET_2_COAWD2</option>
+<option value="GARNET_2_HYDRO">GARNET_2_HYDRO</option>
+<option value="GARNET_2_WIND1">GARNET_2_WIND1</option>
+<option value="GARNET_2_WIND2">GARNET_2_WIND2</option>
+<option value="GARNET_2_WIND3">GARNET_2_WIND3</option>
+<option value="GARNET_2_WIND4">GARNET_2_WIND4</option>
+<option value="GARNET_2_WIND5">GARNET_2_WIND5</option>
+<option value="GASKW1_2_GW1SR1">GASKW1_2_GW1SR1</option>
+<option value="GASKW1_2_GW2BT1">GASKW1_2_GW2BT1</option>
+<option value="GASKW1_2_GW2SR1">GASKW1_2_GW2SR1</option>
+<option value="GASKW1_2_GW2SR2">GASKW1_2_GW2SR2</option>
+<option value="GASKW1_2_GW3SR1">GASKW1_2_GW3SR1</option>
+<option value="GASKW1_2_GW4SR1">GASKW1_2_GW4SR1</option>
+<option value="GASKW1_2_GW5SR1">GASKW1_2_GW5SR1</option>
+<option value="GATES_2_SOLAR">GATES_2_SOLAR</option>
+<option value="GATES_2_WSOLAR">GATES_2_WSOLAR</option>
+<option value="GATEWY_2_GESBT1">GATEWY_2_GESBT1</option>
+<option value="GATWAY_2_PL1X3">GATWAY_2_PL1X3</option>
+<option value="GENESI_2_STG">GENESI_2_STG</option>
+<option value="GEYS11_7_UNIT11">GEYS11_7_UNIT11</option>
+<option value="GEYS12_7_UNIT12">GEYS12_7_UNIT12</option>
+<option value="GEYS14_7_UNIT14">GEYS14_7_UNIT14</option>
+<option value="GEYS16_7_UNIT16">GEYS16_7_UNIT16</option>
+<option value="GEYS17_7_UNIT17">GEYS17_7_UNIT17</option>
+<option value="GEYS18_7_UNIT18">GEYS18_7_UNIT18</option>
+<option value="GEYS20_7_UNIT20">GEYS20_7_UNIT20</option>
+<option value="GIFENS_6_BUGSL1">GIFENS_6_BUGSL1</option>
+<option value="GIFFEN_6_SOLAR">GIFFEN_6_SOLAR</option>
+<option value="GIFFEN_6_SOLAR1">GIFFEN_6_SOLAR1</option>
+<option value="GILROY_1_UNIT">GILROY_1_UNIT</option>
+<option value="GILRPP_1_PL1X2">GILRPP_1_PL1X2</option>
+<option value="GILRPP_1_PL3X4">GILRPP_1_PL3X4</option>
+<option value="GLDFGR_6_SOLAR1">GLDFGR_6_SOLAR1</option>
+<option value="GLDFGR_6_SOLAR2">GLDFGR_6_SOLAR2</option>
+<option value="GLDTWN_6_COLUM3">GLDTWN_6_COLUM3</option>
+<option value="GLDTWN_6_SOLAR">GLDTWN_6_SOLAR</option>
+<option value="GLNARM_2_UNIT 5">GLNARM_2_UNIT 5</option>
+<option value="GLNARM_7_UNIT 1">GLNARM_7_UNIT 1</option>
+<option value="GLNARM_7_UNIT 2">GLNARM_7_UNIT 2</option>
+<option value="GLNARM_7_UNIT 3">GLNARM_7_UNIT 3</option>
+<option value="GLNARM_7_UNIT 4">GLNARM_7_UNIT 4</option>
+<option value="GLOW_6_SOLAR">GLOW_6_SOLAR</option>
+<option value="GOLETA_2_GE2BT3">GOLETA_2_GE2BT3</option>
+<option value="GOLETA_2_VALBT1">GOLETA_2_VALBT1</option>
+<option value="GOLETA_6_ELLWOD">GOLETA_6_ELLWOD</option>
+<option value="GOLETA_6_TR2BM2">GOLETA_6_TR2BM2</option>
+<option value="GONZLS_6_UNIT">GONZLS_6_UNIT</option>
+<option value="GOOSLK_1_SOLAR1">GOOSLK_1_SOLAR1</option>
+<option value="GRADYW_5_GDYWD1">GRADYW_5_GDYWD1</option>
+<option value="GRIDLY_6_SOLAR">GRIDLY_6_SOLAR</option>
+<option value="GRIFFI_2_LSPDYN">GRIFFI_2_LSPDYN</option>
+<option value="GRIZLY_1_UNIT 1">GRIZLY_1_UNIT 1</option>
+<option value="GRNLF1_1_PL1X2">GRNLF1_1_PL1X2</option>
+<option value="GRNLF2_1_UNIT">GRNLF2_1_UNIT</option>
+<option value="GRNVLY_7_SCLAND">GRNVLY_7_SCLAND</option>
+<option value="GRSCRK_6_BGCKWW">GRSCRK_6_BGCKWW</option>
+<option value="GUERNS_6_HD3BM3">GUERNS_6_HD3BM3</option>
+<option value="GUERNS_6_SOLAR">GUERNS_6_SOLAR</option>
+<option value="GUERNS_6_VH2BM1">GUERNS_6_VH2BM1</option>
+<option value="GWFPWR_1_UNITS">GWFPWR_1_UNITS</option>
+<option value="GYS5X6_7_UNITS">GYS5X6_7_UNITS</option>
+<option value="GYS7X8_7_UNITS">GYS7X8_7_UNITS</option>
+<option value="GYSRVL_7_WSPRNG">GYSRVL_7_WSPRNG</option>
+<option value="HAASPH_7_PL1X2">HAASPH_7_PL1X2</option>
+<option value="HALSEY_6_UNIT">HALSEY_6_UNIT</option>
+<option value="HAMLIN_1_BLDSB1">HAMLIN_1_BLDSB1</option>
+<option value="HAMLIN_1_BMSBT2">HAMLIN_1_BMSBT2</option>
+<option value="HARBGN_7_UNITS">HARBGN_7_UNITS</option>
+<option value="HARDWK_6_STWBM1">HARDWK_6_STWBM1</option>
+<option value="HATCR1_7_UNIT">HATCR1_7_UNIT</option>
+<option value="HATCR2_7_UNIT">HATCR2_7_UNIT</option>
+<option value="HATLOS_6_BWDHY1">HATLOS_6_BWDHY1</option>
+<option value="HAYPRS_6_HAYHD1">HAYPRS_6_HAYHD1</option>
+<option value="HAYPRS_6_HAYHD2">HAYPRS_6_HAYHD2</option>
+<option value="HELMPG_7_UNIT 1">HELMPG_7_UNIT 1</option>
+<option value="HELMPG_7_UNIT 2">HELMPG_7_UNIT 2</option>
+<option value="HELMPG_7_UNIT 3">HELMPG_7_UNIT 3</option>
+<option value="HENRTA_6_ACDSR3">HENRTA_6_ACDSR3</option>
+<option value="HENRTA_6_ELCBX2">HENRTA_6_ELCBX2</option>
+<option value="HENRTA_6_HDEBT1">HENRTA_6_HDEBT1</option>
+<option value="HENRTA_6_SOLAR1">HENRTA_6_SOLAR1</option>
+<option value="HENRTA_6_SOLAR2">HENRTA_6_SOLAR2</option>
+<option value="HENRTA_6_UNITA1">HENRTA_6_UNITA1</option>
+<option value="HENRTA_6_UNITA2">HENRTA_6_UNITA2</option>
+<option value="HENRTS_1_SOLAR">HENRTS_1_SOLAR</option>
+<option value="HERDLN_6_BYHSR1">HERDLN_6_BYHSR1</option>
+<option value="HIDSRT_2_UNITS">HIDSRT_2_UNITS</option>
+<option value="HIGGNS_1_COMBIE">HIGGNS_1_COMBIE</option>
+<option value="HIGHDS_2_H5SBT1">HIGHDS_2_H5SBT1</option>
+<option value="HIGHDS_2_H5SSR1">HIGHDS_2_H5SSR1</option>
+<option value="HINSON_6_LBECH1">HINSON_6_LBECH1</option>
+<option value="HINSON_6_LBECH2">HINSON_6_LBECH2</option>
+<option value="HINSON_6_LBECH3">HINSON_6_LBECH3</option>
+<option value="HINSON_6_LBECH4">HINSON_6_LBECH4</option>
+<option value="HNTGBH_2_PL1X3">HNTGBH_2_PL1X3</option>
+<option value="HNTGBH_7_UNIT 2">HNTGBH_7_UNIT 2</option>
+<option value="HOLGAT_1_BORAX">HOLGAT_1_BORAX</option>
+<option value="HOLSTR_1_SOLAR">HOLSTR_1_SOLAR</option>
+<option value="HOOV_2_ANAPT">HOOV_2_ANAPT</option>
+<option value="HOOVER_2_MWDPT">HOOVER_2_MWDPT</option>
+<option value="HOOVER_2_SCEPT">HOOVER_2_SCEPT</option>
+<option value="HOOVER_2_VEAPT">HOOVER_2_VEAPT</option>
+<option value="HUMBPP_1_UNITS3">HUMBPP_1_UNITS3</option>
+<option value="HURON_6_SOLAR">HURON_6_SOLAR</option>
+<option value="HYTTHM_2_UNITS">HYTTHM_2_UNITS</option>
+<option value="INDIGO_1_UNIT 1">INDIGO_1_UNIT 1</option>
+<option value="INDIGO_1_UNIT 2">INDIGO_1_UNIT 2</option>
+<option value="INDIGO_1_UNIT 3">INDIGO_1_UNIT 3</option>
+<option value="INDVLY_1_UNITS">INDVLY_1_UNITS</option>
+<option value="INTMNT_3_ANAHEIM">INTMNT_3_ANAHEIM</option>
+<option value="INTMNT_3_PASADENA">INTMNT_3_PASADENA</option>
+<option value="INTMNT_3_RIVERSIDE">INTMNT_3_RIVERSIDE</option>
+<option value="INTTRB_6_UNIT">INTTRB_6_UNIT</option>
+<option value="INYOKN_1_IKSSR1">INYOKN_1_IKSSR1</option>
+<option value="INYOKN_1_IKSSR2">INYOKN_1_IKSSR2</option>
+<option value="IVANPA_1_UNIT1">IVANPA_1_UNIT1</option>
+<option value="IVANPA_1_UNIT2">IVANPA_1_UNIT2</option>
+<option value="IVANPA_1_UNIT3">IVANPA_1_UNIT3</option>
+<option value="IVSLR2_2_SM2SR1">IVSLR2_2_SM2SR1</option>
+<option value="IVSLRP_2_SOLAR1">IVSLRP_2_SOLAR1</option>
+<option value="IVWEST_2_SOLAR1">IVWEST_2_SOLAR1</option>
+<option value="JACMSR_1_JACSR1">JACMSR_1_JACSR1</option>
+<option value="JANCRK_6_RCABT1">JANCRK_6_RCABT1</option>
+<option value="JAVASR_1_JAVSR1">JAVASR_1_JAVSR1</option>
+<option value="JAWBNE_2_NSRWND">JAWBNE_2_NSRWND</option>
+<option value="JAWBNE_2_SRWND">JAWBNE_2_SRWND</option>
+<option value="JAWBNE_2_SRWWD2">JAWBNE_2_SRWWD2</option>
+<option value="JAYNE_6_WLSLR">JAYNE_6_WLSLR</option>
+<option value="JOANEC_2_ST3BT3">JOANEC_2_ST3BT3</option>
+<option value="JOANEC_2_STABT1">JOANEC_2_STABT1</option>
+<option value="JOANEC_2_STABT2">JOANEC_2_STABT2</option>
+<option value="JOHANN_2_JOSBT1">JOHANN_2_JOSBT1</option>
+<option value="JOHANN_2_JOSBT2">JOHANN_2_JOSBT2</option>
+<option value="JOHANN_2_OCEBT2">JOHANN_2_OCEBT2</option>
+<option value="JOHANN_2_OCEBT3">JOHANN_2_OCEBT3</option>
+<option value="JOHANN_2_T1BBT1">JOHANN_2_T1BBT1</option>
+<option value="KANSAS_6_SOLAR">KANSAS_6_SOLAR</option>
+<option value="KEARNY_6_NESBT1">KEARNY_6_NESBT1</option>
+<option value="KEARNY_6_SESBT2">KEARNY_6_SESBT2</option>
+<option value="KELSO_2_UNITS">KELSO_2_UNITS</option>
+<option value="KELYRG_6_UNIT">KELYRG_6_UNIT</option>
+<option value="KERKH2_7_UNIT 1">KERKH2_7_UNIT 1</option>
+<option value="KERMAN_6_SOLAR1">KERMAN_6_SOLAR1</option>
+<option value="KERMAN_6_SOLAR2">KERMAN_6_SOLAR2</option>
+<option value="KERNEY_6_FCSSR1">KERNEY_6_FCSSR1</option>
+<option value="KERNFT_1_UNITS">KERNFT_1_UNITS</option>
+<option value="KERNRG_1_UNITS">KERNRG_1_UNITS</option>
+<option value="KINGCO_1_KINGBR">KINGCO_1_KINGBR</option>
+<option value="KINGRV_7_UNIT 1">KINGRV_7_UNIT 1</option>
+<option value="KIRKER_7_KELCYN">KIRKER_7_KELCYN</option>
+<option value="KNGBRD_2_SOLAR1">KNGBRD_2_SOLAR1</option>
+<option value="KNGBRD_2_SOLAR2">KNGBRD_2_SOLAR2</option>
+<option value="KNGCTY_6_UNITA1">KNGCTY_6_UNITA1</option>
+<option value="KNTSTH_6_SOLAR">KNTSTH_6_SOLAR</option>
+<option value="KNTSTH_6_WALSR1">KNTSTH_6_WALSR1</option>
+<option value="KRAMER_1_R1BX3">KRAMER_1_R1BX3</option>
+<option value="KRAMER_1_R1PX3">KRAMER_1_R1PX3</option>
+<option value="KRAMER_1_R2BX2">KRAMER_1_R2BX2</option>
+<option value="KRAMER_1_R2PX2">KRAMER_1_R2PX2</option>
+<option value="KRAMER_2_SEGS 9">KRAMER_2_SEGS 9</option>
+<option value="KRNCNY_6_UNIT">KRNCNY_6_UNIT</option>
+<option value="KYCORA_6_KMSBT1">KYCORA_6_KMSBT1</option>
+<option value="LAGBEL_2_CBPBT1">LAGBEL_2_CBPBT1</option>
+<option value="LAKHDG_6_UNIT 1">LAKHDG_6_UNIT 1</option>
+<option value="LAKHDG_6_UNIT 2">LAKHDG_6_UNIT 2</option>
+<option value="LAMONT_1_SOLAR1">LAMONT_1_SOLAR1</option>
+<option value="LAMONT_1_SOLAR2">LAMONT_1_SOLAR2</option>
+<option value="LAMONT_1_SOLAR3">LAMONT_1_SOLAR3</option>
+<option value="LAMONT_1_SOLAR4">LAMONT_1_SOLAR4</option>
+<option value="LAMONT_1_SOLAR5">LAMONT_1_SOLAR5</option>
+<option value="LAPLMA_2_UNIT 1">LAPLMA_2_UNIT 1</option>
+<option value="LAPLMA_2_UNIT 2">LAPLMA_2_UNIT 2</option>
+<option value="LAPLMA_2_UNIT 3">LAPLMA_2_UNIT 3</option>
+<option value="LAPLMA_2_UNIT 4">LAPLMA_2_UNIT 4</option>
+<option value="LARKSP_6_UNIT 1">LARKSP_6_UNIT 1</option>
+<option value="LARKSP_6_UNIT 2">LARKSP_6_UNIT 2</option>
+<option value="LAROA2_2_UNITA1">LAROA2_2_UNITA1</option>
+<option value="LASSEN_6_UNITS">LASSEN_6_UNITS</option>
+<option value="LAWRNC_7_SUNYVL">LAWRNC_7_SUNYVL</option>
+<option value="LCKHT1_2_LH1BT1">LCKHT1_2_LH1BT1</option>
+<option value="LCKHT1_2_LH1SR1">LCKHT1_2_LH1SR1</option>
+<option value="LCKHT1_2_LH1SR2">LCKHT1_2_LH1SR2</option>
+<option value="LEBECS_2_UNITS">LEBECS_2_UNITS</option>
+<option value="LECEF_1_UNITS">LECEF_1_UNITS</option>
+<option value="LECONT_2_LESBT1">LECONT_2_LESBT1</option>
+<option value="LGHTHP_6_ICEGEN">LGHTHP_6_ICEGEN</option>
+<option value="LHILLS_6_SOLAR1">LHILLS_6_SOLAR1</option>
+<option value="LILIAC_6_SOLAR">LILIAC_6_SOLAR</option>
+<option value="LITLRK_6_GBCSR1">LITLRK_6_GBCSR1</option>
+<option value="LIVOAK_1_UNIT 1">LIVOAK_1_UNIT 1</option>
+<option value="LMBEPK_2_UNITA1">LMBEPK_2_UNITA1</option>
+<option value="LMBEPK_2_UNITA2">LMBEPK_2_UNITA2</option>
+<option value="LMBEPK_2_UNITA3">LMBEPK_2_UNITA3</option>
+<option value="LMEC_1_PL1X3">LMEC_1_PL1X3</option>
+<option value="LNCSTR_6_SOLAR2">LNCSTR_6_SOLAR2</option>
+<option value="LOCKFD_1_KSOLAR">LOCKFD_1_KSOLAR</option>
+<option value="LODI25_2_UNIT 1">LODI25_2_UNIT 1</option>
+<option value="LODI25_6_ERKNG1">LODI25_6_ERKNG1</option>
+<option value="LODIEC_2_PL1X2">LODIEC_2_PL1X2</option>
+<option value="LOTUS_6_LSFSR1">LOTUS_6_LSFSR1</option>
+<option value="LTBEAR_1_LB3SR3">LTBEAR_1_LB3SR3</option>
+<option value="LTBEAR_1_LB4SR4">LTBEAR_1_LB4SR4</option>
+<option value="LTBEAR_1_LB4SR5">LTBEAR_1_LB4SR5</option>
+<option value="LTBERA_1_LB1SR1">LTBERA_1_LB1SR1</option>
+<option value="LVNGST_1_WTASR1">LVNGST_1_WTASR1</option>
+<option value="MAGNLA_6_ANAHEIM">MAGNLA_6_ANAHEIM</option>
+<option value="MAGNLA_6_CERRITOS">MAGNLA_6_CERRITOS</option>
+<option value="MAGNLA_6_COLTON">MAGNLA_6_COLTON</option>
+<option value="MAGNLA_6_PASADENA">MAGNLA_6_PASADENA</option>
+<option value="MALAGA_1_ACDBX2">MALAGA_1_ACDBX2</option>
+<option value="MALAGA_1_AUCTG1">MALAGA_1_AUCTG1</option>
+<option value="MALAGA_1_AUCTG2">MALAGA_1_AUCTG2</option>
+<option value="MALAGA_1_PL1X2">MALAGA_1_PL1X2</option>
+<option value="MALCHQ_7_UNIT 1">MALCHQ_7_UNIT 1</option>
+<option value="MANTEC_1_ML1SR1">MANTEC_1_ML1SR1</option>
+<option value="MANZNA_2_WIND">MANZNA_2_WIND</option>
+<option value="MARCPW_6_SOLAR1">MARCPW_6_SOLAR1</option>
+<option value="MARTIN_1_SUNSET">MARTIN_1_SUNSET</option>
+<option value="MARVEL_2_MARBT3">MARVEL_2_MARBT3</option>
+<option value="MARVEL_2_MARBX2">MARVEL_2_MARBX2</option>
+<option value="MCARTH_6_FRIVRB">MCARTH_6_FRIVRB</option>
+<option value="MCCALL_1_QF">MCCALL_1_QF</option>
+<option value="MCFLND_5_MBSBX2">MCFLND_5_MBSBX2</option>
+<option value="MCFLND_5_MFAUXL1">MCFLND_5_MFAUXL1</option>
+<option value="MCFLND_5_MFSBT1">MCFLND_5_MFSBT1</option>
+<option value="MCFLND_5_MFSSR1">MCFLND_5_MFSSR1</option>
+<option value="MCFLND_5_MSBBX2">MCFLND_5_MSBBX2</option>
+<option value="MCFLND_5_MSBSX2">MCFLND_5_MSBSX2</option>
+<option value="MCSWAN_6_UNITS">MCSWAN_6_UNITS</option>
+<option value="MDFKRL_2_PROJCT">MDFKRL_2_PROJCT</option>
+<option value="MELRSE_6_MELBT1">MELRSE_6_MELBT1</option>
+<option value="MELRSE_6_MELBT2">MELRSE_6_MELBT2</option>
+<option value="MENBIO_6_RENEW1">MENBIO_6_RENEW1</option>
+<option value="METEC_2_PL1X3">METEC_2_PL1X3</option>
+<option value="MIDWD_2_WIND2">MIDWD_2_WIND2</option>
+<option value="MIDWD_7_CORAMB">MIDWD_7_CORAMB</option>
+<option value="MIDWY3_2_MDSSR1">MIDWY3_2_MDSSR1</option>
+<option value="MIDWYS_2_MIDSL1">MIDWYS_2_MIDSL1</option>
+<option value="MILFRD_7_PASADENA">MILFRD_7_PASADENA</option>
+<option value="MIRLOM_2_CORONA">MIRLOM_2_CORONA</option>
+<option value="MIRLOM_2_CREST">MIRLOM_2_CREST</option>
+<option value="MIRLOM_2_LNDFL">MIRLOM_2_LNDFL</option>
+<option value="MIRLOM_2_MLBBTA">MIRLOM_2_MLBBTA</option>
+<option value="MIRLOM_2_MLBBTB">MIRLOM_2_MLBBTB</option>
+<option value="MIRLOM_2_TEMESC">MIRLOM_2_TEMESC</option>
+<option value="MIRLOM_6_PEAKER">MIRLOM_6_PEAKER</option>
+<option value="MIRLOM_7_MWDLKM">MIRLOM_7_MWDLKM</option>
+<option value="MKTRCK_1_UNIT 1">MKTRCK_1_UNIT 1</option>
+<option value="MNDALY_6_MCGRTH">MNDALY_6_MCGRTH</option>
+<option value="MNDOTA_1_SOLAR1">MNDOTA_1_SOLAR1</option>
+<option value="MNDOTA_1_SOLAR2">MNDOTA_1_SOLAR2</option>
+<option value="MOJAVE_1_SIPHON">MOJAVE_1_SIPHON</option>
+<option value="MOJAVW_2_SOLAR">MOJAVW_2_SOLAR</option>
+<option value="MONTPH_7_UNITS">MONTPH_7_UNITS</option>
+<option value="MOORPK_2_ACOBT1">MOORPK_2_ACOBT1</option>
+<option value="MOORPK_2_CALABS">MOORPK_2_CALABS</option>
+<option value="MORWD_6_QF">MORWD_6_QF</option>
+<option value="MOSSLD_2_PSP1">MOSSLD_2_PSP1</option>
+<option value="MOSSLD_2_PSP2">MOSSLD_2_PSP2</option>
+<option value="MRCHNT_2_PL1X3">MRCHNT_2_PL1X3</option>
+<option value="MRGT_6_MEF2">MRGT_6_MEF2</option>
+<option value="MRGT_6_MMAREF">MRGT_6_MMAREF</option>
+<option value="MRGT_6_TGEBT1">MRGT_6_TGEBT1</option>
+<option value="MRLSDS_6_SOLAR1">MRLSDS_6_SOLAR1</option>
+<option value="MSOLAR_2_MS4BT1">MSOLAR_2_MS4BT1</option>
+<option value="MSOLAR_2_MS4SR4">MSOLAR_2_MS4SR4</option>
+<option value="MSOLAR_2_SOLAR1">MSOLAR_2_SOLAR1</option>
+<option value="MSOLAR_2_SOLAR2">MSOLAR_2_SOLAR2</option>
+<option value="MSOLAR_2_SOLAR3">MSOLAR_2_SOLAR3</option>
+<option value="MSTANG_2_MTGBT1">MSTANG_2_MTGBT1</option>
+<option value="MSTANG_2_SOLAR">MSTANG_2_SOLAR</option>
+<option value="MSTANG_2_SOLAR3">MSTANG_2_SOLAR3</option>
+<option value="MSTANG_2_SOLAR4">MSTANG_2_SOLAR4</option>
+<option value="MTNPOS_1_UNIT">MTNPOS_1_UNIT</option>
+<option value="MTWIND_1_MVPWD1">MTWIND_1_MVPWD1</option>
+<option value="MTWIND_1_UNIT 3">MTWIND_1_UNIT 3</option>
+<option value="MURRAY_6_UNIT">MURRAY_6_UNIT</option>
+<option value="NAROW1_2_UNIT">NAROW1_2_UNIT</option>
+<option value="NAROW2_2_UNIT">NAROW2_2_UNIT</option>
+<option value="NAVYII_2_UNITS">NAVYII_2_UNITS</option>
+<option value="NCPA_7_GP1UN1">NCPA_7_GP1UN1</option>
+<option value="NCPA_7_GP1UN2">NCPA_7_GP1UN2</option>
+<option value="NCPA_7_GP2UN3">NCPA_7_GP2UN3</option>
+<option value="NCPA_7_GP2UN4">NCPA_7_GP2UN4</option>
+<option value="NEENCH_6_SOLAR">NEENCH_6_SOLAR</option>
+<option value="NGILAA_5_SDGDYN">NGILAA_5_SDGDYN</option>
+<option value="NHOGAN_6_UNITS">NHOGAN_6_UNITS</option>
+<option value="NOAKS_2_PESBT1">NOAKS_2_PESBT1</option>
+<option value="NORCNV_1_NCVBT1">NORCNV_1_NCVBT1</option>
+<option value="NORORC_2_NOSBX2">NORORC_2_NOSBX2</option>
+<option value="NOVATO_6_LNDFL">NOVATO_6_LNDFL</option>
+<option value="NWCSTL_7_UNIT 1">NWCSTL_7_UNIT 1</option>
+<option value="NZWIND_2_WDSTR5">NZWIND_2_WDSTR5</option>
+<option value="NZWIND_6_CALWND">NZWIND_6_CALWND</option>
+<option value="NZWIND_6_WDSTR">NZWIND_6_WDSTR</option>
+<option value="NZWIND_6_WDSTR2">NZWIND_6_WDSTR2</option>
+<option value="NZWIND_6_WDSTR3">NZWIND_6_WDSTR3</option>
+<option value="NZWIND_6_WDSTR4">NZWIND_6_WDSTR4</option>
+<option value="OAK C_7_UNIT 1">OAK C_7_UNIT 1</option>
+<option value="OAK C_7_UNIT 3">OAK C_7_UNIT 3</option>
+<option value="OAK L_1_GTG1">OAK L_1_GTG1</option>
+<option value="OAKWD_6_QF">OAKWD_6_QF</option>
+<option value="OAKWD_6_ZEPHWD">OAKWD_6_ZEPHWD</option>
+<option value="OASIS_6_AR4SR1">OASIS_6_AR4SR1</option>
+<option value="OASIS_6_AR4SR3">OASIS_6_AR4SR3</option>
+<option value="OASIS_6_AR8SR1">OASIS_6_AR8SR1</option>
+<option value="OASIS_6_AR8SR2">OASIS_6_AR8SR2</option>
+<option value="OASIS_6_AR8SR3">OASIS_6_AR8SR3</option>
+<option value="OASIS_6_CREST">OASIS_6_CREST</option>
+<option value="OASIS_6_MA4SR1">OASIS_6_MA4SR1</option>
+<option value="OASIS_6_VINSR1">OASIS_6_VINSR1</option>
+<option value="OBERON_5_O1BBX2">OBERON_5_O1BBX2</option>
+<option value="OBERON_5_O1SSR3">OBERON_5_O1SSR3</option>
+<option value="OBERON_5_O1SSX2">OBERON_5_O1SSX2</option>
+<option value="OBERON_5_O2BBX2">OBERON_5_O2BBX2</option>
+<option value="OBERON_5_O2SSR4">OBERON_5_O2SSR4</option>
+<option value="OBERON_5_O2SSR5">OBERON_5_O2SSR5</option>
+<option value="OCOTLO_6_OCWSB1">OCOTLO_6_OCWSB1</option>
+<option value="OGROVE_6_PL1X2">OGROVE_6_PL1X2</option>
+<option value="OILFLD_7_QFUNTS">OILFLD_7_QFUNTS</option>
+<option value="OLDRIV_6_CESDBM">OLDRIV_6_CESDBM</option>
+<option value="OLDRIV_6_LKVBM1">OLDRIV_6_LKVBM1</option>
+<option value="OLDRV1_6_SOLAR">OLDRV1_6_SOLAR</option>
+<option value="OLINDA_2_LNDFL2">OLINDA_2_LNDFL2</option>
+<option value="OLIVEP_1_SOLAR">OLIVEP_1_SOLAR</option>
+<option value="OLIVEP_1_SOLAR2">OLIVEP_1_SOLAR2</option>
+<option value="OLSEN_2_UNIT">OLSEN_2_UNIT</option>
+<option value="OMAR_2_UNIT 1">OMAR_2_UNIT 1</option>
+<option value="OMAR_2_UNIT 2">OMAR_2_UNIT 2</option>
+<option value="OMAR_2_UNIT 3">OMAR_2_UNIT 3</option>
+<option value="OMAR_2_UNIT 4">OMAR_2_UNIT 4</option>
+<option value="ONLLPP_6_UNITS">ONLLPP_6_UNITS</option>
+<option value="ORMOND_7_UNIT 1">ORMOND_7_UNIT 1</option>
+<option value="ORMOND_7_UNIT 2">ORMOND_7_UNIT 2</option>
+<option value="OROLOM_1_SOLAR1">OROLOM_1_SOLAR1</option>
+<option value="OROLOM_1_SOLAR2">OROLOM_1_SOLAR2</option>
+<option value="OROVIL_6_UNIT">OROVIL_6_UNIT</option>
+<option value="ORTGA_6_ME1SL1">ORTGA_6_ME1SL1</option>
+<option value="OTAY_6_ECVBT1">OTAY_6_ECVBT1</option>
+<option value="OTAY_6_ECVBT2">OTAY_6_ECVBT2</option>
+<option value="OTAY_6_PL1X2">OTAY_6_PL1X2</option>
+<option value="OTMESA_2_PL1X3">OTMESA_2_PL1X3</option>
+<option value="OXBOW_6_DRUM">OXBOW_6_DRUM</option>
+<option value="OXMTN_6_LNDFIL">OXMTN_6_LNDFIL</option>
+<option value="PACLUM_6_UNIT">PACLUM_6_UNIT</option>
+<option value="PADUA_2_ONTARO">PADUA_2_ONTARO</option>
+<option value="PADUA_7_SDIMAS">PADUA_7_SDIMAS</option>
+<option value="PAIGES_6_SOLAR">PAIGES_6_SOLAR</option>
+<option value="PALA_6_PGCBT1">PALA_6_PGCBT1</option>
+<option value="PALOMR_2_PL1X3">PALOMR_2_PL1X3</option>
+<option value="PALSEL_6_PLSBT1">PALSEL_6_PLSBT1</option>
+<option value="PANERO_2_MWPWD1">PANERO_2_MWPWD1</option>
+<option value="PARDEB_6_UNITS">PARDEB_6_UNITS</option>
+<option value="PBLOSM_2_SOLAR">PBLOSM_2_SOLAR</option>
+<option value="PEABDY_2_LNDFIL">PEABDY_2_LNDFIL</option>
+<option value="PEABDY_2_LNDFL1">PEABDY_2_LNDFL1</option>
+<option value="PEARBL_2_NSPIN">PEARBL_2_NSPIN</option>
+<option value="PEASE_1_TBEBT1">PEASE_1_TBEBT1</option>
+<option value="PEORIA_1_SOLAR">PEORIA_1_SOLAR</option>
+<option value="PGKN_2_PDRP01">PGKN_2_PDRP01</option>
+<option value="PGKN_2_PDRP04">PGKN_2_PDRP04</option>
+<option value="PGNP_2_RDRR02">PGNP_2_RDRR02</option>
+<option value="PGNP_2_RDRR03">PGNP_2_RDRR03</option>
+<option value="PGSB_1_PDRP20">PGSB_1_PDRP20</option>
+<option value="PGST_2_RDRR01">PGST_2_RDRR01</option>
+<option value="PGZP_2_PDRP05">PGZP_2_PDRP05</option>
+<option value="PHOENX_1_UNIT">PHOENX_1_UNIT</option>
+<option value="PINFLT_7_UNITS">PINFLT_7_UNITS</option>
+<option value="PIOPIC_2_CTG1">PIOPIC_2_CTG1</option>
+<option value="PIOPIC_2_CTG2">PIOPIC_2_CTG2</option>
+<option value="PIOPIC_2_CTG3">PIOPIC_2_CTG3</option>
+<option value="PIT1_6_FRIVRA">PIT1_6_FRIVRA</option>
+<option value="PIT1_7_UNIT 1">PIT1_7_UNIT 1</option>
+<option value="PIT1_7_UNIT 2">PIT1_7_UNIT 2</option>
+<option value="PIT3_7_PL1X3">PIT3_7_PL1X3</option>
+<option value="PIT4_7_PL1X2">PIT4_7_PL1X2</option>
+<option value="PIT5_7_PL1X2">PIT5_7_PL1X2</option>
+<option value="PIT5_7_PL3X4">PIT5_7_PL3X4</option>
+<option value="PIT5_7_QFUNTS">PIT5_7_QFUNTS</option>
+<option value="PIT6_7_UNIT 1">PIT6_7_UNIT 1</option>
+<option value="PIT6_7_UNIT 2">PIT6_7_UNIT 2</option>
+<option value="PIT7_7_UNIT 1">PIT7_7_UNIT 1</option>
+<option value="PIT7_7_UNIT 2">PIT7_7_UNIT 2</option>
+<option value="PIUTE_6_GNBSR1">PIUTE_6_GNBSR1</option>
+<option value="PLACVL_1_CHILIB">PLACVL_1_CHILIB</option>
+<option value="PLAINV_6_BSOLAR">PLAINV_6_BSOLAR</option>
+<option value="PLAINV_6_DSOLAR">PLAINV_6_DSOLAR</option>
+<option value="PLAINV_6_NLRSR1">PLAINV_6_NLRSR1</option>
+<option value="PLAINV_6_SOLAR3">PLAINV_6_SOLAR3</option>
+<option value="PLAINV_6_SOLARC">PLAINV_6_SOLARC</option>
+<option value="PLMSSR_6_HISIER">PLMSSR_6_HISIER</option>
+<option value="PLSNTG_7_LNCLND">PLSNTG_7_LNCLND</option>
+<option value="PMDLET_6_SOLAR1">PMDLET_6_SOLAR1</option>
+<option value="PMPJCK_1_RB2SLR">PMPJCK_1_RB2SLR</option>
+<option value="PMPJCK_1_SOLAR1">PMPJCK_1_SOLAR1</option>
+<option value="PMPJCK_1_SOLAR2">PMPJCK_1_SOLAR2</option>
+<option value="PNCHEG_2_PL1X4">PNCHEG_2_PL1X4</option>
+<option value="PNCHPP_1_PL1X2">PNCHPP_1_PL1X2</option>
+<option value="PNCHVS_2_SOLAR">PNCHVS_2_SOLAR</option>
+<option value="PNOCHE_1_PL1X2">PNOCHE_1_PL1X2</option>
+<option value="PNOCHE_1_UNITA1">PNOCHE_1_UNITA1</option>
+<option value="POEPH_7_UNIT 1">POEPH_7_UNIT 1</option>
+<option value="POEPH_7_UNIT 2">POEPH_7_UNIT 2</option>
+<option value="POLRIS_2_ASEBT1">POLRIS_2_ASEBT1</option>
+<option value="POLRIS_2_ASESR1">POLRIS_2_ASESR1</option>
+<option value="POLRIS_2_ASRBT1">POLRIS_2_ASRBT1</option>
+<option value="POLRIS_2_ASRSR1">POLRIS_2_ASRSR1</option>
+<option value="POTTER_7_VECINO">POTTER_7_VECINO</option>
+<option value="PRCTVY_1_MIGBT1">PRCTVY_1_MIGBT1</option>
+<option value="PRIMM_2_SOLAR1">PRIMM_2_SOLAR1</option>
+<option value="PROXSR_2_PROSR1">PROXSR_2_PROSR1</option>
+<option value="PROXSR_2_PS1BT1">PROXSR_2_PS1BT1</option>
+<option value="PROXSR_2_PS1BT2">PROXSR_2_PS1BT2</option>
+<option value="PROXSR_2_PS1SR2">PROXSR_2_PS1SR2</option>
+<option value="PROXSR_2_PS2BT3">PROXSR_2_PS2BT3</option>
+<option value="PUTHCR_1_PCNSB1">PUTHCR_1_PCNSB1</option>
+<option value="PUTHCR_1_SOLAR1">PUTHCR_1_SOLAR1</option>
+<option value="RAMON_2_SCEDYN">RAMON_2_SCEDYN</option>
+<option value="RATSKE_2_NROSR1">RATSKE_2_NROSR1</option>
+<option value="RATSKE_2_RBSSB1">RATSKE_2_RBSSB1</option>
+<option value="RATSKE_2_RBSSB2">RATSKE_2_RBSSB2</option>
+<option value="RCKCRK_7_UNIT 1">RCKCRK_7_UNIT 1</option>
+<option value="RCKCRK_7_UNIT 2">RCKCRK_7_UNIT 2</option>
+<option value="RDWAY_1_SCKSR1">RDWAY_1_SCKSR1</option>
+<option value="RECTOR_2_KAWEAH">RECTOR_2_KAWEAH</option>
+<option value="RECTOR_2_KAWH 1">RECTOR_2_KAWH 1</option>
+<option value="RECTOR_2_QF">RECTOR_2_QF</option>
+<option value="RECTOR_2_TFDBM1">RECTOR_2_TFDBM1</option>
+<option value="RECTOR_2_VISSR1">RECTOR_2_VISSR1</option>
+<option value="REDOND_7_UNIT 5">REDOND_7_UNIT 5</option>
+<option value="REDOND_7_UNIT 6">REDOND_7_UNIT 6</option>
+<option value="REDOND_7_UNIT 8">REDOND_7_UNIT 8</option>
+<option value="REEDLY_6_SOLAR">REEDLY_6_SOLAR</option>
+<option value="RENWD_1_QF">RENWD_1_QF</option>
+<option value="REXFRD_2_RSFBX2">REXFRD_2_RSFBX2</option>
+<option value="REXFRD_2_RSFSX2">REXFRD_2_RSFSX2</option>
+<option value="RICHMN_1_CHVSR2">RICHMN_1_CHVSR2</option>
+<option value="RICHMN_1_SOLAR">RICHMN_1_SOLAR</option>
+<option value="RICHMN_7_BAYENV">RICHMN_7_BAYENV</option>
+<option value="RIOBRV_6_UNIT 1">RIOBRV_6_UNIT 1</option>
+<option value="RNDSBG_1_HZASR1">RNDSBG_1_HZASR1</option>
+<option value="ROLLIN_6_UNIT">ROLLIN_6_UNIT</option>
+<option value="ROMOLA_5_MPBBT1">ROMOLA_5_MPBBT1</option>
+<option value="ROMOLA_5_MPBBT2">ROMOLA_5_MPBBT2</option>
+<option value="ROMOLA_5_MPBBT3">ROMOLA_5_MPBBT3</option>
+<option value="ROMOLA_5_MPBBT4">ROMOLA_5_MPBBT4</option>
+<option value="ROSMDW_2_WIND1">ROSMDW_2_WIND1</option>
+<option value="ROSMND_6_SOLAR">ROSMND_6_SOLAR</option>
+<option value="RSMSLR_6_SOLAR1">RSMSLR_6_SOLAR1</option>
+<option value="RSMSLR_6_SOLAR2">RSMSLR_6_SOLAR2</option>
+<option value="RTEDDY_2_RWSBT1">RTEDDY_2_RWSBT1</option>
+<option value="RTEDDY_2_RWSBT2">RTEDDY_2_RWSBT2</option>
+<option value="RTEDDY_2_RWSBT3">RTEDDY_2_RWSBT3</option>
+<option value="RTEDDY_2_RWSBT4">RTEDDY_2_RWSBT4</option>
+<option value="RTEDDY_2_RWSBT5">RTEDDY_2_RWSBT5</option>
+<option value="RTEDDY_2_SC1SR3">RTEDDY_2_SC1SR3</option>
+<option value="RTEDDY_2_SEBSR3">RTEDDY_2_SEBSR3</option>
+<option value="RTEDDY_2_SEBSR4">RTEDDY_2_SEBSR4</option>
+<option value="RTEDDY_2_SOLAR1">RTEDDY_2_SOLAR1</option>
+<option value="RTEDDY_2_SOLAR2">RTEDDY_2_SOLAR2</option>
+<option value="RTEDDY_2_SPASR4">RTEDDY_2_SPASR4</option>
+<option value="RTEDDY_2_SRXSR4">RTEDDY_2_SRXSR4</option>
+<option value="RTREE_2_WIND1">RTREE_2_WIND1</option>
+<option value="RTREE_2_WIND2">RTREE_2_WIND2</option>
+<option value="RTREE_2_WIND3">RTREE_2_WIND3</option>
+<option value="RUSCTY_2_UNITS">RUSCTY_2_UNITS</option>
+<option value="RVRVEW_1_UNITA1">RVRVEW_1_UNITA1</option>
+<option value="RVSIDE_2_RERCU3">RVSIDE_2_RERCU3</option>
+<option value="RVSIDE_2_RERCU4">RVSIDE_2_RERCU4</option>
+<option value="RVSIDE_6_RERCU1">RVSIDE_6_RERCU1</option>
+<option value="RVSIDE_6_RERCU2">RVSIDE_6_RERCU2</option>
+<option value="RVSIDE_6_SPRING">RVSIDE_6_SPRING</option>
+<option value="SALIRV_2_UNIT">SALIRV_2_UNIT</option>
+<option value="SALTSP_7_UNITS">SALTSP_7_UNITS</option>
+<option value="SAMPSN_6_KELCO1">SAMPSN_6_KELCO1</option>
+<option value="SANBRN_2_EESSB2">SANBRN_2_EESSB2</option>
+<option value="SANBRN_2_ES1BT3">SANBRN_2_ES1BT3</option>
+<option value="SANBRN_2_ES2SB3">SANBRN_2_ES2SB3</option>
+<option value="SANBRN_2_ESABT1">SANBRN_2_ESABT1</option>
+<option value="SANBRN_2_ESBBT1">SANBRN_2_ESBBT1</option>
+<option value="SANBRN_2_SS2BT3">SANBRN_2_SS2BT3</option>
+<option value="SANBRN_2_SS2BT4">SANBRN_2_SS2BT4</option>
+<option value="SANBRN_2_SS2SB4">SANBRN_2_SS2SB4</option>
+<option value="SANDLT_2_SUNITS">SANDLT_2_SUNITS</option>
+<option value="SANDRN_2_SS1SR1">SANDRN_2_SS1SR1</option>
+<option value="SANDRN_2_SS2SR2">SANDRN_2_SS2SR2</option>
+<option value="SANLOB_1_LNDFIL">SANLOB_1_LNDFIL</option>
+<option value="SANTFG_7_UNITS">SANTFG_7_UNITS</option>
+<option value="SANTGO_2_LNDFL1">SANTGO_2_LNDFL1</option>
+<option value="SANTGO_2_MABBT1">SANTGO_2_MABBT1</option>
+<option value="SANWD_1_QF">SANWD_1_QF</option>
+<option value="SAUGUS_2_SPESBT1">SAUGUS_2_SPESBT1</option>
+<option value="SAUGUS_7_CHIQCN">SAUGUS_7_CHIQCN</option>
+<option value="SBERDO_2_PSP3">SBERDO_2_PSP3</option>
+<option value="SBERDO_2_PSP4">SBERDO_2_PSP4</option>
+<option value="SBERDO_2_RTS011">SBERDO_2_RTS011</option>
+<option value="SBERDO_2_SNTANA">SBERDO_2_SNTANA</option>
+<option value="SBERDO_6_MILLCK">SBERDO_6_MILLCK</option>
+<option value="SCARLT_2_SS2BT1">SCARLT_2_SS2BT1</option>
+<option value="SCARLT_2_SS2SR1">SCARLT_2_SS2SR1</option>
+<option value="SCARLT_2_SSABT1">SCARLT_2_SSABT1</option>
+<option value="SCARLT_2_SSASR1">SCARLT_2_SSASR1</option>
+<option value="SCARLT_2_SSBBT1">SCARLT_2_SSBBT1</option>
+<option value="SCARLT_2_SSBSR1">SCARLT_2_SSBSR1</option>
+<option value="SCEC_1_PDRP124">SCEC_1_PDRP124</option>
+<option value="SCEC_1_PDRP16">SCEC_1_PDRP16</option>
+<option value="SCEC_1_PDRP17">SCEC_1_PDRP17</option>
+<option value="SCEC_1_PDRP173">SCEC_1_PDRP173</option>
+<option value="SCEC_1_PDRP60">SCEC_1_PDRP60</option>
+<option value="SCEC_1_RDRR08">SCEC_1_RDRR08</option>
+<option value="SCEC_1_RDRR35">SCEC_1_RDRR35</option>
+<option value="SCEC_1_RDRR36">SCEC_1_RDRR36</option>
+<option value="SCEC_1_RDRR37">SCEC_1_RDRR37</option>
+<option value="SCEC_1_RDRR38">SCEC_1_RDRR38</option>
+<option value="SCEHOV_2_HOOVER">SCEHOV_2_HOOVER</option>
+<option value="SCEN_6_RDRR02">SCEN_6_RDRR02</option>
+<option value="SCEN_6_RDRR12">SCEN_6_RDRR12</option>
+<option value="SCEW_2_PDRP03">SCEW_2_PDRP03</option>
+<option value="SCEW_2_PDRP09">SCEW_2_PDRP09</option>
+<option value="SCEW_2_PDRP10">SCEW_2_PDRP10</option>
+<option value="SCEW_2_PDRP114">SCEW_2_PDRP114</option>
+<option value="SCEW_2_PDRP12">SCEW_2_PDRP12</option>
+<option value="SCEW_2_PDRP159">SCEW_2_PDRP159</option>
+<option value="SCEW_2_PDRP160">SCEW_2_PDRP160</option>
+<option value="SCEW_2_PDRP163">SCEW_2_PDRP163</option>
+<option value="SCEW_2_PDRP167">SCEW_2_PDRP167</option>
+<option value="SCEW_2_PDRP35">SCEW_2_PDRP35</option>
+<option value="SCEW_2_PDRP85">SCEW_2_PDRP85</option>
+<option value="SCEW_2_PDRP89">SCEW_2_PDRP89</option>
+<option value="SCEW_2_RDRR08">SCEW_2_RDRR08</option>
+<option value="SCEW_2_RDRR25">SCEW_2_RDRR25</option>
+<option value="SCEW_2_RDRR26">SCEW_2_RDRR26</option>
+<option value="SCHD_1_RDRR08">SCHD_1_RDRR08</option>
+<option value="SCHD_1_RDRR11">SCHD_1_RDRR11</option>
+<option value="SCHLTE_1_PL1X3">SCHLTE_1_PL1X3</option>
+<option value="SCHNDR_1_FIVPTS">SCHNDR_1_FIVPTS</option>
+<option value="SCHNDR_1_WSTSDE">SCHNDR_1_WSTSDE</option>
+<option value="SCNW_6_PDRP05">SCNW_6_PDRP05</option>
+<option value="SCNW_6_PDRP57">SCNW_6_PDRP57</option>
+<option value="SCNW_6_PDRP61">SCNW_6_PDRP61</option>
+<option value="SCNW_6_RDRR08">SCNW_6_RDRR08</option>
+<option value="SCNW_6_RDRR10">SCNW_6_RDRR10</option>
+<option value="SEARLS_1_TS3SR1">SEARLS_1_TS3SR1</option>
+<option value="SEARLS_7_ARGUS">SEARLS_7_ARGUS</option>
+<option value="SEGS_1_SR2SL2">SEGS_1_SR2SL2</option>
+<option value="SENTNL_2_CTG1">SENTNL_2_CTG1</option>
+<option value="SENTNL_2_CTG2">SENTNL_2_CTG2</option>
+<option value="SENTNL_2_CTG3">SENTNL_2_CTG3</option>
+<option value="SENTNL_2_CTG4">SENTNL_2_CTG4</option>
+<option value="SENTNL_2_CTG5">SENTNL_2_CTG5</option>
+<option value="SENTNL_2_CTG6">SENTNL_2_CTG6</option>
+<option value="SENTNL_2_CTG7">SENTNL_2_CTG7</option>
+<option value="SENTNL_2_CTG8">SENTNL_2_CTG8</option>
+<option value="SGREGY_6_SANGER">SGREGY_6_SANGER</option>
+<option value="SHAFTR_1_HWYSR1">SHAFTR_1_HWYSR1</option>
+<option value="SHANDN_2_SBBBM1">SHANDN_2_SBBBM1</option>
+<option value="SHUTLE_6_RUISR1">SHUTLE_6_RUISR1</option>
+<option value="SHUTLE_6_RUISR2">SHUTLE_6_RUISR2</option>
+<option value="SHUTLE_6_RUISR3">SHUTLE_6_RUISR3</option>
+<option value="SIERRA_1_UNITS">SIERRA_1_UNITS</option>
+<option value="SIGHEB_6_HE2SCEDYN">SIGHEB_6_HE2SCEDYN</option>
+<option value="SIGHEB_6_MIRDYN">SIGHEB_6_MIRDYN</option>
+<option value="SISPRG_2_DS3BT1">SISPRG_2_DS3BT1</option>
+<option value="SISPRG_2_DS3BT2">SISPRG_2_DS3BT2</option>
+<option value="SISPRG_2_DS3BT3">SISPRG_2_DS3BT3</option>
+<option value="SISPRG_2_DS3BT4">SISPRG_2_DS3BT4</option>
+<option value="SISPRG_2_DS3SR1">SISPRG_2_DS3SR1</option>
+<option value="SISPRG_2_DS3SR2">SISPRG_2_DS3SR2</option>
+<option value="SISPRG_2_DS3SR3">SISPRG_2_DS3SR3</option>
+<option value="SISPRG_2_DS3SR4">SISPRG_2_DS3SR4</option>
+<option value="SKERN_6_SOLAR1">SKERN_6_SOLAR1</option>
+<option value="SKERN_6_SOLAR2">SKERN_6_SOLAR2</option>
+<option value="SLATE_2_SLASR1">SLATE_2_SLASR1</option>
+<option value="SLATE_2_SLASR2">SLATE_2_SLASR2</option>
+<option value="SLATE_2_SLASR3">SLATE_2_SLASR3</option>
+<option value="SLATE_2_SLASR4">SLATE_2_SLASR4</option>
+<option value="SLATE_2_SLASR5">SLATE_2_SLASR5</option>
+<option value="SLRMS3_2_SRMSR1">SLRMS3_2_SRMSR1</option>
+<option value="SLST13_2_SOLAR1">SLST13_2_SOLAR1</option>
+<option value="SLSTR1_2_SOLAR1">SLSTR1_2_SOLAR1</option>
+<option value="SLSTR2_2_SOLAR2">SLSTR2_2_SOLAR2</option>
+<option value="SLUISP_2_UNITS">SLUISP_2_UNITS</option>
+<option value="SLYCRK_1_UNIT 1">SLYCRK_1_UNIT 1</option>
+<option value="SMPRIP_1_SMPSON">SMPRIP_1_SMPSON</option>
+<option value="SMRCOS_6_LNDFIL">SMRCOS_6_LNDFIL</option>
+<option value="SMYRNA_1_DL1SR1">SMYRNA_1_DL1SR1</option>
+<option value="SNCLRA_2_HOWLNG">SNCLRA_2_HOWLNG</option>
+<option value="SNCLRA_2_SILBT1">SNCLRA_2_SILBT1</option>
+<option value="SNCLRA_2_UNIT1">SNCLRA_2_UNIT1</option>
+<option value="SNCLRA_2_VESBT1">SNCLRA_2_VESBT1</option>
+<option value="SNCLRA_6_OXGEN">SNCLRA_6_OXGEN</option>
+<option value="SNCLRA_6_PROCGN">SNCLRA_6_PROCGN</option>
+<option value="SNDBAR_7_UNIT 1">SNDBAR_7_UNIT 1</option>
+<option value="SNMALF_6_UNITS">SNMALF_6_UNITS</option>
+<option value="SNORA_2_SNRSLR">SNORA_2_SNRSLR</option>
+<option value="SOLBLU_2_WSBBX2">SOLBLU_2_WSBBX2</option>
+<option value="SOLBLU_2_WSBSX2">SOLBLU_2_WSBSX2</option>
+<option value="SOUTH_2_UNIT">SOUTH_2_UNIT</option>
+<option value="SPAULD_6_UNIT 3">SPAULD_6_UNIT 3</option>
+<option value="SPAULD_6_UNIT12">SPAULD_6_UNIT12</option>
+<option value="SPBURN_2_UNIT 1">SPBURN_2_UNIT 1</option>
+<option value="SPBURN_7_SNOWMT">SPBURN_7_SNOWMT</option>
+<option value="SPI LI_2_UNIT 1">SPI LI_2_UNIT 1</option>
+<option value="SPIAND_1_ANDSN2">SPIAND_1_ANDSN2</option>
+<option value="SPICER_1_UNITS">SPICER_1_UNITS</option>
+<option value="SPIFBD_1_PL1X2">SPIFBD_1_PL1X2</option>
+<option value="SPOINT_2_MEADDYN">SPOINT_2_MEADDYN</option>
+<option value="SPOINT_2_PARKERDYN">SPOINT_2_PARKERDYN</option>
+<option value="SPQUIN_6_SRPCQU">SPQUIN_6_SRPCQU</option>
+<option value="SPRGAP_1_UNIT 1">SPRGAP_1_UNIT 1</option>
+<option value="SPRGVL_2_SUCCES">SPRGVL_2_SUCCES</option>
+<option value="SRINTL_6_UNIT">SRINTL_6_UNIT</option>
+<option value="STANIS_7_UNIT 1">STANIS_7_UNIT 1</option>
+<option value="STANTN_2_SBEBX2">STANTN_2_SBEBX2</option>
+<option value="STANTN_2_STAGT1">STANTN_2_STAGT1</option>
+<option value="STANTN_2_STAGT2">STANTN_2_STAGT2</option>
+<option value="STIGCT_2_LODI">STIGCT_2_LODI</option>
+<option value="STNRES_1_UNIT">STNRES_1_UNIT</option>
+<option value="STOILS_1_UNITS">STOILS_1_UNITS</option>
+<option value="STRAUS_1_STRWD1">STRAUS_1_STRWD1</option>
+<option value="STROUD_6_WWHSR1">STROUD_6_WWHSR1</option>
+<option value="SUNCAT_2_A1ABT1">SUNCAT_2_A1ABT1</option>
+<option value="SUNCAT_2_A1BBT1">SUNCAT_2_A1BBT1</option>
+<option value="SUNCAT_2_A2ABT2">SUNCAT_2_A2ABT2</option>
+<option value="SUNCAT_2_A2BSR2">SUNCAT_2_A2BSR2</option>
+<option value="SUNRIS_2_PL1X3">SUNRIS_2_PL1X3</option>
+<option value="SUNSHN_2_LNDFL">SUNSHN_2_LNDFL</option>
+<option value="SUNSLR_1_SSVSR1">SUNSLR_1_SSVSR1</option>
+<option value="SUNSPT_2_WNASR1">SUNSPT_2_WNASR1</option>
+<option value="SUNST2_5_SS2SR1">SUNST2_5_SS2SR1</option>
+<option value="SUNSTR_5_SS1SCEDYN">SUNSTR_5_SS1SCEDYN</option>
+<option value="SUTTER_2_CISO">SUTTER_2_CISO</option>
+<option value="SYCAMR_2_UNIT 1">SYCAMR_2_UNIT 1</option>
+<option value="SYCAMR_2_UNIT 2">SYCAMR_2_UNIT 2</option>
+<option value="SYCAMR_2_UNIT 3">SYCAMR_2_UNIT 3</option>
+<option value="SYCAMR_2_UNIT 4">SYCAMR_2_UNIT 4</option>
+<option value="TAHOE_2_THOBT1">TAHOE_2_THOBT1</option>
+<option value="TAHOE_2_THOBT2">TAHOE_2_THOBT2</option>
+<option value="TAHOE_2_THOBT3">TAHOE_2_THOBT3</option>
+<option value="TANHIL_6_SOLART">TANHIL_6_SOLART</option>
+<option value="TBLMTN_6_QF">TBLMTN_6_QF</option>
+<option value="TECOLOTE_3_WBDYN">TECOLOTE_3_WBDYN</option>
+<option value="TEHAPI_2_PW1WD1">TEHAPI_2_PW1WD1</option>
+<option value="TEHAPI_2_PW2WD2">TEHAPI_2_PW2WD2</option>
+<option value="TEHAPI_2_WIND1">TEHAPI_2_WIND1</option>
+<option value="TEHAPI_2_WIND2">TEHAPI_2_WIND2</option>
+<option value="TENGEN_2_PL1X2">TENGEN_2_PL1X2</option>
+<option value="TERMEX_2_PL1X3">TERMEX_2_PL1X3</option>
+<option value="TIFFNY_1_DILLON">TIFFNY_1_DILLON</option>
+<option value="TIGRCK_7_UNITS">TIGRCK_7_UNITS</option>
+<option value="TITANS_2_TTSSR1">TITANS_2_TTSSR1</option>
+<option value="TKOPWR_6_HYDRO">TKOPWR_6_HYDRO</option>
+<option value="TOADTW_6_UNIT">TOADTW_6_UNIT</option>
+<option value="TOPAZ_2_SOLAR">TOPAZ_2_SOLAR</option>
+<option value="TORTLA_1_SOLAR">TORTLA_1_SOLAR</option>
+<option value="TOWNSITE_2_MEADDYN">TOWNSITE_2_MEADDYN</option>
+<option value="TRNQL8_2_AMASR1">TRNQL8_2_AMASR1</option>
+<option value="TRNQL8_2_AZUSR1">TRNQL8_2_AZUSR1</option>
+<option value="TRNQL8_2_ROJSR1">TRNQL8_2_ROJSR1</option>
+<option value="TRNQL8_2_VERSR1">TRNQL8_2_VERSR1</option>
+<option value="TRNQLT_2_RETBT1">TRNQLT_2_RETBT1</option>
+<option value="TRNQLT_2_SOLAR">TRNQLT_2_SOLAR</option>
+<option value="TULARE_2_TFCBM1">TULARE_2_TFCBM1</option>
+<option value="TULEWD_1_TULWD1">TULEWD_1_TULWD1</option>
+<option value="TULLCK_7_UNITS">TULLCK_7_UNITS</option>
+<option value="TUMBWD_2_WISBT3">TUMBWD_2_WISBT3</option>
+<option value="TUMBWD_2_WISBT4">TUMBWD_2_WISBT4</option>
+<option value="TUPMAN_1_BIOGAS">TUPMAN_1_BIOGAS</option>
+<option value="TVYVLY_6_KRSHY1">TVYVLY_6_KRSHY1</option>
+<option value="TWISSL_6_SOLAR1">TWISSL_6_SOLAR1</option>
+<option value="TX-ELK_6_SOLAR1">TX-ELK_6_SOLAR1</option>
+<option value="TXMCKT_6_UNIT">TXMCKT_6_UNIT</option>
+<option value="UKIAH_7_LAKEMN">UKIAH_7_LAKEMN</option>
+<option value="ULTPCH_1_UCSBT1">ULTPCH_1_UCSBT1</option>
+<option value="ULTPCH_1_UNIT 1">ULTPCH_1_UNIT 1</option>
+<option value="ULTPFR_1_UNIT 1">ULTPFR_1_UNIT 1</option>
+<option value="ULTRCK_2_UNIT">ULTRCK_2_UNIT</option>
+<option value="UNVRSY_1_UNIT 1">UNVRSY_1_UNIT 1</option>
+<option value="USWND2_1_WIND1">USWND2_1_WIND1</option>
+<option value="USWND2_1_WIND2">USWND2_1_WIND2</option>
+<option value="USWND2_1_WIND3">USWND2_1_WIND3</option>
+<option value="USWNDR_2_LABWD1">USWNDR_2_LABWD1</option>
+<option value="USWNDR_2_SMUD2">USWNDR_2_SMUD2</option>
+<option value="USWPFK_6_FRICK">USWPFK_6_FRICK</option>
+<option value="USWPJR_2_UNITS">USWPJR_2_UNITS</option>
+<option value="VACADX_1_SOLAR">VACADX_1_SOLAR</option>
+<option value="VACADX_1_UNITA1">VACADX_1_UNITA1</option>
+<option value="VALLEY_5_PERRIS">VALLEY_5_PERRIS</option>
+<option value="VALLEY_5_REDMTN">VALLEY_5_REDMTN</option>
+<option value="VALLEY_5_SOLAR2">VALLEY_5_SOLAR2</option>
+<option value="VALTNE_2_AVASR1">VALTNE_2_AVASR1</option>
+<option value="VALTNE_2_TBBBT1">VALTNE_2_TBBBT1</option>
+<option value="VALTNE_2_TRSBT1">VALTNE_2_TRSBT1</option>
+<option value="VALTNE_2_TSASR1">VALTNE_2_TSASR1</option>
+<option value="VALTNE_2_TSASR2">VALTNE_2_TSASR2</option>
+<option value="VALTNE_2_TSBBT1">VALTNE_2_TSBBT1</option>
+<option value="VALTNE_2_TSBBT2">VALTNE_2_TSBBT2</option>
+<option value="VEGA_6_SOLAR1">VEGA_6_SOLAR1</option>
+<option value="VENWD_1_WIND3">VENWD_1_WIND3</option>
+<option value="VERNON_6_GONZL1">VERNON_6_GONZL1</option>
+<option value="VERNON_6_GONZL2">VERNON_6_GONZL2</option>
+<option value="VERNON_6_MALBRG">VERNON_6_MALBRG</option>
+<option value="VESTAL_2_BTNBT1">VESTAL_2_BTNBT1</option>
+<option value="VESTAL_2_KERN">VESTAL_2_KERN</option>
+<option value="VESTAL_2_RTS042">VESTAL_2_RTS042</option>
+<option value="VESTAL_2_SOLAR1">VESTAL_2_SOLAR1</option>
+<option value="VESTAL_2_SOLAR2">VESTAL_2_SOLAR2</option>
+<option value="VESTAL_2_TS5SR1">VESTAL_2_TS5SR1</option>
+<option value="VESTAL_2_UNIT1">VESTAL_2_UNIT1</option>
+<option value="VESTAL_2_WELLHD">VESTAL_2_WELLHD</option>
+<option value="VESTAL_6_QF">VESTAL_6_QF</option>
+<option value="VICPAS_2_SLOBT1">VICPAS_2_SLOBT1</option>
+<option value="VICPAS_2_SLOSR1">VICPAS_2_SLOSR1</option>
+<option value="VICPAS_2_SOCBT1">VICPAS_2_SOCBT1</option>
+<option value="VICPAS_2_SOCBT2">VICPAS_2_SOCBT2</option>
+<option value="VICPAS_2_SOCSR1">VICPAS_2_SOCSR1</option>
+<option value="VICPAS_2_SOCSR2">VICPAS_2_SOCSR2</option>
+<option value="VICPAS_2_SOCSR3">VICPAS_2_SOCSR3</option>
+<option value="VICPAS_2_VPSBT1">VICPAS_2_VPSBT1</option>
+<option value="VICPAS_2_VPSSR1">VICPAS_2_VPSSR1</option>
+<option value="VICTOR_1_EXSLRA">VICTOR_1_EXSLRA</option>
+<option value="VICTOR_1_EXSLRB">VICTOR_1_EXSLRB</option>
+<option value="VICTOR_1_LMISR2">VICTOR_1_LMISR2</option>
+<option value="VICTOR_1_LVSLR1">VICTOR_1_LVSLR1</option>
+<option value="VICTOR_1_LVSLR2">VICTOR_1_LVSLR2</option>
+<option value="VICTOR_1_SOLAR1">VICTOR_1_SOLAR1</option>
+<option value="VICTOR_1_SOLAR2">VICTOR_1_SOLAR2</option>
+<option value="VICTOR_1_SOLAR3">VICTOR_1_SOLAR3</option>
+<option value="VICTOR_1_SOLAR4">VICTOR_1_SOLAR4</option>
+<option value="VICTOR_1_VDRYFB">VICTOR_1_VDRYFB</option>
+<option value="VIKING_2_VCBBT1">VIKING_2_VCBBT1</option>
+<option value="VIKING_2_VCSSR1">VIKING_2_VCSSR1</option>
+<option value="VIKING_2_VSHSB1">VIKING_2_VSHSB1</option>
+<option value="VISTRA_5_DALBT1">VISTRA_5_DALBT1</option>
+<option value="VISTRA_5_DALBT2">VISTRA_5_DALBT2</option>
+<option value="VISTRA_5_DALBT3">VISTRA_5_DALBT3</option>
+<option value="VISTRA_5_DALBT4">VISTRA_5_DALBT4</option>
+<option value="VISTRA_5_PLABT1">VISTRA_5_PLABT1</option>
+<option value="VISTRA_5_PLABT2">VISTRA_5_PLABT2</option>
+<option value="VISTRA_5_PLABT3">VISTRA_5_PLABT3</option>
+<option value="VISTRA_5_PLABT4">VISTRA_5_PLABT4</option>
+<option value="VLCNTR_6_VCEBT1">VLCNTR_6_VCEBT1</option>
+<option value="VLCNTR_6_VCEBT2">VLCNTR_6_VCEBT2</option>
+<option value="VLCNTR_6_VCSLR">VLCNTR_6_VCSLR</option>
+<option value="VLCNTR_6_VCSLR1">VLCNTR_6_VCSLR1</option>
+<option value="VLCNTR_6_VCSLR2">VLCNTR_6_VCSLR2</option>
+<option value="VLYHOM_7_SSJID">VLYHOM_7_SSJID</option>
+<option value="VOLTA_2_UNIT 1">VOLTA_2_UNIT 1</option>
+<option value="VOLTA_2_UNIT 2">VOLTA_2_UNIT 2</option>
+<option value="VOLTA_6_BAILCK">VOLTA_6_BAILCK</option>
+<option value="VOLTA_6_DIGHYD">VOLTA_6_DIGHYD</option>
+<option value="VOLTA_7_PONHY1">VOLTA_7_PONHY1</option>
+<option value="VOLTA_7_QFUNTS">VOLTA_7_QFUNTS</option>
+<option value="VOYAGR_2_VOAWD5">VOYAGR_2_VOAWD5</option>
+<option value="VOYAGR_2_VOYWD1">VOYAGR_2_VOYWD1</option>
+<option value="VOYAGR_2_VOYWD2">VOYAGR_2_VOYWD2</option>
+<option value="VOYAGR_2_VOYWD3">VOYAGR_2_VOYWD3</option>
+<option value="VOYAGR_2_VOYWD4">VOYAGR_2_VOYWD4</option>
+<option value="VSTAES_6_VESBT1">VSTAES_6_VESBT1</option>
+<option value="WADHAM_6_UNIT">WADHAM_6_UNIT</option>
+<option value="WALCRK_2_CTG1">WALCRK_2_CTG1</option>
+<option value="WALCRK_2_CTG2">WALCRK_2_CTG2</option>
+<option value="WALCRK_2_CTG3">WALCRK_2_CTG3</option>
+<option value="WALCRK_2_CTG4">WALCRK_2_CTG4</option>
+<option value="WALCRK_2_CTG5">WALCRK_2_CTG5</option>
+<option value="WALNUT_6_HILLGEN">WALNUT_6_HILLGEN</option>
+<option value="WALNUT_7_WCOVST">WALNUT_7_WCOVST</option>
+<option value="WARNE_2_UNIT">WARNE_2_UNIT</option>
+<option value="WAUKNA_1_SOLAR">WAUKNA_1_SOLAR</option>
+<option value="WDFRDF_2_WFFBT1">WDFRDF_2_WFFBT1</option>
+<option value="WDLEAF_7_UNIT 1">WDLEAF_7_UNIT 1</option>
+<option value="WEBER_6_FORWRD">WEBER_6_FORWRD</option>
+<option value="WEEDPC_6_KNSSR1">WEEDPC_6_KNSSR1</option>
+<option value="WESCAN_2_BDSBT1">WESCAN_2_BDSBT1</option>
+<option value="WESCN2_2_BDSBT1">WESCN2_2_BDSBT1</option>
+<option value="WESTPT_2_UNIT">WESTPT_2_UNIT</option>
+<option value="WFRESN_1_SOLAR">WFRESN_1_SOLAR</option>
+<option value="WHITEW_5_WWAUXL1">WHITEW_5_WWAUXL1</option>
+<option value="WHITEW_5_WWRSR1">WHITEW_5_WWRSR1</option>
+<option value="WHITNY_6_SOLAR">WHITNY_6_SOLAR</option>
+<option value="WILLMS_6_ARBBM1">WILLMS_6_ARBBM1</option>
+<option value="WISE_1_UNIT 1">WISE_1_UNIT 1</option>
+<option value="WISE_1_UNIT 2">WISE_1_UNIT 2</option>
+<option value="WISHON_6_UNITS">WISHON_6_UNITS</option>
+<option value="WISTER_2_WISSR1">WISTER_2_WISSR1</option>
+<option value="WISTRA_2_WRSSR1">WISTRA_2_WRSSR1</option>
+<option value="WLDWD_1_SOLAR1">WLDWD_1_SOLAR1</option>
+<option value="WLDWD_1_SOLAR2">WLDWD_1_SOLAR2</option>
+<option value="WNDMAS_2_UNIT 1">WNDMAS_2_UNIT 1</option>
+<option value="WNDSTR_2_WIND">WNDSTR_2_WIND</option>
+<option value="WOLFSK_1_UNITA1">WOLFSK_1_UNITA1</option>
+<option value="WRGTSR_2_WSFSR1">WRGTSR_2_WSFSR1</option>
+<option value="WSENGY_1_UNIT 1">WSENGY_1_UNIT 1</option>
+<option value="WSNR_2_CVPDYN">WSNR_2_CVPDYN</option>
+<option value="WSTWND_2_M89BT2">WSTWND_2_M89BT2</option>
+<option value="WSTWND_2_M89WD1">WSTWND_2_M89WD1</option>
+<option value="WSTWND_2_M89WD2">WSTWND_2_M89WD2</option>
+<option value="WSTWND_2_M90WD2">WSTWND_2_M90WD2</option>
+<option value="WSTWND_2_SBSBT1">WSTWND_2_SBSBT1</option>
+<option value="WSTWND_2_SBSBT2">WSTWND_2_SBSBT2</option>
+<option value="WSTWND_2_SBSBT3">WSTWND_2_SBSBT3</option>
+<option value="YELPIN_2_YP2BT1">YELPIN_2_YP2BT1</option>
+<option value="YELPIN_2_YP2BT2">YELPIN_2_YP2BT2</option>
+<option value="YELPIN_2_YP2BT3">YELPIN_2_YP2BT3</option>
+<option value="YELPIN_2_YP2SR1">YELPIN_2_YP2SR1</option>
+<option value="YELPIN_2_YP2SR2">YELPIN_2_YP2SR2</option>
+<option value="YELPIN_2_YP2SR3">YELPIN_2_YP2SR3</option>
+<option value="YUBACT_1_SUNSWT">YUBACT_1_SUNSWT</option>
+<option value="YUBACT_6_UNITA1">YUBACT_6_UNITA1</option></select>
+<script type="application/json" data-for="generator_name">{"plugins":["selectize-plugin-a11y"]}</script>
+</div>
+</div>
+</div>
+<div class="cell-output-display html-fill-item html-fill-container">
+<button class="btn btn-default action-button btn-primary" id="submit_generator" type="button"><span class="action-label">Submit Resource</span></button>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div><div class="html-fill-item html-fill-container bslib-grid" style="display: grid; grid-template-rows: minmax(3em, 1fr); grid-auto-columns: minmax(0, 1fr);">
+<div class="card cell html-fill-item html-fill-container bslib-card" data-bslib-card-init data-require-bs-caller="card()" data-full-screen="false">
+<div class="card-body html-fill-item html-fill-container">
+<div class="cell-output-display html-fill-item html-fill-container no-overflow-x">
+<div id="id_match_summary" class="shiny-html-output html-fill-item html-fill-container"></div>
+</div>
+</div>
+<bslib-tooltip placement="auto" bsoptions="[]" data-require-bs-version="5" data-require-bs-caller="tooltip()">
+    <template>Expand</template>
+    <span class="bslib-full-screen-enter badge rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" style="height:1em;width:1em;" aria-hidden="true" role="img"><path d="M20 5C20 4.4 19.6 4 19 4H13C12.4 4 12 3.6 12 3C12 2.4 12.4 2 13 2H21C21.6 2 22 2.4 22 3V11C22 11.6 21.6 12 21 12C20.4 12 20 11.6 20 11V5ZM4 19C4 19.6 4.4 20 5 20H11C11.6 20 12 20.4 12 21C12 21.6 11.6 22 11 22H3C2.4 22 2 21.6 2 21V13C2 12.4 2.4 12 3 12C3.6 12 4 12.4 4 13V19Z" /></svg>
+    </span>
+</bslib-tooltip><script data-bslib-card-init>bslib.Card.initializeAllCards();</script></div>
 <div id="3ade8a4a-fb1d-4a6c-8409-ac45482d5fc9" class="hidden html-fill-item html-fill-container">
 
 </div>
@@ -3882,6 +5155,39 @@ gen_match_candidates <- eventReactive(input$submit_id, {
     ) |>
     arrange(desc(!is.na(confidence)), desc(score)) |>
     slice_head(n = 4)
+
+  bind_rows(
+    best_match,
+    other_matches
+  ) |>
+    left_join(
+      outage_events |>
+        select(`RESOURCE ID`, total_outage_events),
+      by = "RESOURCE ID"
+    )
+})
+
+
+id_match_candidates <- eventReactive(input$submit_generator, {
+  req(input$generator_name)
+
+  target_resource <- as.character(input$generator_name) |> str_trim()
+
+  best_match <- best_gen_match |>
+    filter(`RESOURCE NAME` == target_resource) |>
+    mutate(match_source = "final")
+
+  exclude_id <- best_match$RESOURCEBID_SEQ
+  n_other <- max(0, 5 - nrow(best_match))
+
+  other_matches <- gen_matches_all |>
+    filter(
+      `RESOURCE NAME` == target_resource,
+      !(RESOURCEBID_SEQ %in% exclude_id)
+    ) |>
+    arrange(desc(!is.na(confidence)), desc(score)) |>
+    slice_head(n = n_other) |>
+    mutate(match_source = "candidate")
 
   bind_rows(
     best_match,
@@ -4193,6 +5499,119 @@ output$gen_match_summary <- renderUI({
 })
 </script>
  
+<script type="application/shiny-prerendered" data-context="server">
+output$id_match_summary <- renderUI({
+  req(input$generator_name)
+
+  target_resource <- as.character(input$generator_name) |> str_trim()
+
+  id_rows <- id_match_candidates()
+
+  validate(
+    need(nrow(id_rows) > 0, "No anonymous ID matches found for this resource.")
+  )
+
+  candidate_labels <- c(
+    "top candidate",
+    "second candidate",
+    "third candidate",
+    "fourth candidate",
+    "fifth candidate"
+  )
+
+  cards <- purrr::map(seq_len(nrow(id_rows)), function(i) {
+    row <- id_rows[i, ]
+
+    anonymous_id <- as.character(row$RESOURCEBID_SEQ)
+    resource_pmax <- round(row$`RESOURCE PMAX MW`, 3)
+    id_max_mw <- round(row$seq_max_mw, 3)
+    n_matches <- row$n_matches
+    total_events <- row$total_outage_events
+    score <- round(row$score, 3)
+    confidence <- round(row$confidence, 3)
+    match_source <- row$match_source
+
+    match_label <- if (!is.na(match_source) && match_source == "final") {
+      "selected final"
+    } else {
+      candidate_labels[i]
+    }
+
+    confidence_text <- if (!is.na(confidence)) {
+      tagList(
+        ", with a ",
+        tags$span(
+          "confidence",
+          title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match. Confidence is only used between the top two matches.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " of ",
+        tags$strong(confidence, style = "color:#3498DB;")
+      )
+    } else {
+      NULL
+    }
+
+    div(
+      class = "card",
+      style = "
+        padding: 18px;
+        margin-bottom: 14px;
+        background-color: #FFFFFF;
+        border-left: 6px solid #a2c7ea;
+        font-size: 16px;
+        line-height: 1.6;
+      ",
+
+      p(
+        style = "margin-top:8px; margin-bottom:0;",
+
+        "The ",
+        match_label,
+        " ",
+        tags$span(
+          "anonymous ID",
+          title = "Anonymized RTM Resource ID matched to the selected resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for resource ",
+        tags$strong(target_resource, style = "color:#F39C12;"),
+        " is ",
+        tags$strong(anonymous_id),
+        ". Our final ",
+        tags$span(
+          "score",
+          title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for this match is ",
+        tags$strong(score, style = "color:#3498DB;"),
+        confidence_text,
+        ". Why? The resource ",
+        tags$span(
+          "Pmax",
+          title = "CAISO reported physical maximum output for the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " is ",
+        tags$strong(paste0(resource_pmax, " MW"), style = "color:#18BC9C;"),
+        ", and ID ",
+        anonymous_id,
+        "'s maximum MW ever submitted in a bid is ",
+        tags$strong(paste0(id_max_mw, " MW"), style = "color:#18BC9C;"),
+        ". Out of ",
+        tags$strong(style = "color:#E74C3C;", total_events),
+        " total outage events, ",
+        tags$strong(style = "color:#E98A7F;", n_matches),
+        " matched this anonymous ID."
+      )
+    )
+  })
+
+  tagList(cards)
+})
+</script>
+ 
 <script type="application/shiny-prerendered" data-context="server-extras">
 ojs_define <- function(..., .session = shiny::getDefaultReactiveDomain()) {
   quos <- rlang::enquos(...)
@@ -4235,7 +5654,7 @@ ojs_define <- function(..., .session = shiny::getDefaultReactiveDomain()) {
 </p>
 <!--html_preserve-->
 <script type="application/shiny-prerendered" data-context="dependencies">
-{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap-datepicker-js"]},{"type":"character","attributes":{},"value":["1.10.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/datepicker"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/bootstrap-datepicker.min.js"]},{"type":"NULL"},{"type":"character","attributes":{},"value":["<script>(function() {\n        var datepicker = $.fn.datepicker.noConflict();\n        $.fn.bsDatepicker = datepicker;\n      })();\n     <\/script>"]},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap-datepicker-css"]},{"type":"character","attributes":{},"value":["1.10.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/datepicker"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/bootstrap-datepicker3.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider-javascript"]},{"type":"character","attributes":{},"value":["2.3.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/ion.rangeSlider.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["strftime"]},{"type":"character","attributes":{},"value":["0.9.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/strftime"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["strftime-min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider-css"]},{"type":"character","attributes":{},"value":["2.3.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/ion.rangeSlider.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["selectize"]},{"type":"character","attributes":{},"value":["0.15.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/selectize"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/selectize.min.js","accessibility/js/selectize-plugin-a11y.min.js"]},{"type":"character","attributes":{},"value":["css/selectize.bootstrap3.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]}]}
+{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap-datepicker-js"]},{"type":"character","attributes":{},"value":["1.10.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/datepicker"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/bootstrap-datepicker.min.js"]},{"type":"NULL"},{"type":"character","attributes":{},"value":["<script>(function() {\n        var datepicker = $.fn.datepicker.noConflict();\n        $.fn.bsDatepicker = datepicker;\n      })();\n     <\/script>"]},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap-datepicker-css"]},{"type":"character","attributes":{},"value":["1.10.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/datepicker"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/bootstrap-datepicker3.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider-javascript"]},{"type":"character","attributes":{},"value":["2.3.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/ion.rangeSlider.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["strftime"]},{"type":"character","attributes":{},"value":["0.9.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/strftime"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["strftime-min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider-css"]},{"type":"character","attributes":{},"value":["2.3.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/ion.rangeSlider.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["selectize"]},{"type":"character","attributes":{},"value":["0.15.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/selectize"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/selectize.min.js","accessibility/js/selectize-plugin-a11y.min.js"]},{"type":"character","attributes":{},"value":["css/selectize.bootstrap3.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmltools-fill"]},{"type":"character","attributes":{},"value":["0.5.9"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["fill"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["fill.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmltools"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.5.9"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"character","attributes":{},"value":["1.6.4"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["htmlwidgets"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.6.4"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["plotly-binding"]},{"type":"character","attributes":{},"value":["4.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["htmlwidgets"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["plotly"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["4.12.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["selectize"]},{"type":"character","attributes":{},"value":["0.15.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["www/shared/selectize"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/selectize.min.js","accessibility/js/selectize-plugin-a11y.min.js"]},{"type":"character","attributes":{},"value":["css/selectize.bootstrap3.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.13.0"]}]}]}
 </script>
 <!--/html_preserve-->
 <!--html_preserve-->

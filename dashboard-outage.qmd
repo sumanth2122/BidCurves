@@ -125,6 +125,39 @@ gen_match_candidates <- eventReactive(input$submit_id, {
     )
 })
 
+
+id_match_candidates <- eventReactive(input$submit_generator, {
+  req(input$generator_name)
+
+  target_resource <- as.character(input$generator_name) |> str_trim()
+
+  best_match <- best_gen_match |>
+    filter(`RESOURCE NAME` == target_resource) |>
+    mutate(match_source = "final")
+
+  exclude_id <- best_match$RESOURCEBID_SEQ
+  n_other <- max(0, 5 - nrow(best_match))
+
+  other_matches <- gen_matches_all |>
+    filter(
+      `RESOURCE NAME` == target_resource,
+      !(RESOURCEBID_SEQ %in% exclude_id)
+    ) |>
+    arrange(desc(!is.na(confidence)), desc(score)) |>
+    slice_head(n = n_other) |>
+    mutate(match_source = "candidate")
+
+  bind_rows(
+    best_match,
+    other_matches
+  ) |>
+    left_join(
+      outage_events |>
+        select(`RESOURCE ID`, total_outage_events),
+      by = "RESOURCE ID"
+    )
+})
+
 output$id_warning <- renderUI({
   req(input$resource_id)
 
@@ -208,6 +241,10 @@ To compare bid curves across days, each ID's MW values are rescaled to a common 
 # Deanonymization
 
 When a generator has a reported full outage, its RTM bid submissions should disappear for the outage window. This pipeline matches reported outage windows to gaps in RTM bid submissions for anonymous IDs. Further filtering is based on the number of matched outage events, the closeness of the ID's max bid MW to the resource's pmax, and timing offsets around outage stop and restart. A score and a confidence are given for the matches. The score is based on the mean absolute percentage error of bids across all matching days along with the number of matches. The confidence (0-1 scale) is based on how much the top score is better than the runner up. A score of 1 represents an unambiguous match.
+
+# Resource Name to ID
+
+Select a reported resource name to view the anonymous RTM IDs most likely associated with that generator. This is the opposite of the **Deanonymization** tab, but essentially uses the same logic.
 
 :::
 
@@ -609,6 +646,162 @@ output$gen_match_summary <- renderUI({
         tags$strong(paste0(resource_pmax, " MW"), style = "color:#18BC9C;"),
         ", and ID ",
         target_id,
+        "'s maximum MW ever submitted in a bid is ",
+        tags$strong(paste0(id_max_mw, " MW"), style = "color:#18BC9C;"),
+        ". Out of ",
+        tags$strong(style = "color:#E74C3C;", total_events),
+        " total outage events, ",
+        tags$strong(style = "color:#E98A7F;", n_matches),
+        " matched this anonymous ID."
+      )
+    )
+  })
+
+  tagList(cards)
+})
+```
+
+# Resource Name to ID
+
+::: {.callout-note appearance="minimal" style="background-color: #F8F8F8; border-left: 6px solid #2B3E50;"}
+## Resource Name to ID
+
+This page displays the most similar anonymous RTM IDs for the selected resource using outage matching. The selected final match is shown first when available. Candidate IDs are ordered by score. Hover over words highlighted in <span style="color:#325D88;">blue</span> for more information.
+
+To view matches for a different resource, select a new Resource Name below and click **Submit Resource**.
+:::
+
+## Row
+
+::: {.card width="20%"}
+## Explore a Resource Name
+
+```{r}
+selectizeInput(
+  inputId = "generator_name",
+  label = "Please select a Resource Name:",
+  choices = sort(unique(c(
+    best_gen_match$`RESOURCE NAME`,
+    gen_matches_all$`RESOURCE NAME`
+  ))),
+  selected = NULL,
+  multiple = FALSE
+)
+
+actionButton(
+  inputId = "submit_generator",
+  label = "Submit Resource",
+  class = "btn-primary"
+)
+```
+
+:::
+
+### Column
+
+```{r}
+uiOutput("id_match_summary")
+```
+
+```{r}
+#| context: server
+output$id_match_summary <- renderUI({
+  req(input$generator_name)
+
+  target_resource <- as.character(input$generator_name) |> str_trim()
+
+  id_rows <- id_match_candidates()
+
+  validate(
+    need(nrow(id_rows) > 0, "No anonymous ID matches found for this resource.")
+  )
+
+  candidate_labels <- c(
+    "top candidate",
+    "second candidate",
+    "third candidate",
+    "fourth candidate",
+    "fifth candidate"
+  )
+
+  cards <- purrr::map(seq_len(nrow(id_rows)), function(i) {
+    row <- id_rows[i, ]
+
+    anonymous_id <- as.character(row$RESOURCEBID_SEQ)
+    resource_pmax <- round(row$`RESOURCE PMAX MW`, 3)
+    id_max_mw <- round(row$seq_max_mw, 3)
+    n_matches <- row$n_matches
+    total_events <- row$total_outage_events
+    score <- round(row$score, 3)
+    confidence <- round(row$confidence, 3)
+    match_source <- row$match_source
+
+    match_label <- if (!is.na(match_source) && match_source == "final") {
+      "selected final"
+    } else {
+      candidate_labels[i]
+    }
+
+    confidence_text <- if (!is.na(confidence)) {
+      tagList(
+        ", with a ",
+        tags$span(
+          "confidence",
+          title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match. Confidence is only used between the top two matches.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " of ",
+        tags$strong(confidence, style = "color:#3498DB;")
+      )
+    } else {
+      NULL
+    }
+
+    div(
+      class = "card",
+      style = "
+        padding: 18px;
+        margin-bottom: 14px;
+        background-color: #FFFFFF;
+        border-left: 6px solid #a2c7ea;
+        font-size: 16px;
+        line-height: 1.6;
+      ",
+
+      p(
+        style = "margin-top:8px; margin-bottom:0;",
+
+        "The ",
+        match_label,
+        " ",
+        tags$span(
+          "anonymous ID",
+          title = "Anonymized RTM Resource ID matched to the selected resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for resource ",
+        tags$strong(target_resource, style = "color:#F39C12;"),
+        " is ",
+        tags$strong(anonymous_id),
+        ". Our final ",
+        tags$span(
+          "score",
+          title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for this match is ",
+        tags$strong(score, style = "color:#3498DB;"),
+        confidence_text,
+        ". Why? The resource ",
+        tags$span(
+          "Pmax",
+          title = "CAISO reported physical maximum output for the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " is ",
+        tags$strong(paste0(resource_pmax, " MW"), style = "color:#18BC9C;"),
+        ", and ID ",
+        anonymous_id,
         "'s maximum MW ever submitted in a bid is ",
         tags$strong(paste0(id_max_mw, " MW"), style = "color:#18BC9C;"),
         ". Out of ",
