@@ -40,7 +40,11 @@ id_matches <- readRDS(here::here("cos_sim.rda"))
 
 features <- arrow::read_parquet("feature_vectors.parquet")
 
-gen_matches_all <- read_csv("curtailment_matches_final.csv")
+gen_matches_all <- read_csv("final_outputs/curtailment_top_candidates.csv")
+
+best_gen_match <- read_csv("final_outputs/curtailment_matches_final.csv")
+
+curtailment_events <- read_csv("final_outputs/curtailment_event_counts.csv")
 ```
 
 ```{r}
@@ -92,28 +96,92 @@ best_matches <- eventReactive(input$submit_id, {
         slice_max(order_by = similarity, n = 5)
     })
 
-gen_matches <- eventReactive(input$submit_id, {
-    req(input$resource_id)
+# gen_matches <- eventReactive(input$submit_id, {
+#     req(input$resource_id)
 
-    gen_matches_all |>
-    filter(RESOURCEBID_SEQ == input$resource_id) |>
-    select(-RESOURCEBID_SEQ, -`RESOURCE ID`) |>
-    rename(
-        # "Resource ID" = RESOURCEBID_SEQ,
-           "Resource Name" = `RESOURCE NAME`,
-           "Resource Pmax" = `RESOURCE PMAX MW`,
-           "ID Max MW" = seq_max_mw,
-           "# of Matches" = n_matches,
-           "Mean % Error" = mean_pct_err,
-           "Score" = score,
-           "Confidence" = confidence) |>
-    pivot_longer(
-        cols = `Resource Pmax`:Confidence,
-        names_to = "Matching Attributes",
-        values_to = "Value"
+#     gen_matches_all |>
+#     filter(RESOURCEBID_SEQ == input$submit_id) |>
+#     select(-RESOURCEBID_SEQ, -`RESOURCE ID`) |>
+#     rename(
+#         # "Resource ID" = RESOURCEBID_SEQ,
+#            "Resource Name" = `RESOURCE NAME`,
+#            "Resource Pmax" = `RESOURCE PMAX MW`,
+#            "ID Max MW" = seq_max_mw,
+#            "# of Matches" = n_matches,
+#            "Mean % Error" = mean_pct_err,
+#            "Score" = score,
+#            "Confidence" = confidence) |>
+#     arrange(desc(!is.na(Confidence)), desc(Score)) |>
+#     slice_head(n = 5) |>
+#     pivot_longer(
+#         cols = `Resource Pmax`:Confidence,
+#         names_to = "Matching Attributes",
+#         values_to = "Value"
+#     ) |>
+#     mutate(Value = round(Value, 3),
+#            `Resource Name` = if_else(`Resource Name` == lag(`Resource Name`, default = ""), "", `Resource Name`)) 
+# })
+
+# gen_match_candidates <- eventReactive(input$submit_id, {
+#   req(input$resource_id)
+
+#   gen_matches_all |>
+#     filter(RESOURCEBID_SEQ == input$resource_id) |>
+#     left_join(
+#       curtailment_events |>
+#         select(`RESOURCE ID`, total_curtailment_events),
+#       by = "RESOURCE ID"
+#     ) |>
+#     arrange(desc(!is.na(confidence)), desc(score)) |>
+#     slice_head(n = 5)
+# })
+
+gen_match_candidates <- eventReactive(input$submit_id, {
+  req(input$resource_id)
+
+  target_id <- as.numeric(input$resource_id)
+
+  # best_match <- best_gen_match |>
+  #   filter(RESOURCEBID_SEQ == 101363)
+
+  # other_matches <- gen_matches_all |>
+  #   filter(RESOURCEBID_SEQ == 101363) |>
+  #   filter(`RESOURCE ID` != best_match$`RESOURCE ID`) |>
+  #   arrange(desc(!is.na(confidence)), desc(score)) |>
+  #   slice_head(n = 4)
+
+  # bind_rows(
+  #   best_match,
+  #   other_matches
+  # ) |>
+  #   left_join(
+  #     curtailment_events |>
+  #       select(`RESOURCE ID`, total_curtailment_events),
+  #     by = "RESOURCE ID"
+  #   ) 
+
+  best_match <- best_gen_match |>
+    filter(RESOURCEBID_SEQ == input$resource_id)
+
+  exclude_id <- best_match$`RESOURCE ID`
+
+  other_matches <- gen_matches_all |>
+    filter(
+      RESOURCEBID_SEQ == input$resource_id,
+      !(`RESOURCE ID` %in% exclude_id)
     ) |>
-    mutate(Value = round(Value, 3),
-           `Resource Name` = if_else(`Resource Name` == lag(`Resource Name`, default = ""), "", `Resource Name`)) 
+    arrange(desc(!is.na(confidence)), desc(score)) |>
+    slice_head(n = 4)
+
+  bind_rows(
+    best_match,
+    other_matches
+  ) |>
+    left_join(
+      curtailment_events |>
+        select(`RESOURCE ID`, total_curtailment_events),
+      by = "RESOURCE ID"
+    ) 
 })
 
 matches_by_period <- reactive({
@@ -384,57 +452,11 @@ he table on the left lists definitions of the attributes using in matching. The 
 ### Column
 
 ```{r}
-# gt_output("gen_match_tbl")
 uiOutput("gen_match_summary")
 ```
 
 ```{r}
 #| context: server
-
-# output$gen_match_summary <- renderUI({
-
-#   req(input$resource_id)
-
-#   target_id <- as.character(input$resource_id)
-
-#   gen_row <- gen_matches_all |>
-#     filter(RESOURCEBID_SEQ == input$resource_id) |>
-#     slice(1)
-
-#   validate(
-#     need(nrow(gen_row) > 0, "No deanonymization match found for this ID.")
-#   )
-
-#   resource_name <- gen_row$`RESOURCE NAME`
-#   resource_pmax <- round(gen_row$`RESOURCE PMAX MW`, 3)
-#   id_max_mw <- round(gen_row$seq_max_mw, 3)
-#   n_matches <- gen_row$n_matches
-#   score <- round(gen_row$score, 3)
-#   confidence <- round(gen_row$confidence, 3)
-
-#   HTML(glue::glue(
-#     '
-#     <div class="card" style="padding: 22px; font-size: 18px; line-height: 1.7;">
-#       <p>
-#         The most likely resource for anonymous ID <strong>{target_id}</strong> is 
-#         <strong style="color#18BC9C;">{resource_name}</strong>.
-#       </p>
-
-#       <p>
-#         Our final score for this match is <strong style="color:#3498DB;">{score}</strong>, with a confidence of 
-#         <strong style="color:#F39C12;">{confidence}</strong>.
-#       </p>
-
-#       <p>
-#         Why? The resource Pmax is <strong style="color:#a2c7ea;">{resource_pmax} MW</strong>, and ID {target_id}’s
-#         maximum MW ever submitted in a bid is <strong style="color:#a2c7ea;">{id_max_mw} MW</strong>.
-#         There were <strong>{n_matches}</strong> curtailment events that matched this ID.
-#       </p>
-
-#     </div>
-#     '
-#   ))
-# })
 
 output$gen_match_summary <- renderUI({
 
@@ -442,108 +464,100 @@ output$gen_match_summary <- renderUI({
 
   target_id <- as.character(input$resource_id)
 
-  gen_row <- gen_matches_all |>
-    filter(RESOURCEBID_SEQ == input$resource_id) |>
-    slice(1)
+  gen_rows <- gen_match_candidates()
 
-  resource_name <- gen_row$`RESOURCE NAME`
-  resource_pmax <- round(gen_row$`RESOURCE PMAX MW`, 3)
-  id_max_mw <- round(gen_row$seq_max_mw, 3)
-  n_matches <- gen_row$n_matches
-  score <- round(gen_row$score, 3)
-  confidence <- round(gen_row$confidence, 3)
-
-  div(
-    class = "card",
-    style = "padding: 22px; font-size: 18px; line-height: 1.7;",
-
-    p(
-      "The most likely ",
-    #   tags$span(
-    #     "resource ⓘ",
-    #     title = "Official name of the matched resource.",
-    #     style = "cursor: help;"
-    #   ),
-      tags$span(
-        "resource",
-        title = "Official name of the matched resource.",
-        style = "
-            color: #325D88;
-            cursor: help;
-        "
-        ),
-      " for anonymous ID ",
-      tags$strong(target_id),
-      " is ",
-      tags$strong(
-        resource_name,
-        style = "color:#18BC9C;"
-      ),
-      "."
-    ),
-
-    p(
-      "Our final ",
-    #   tags$span(
-    #     "score ⓘ",
-    #     title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
-    #     style = "cursor: help;"
-    #   ),
-      tags$span(
-        "score",
-        title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
-        style = "
-            color: #325D88;
-            cursor: help;"
-        ),
-      " for this match is ",
-      tags$strong(score, style = "color:#3498DB;"),
-      ", with a ",
-    #   tags$span(
-    #     "confidence ⓘ",
-    #     title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match.",
-    #     style = "cursor: help;"
-    #   ),
-      tags$span(
-        "confidence",
-        title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match.",
-        style = "
-            color: #325D88;
-            cursor: help;"
-        ),
-      " of ",
-      tags$strong(confidence, style = "color:#F39C12;"),
-      "."
-    ),
-
-    p(
-      "Why? The resource",
-    #   tags$span(
-    #     "Pmax ⓘ",
-    #     title = "CAISO reported physical maximum output for the matched resource.",
-    #     style = "cursor: help;"
-    #   ),
-      tags$span(
-        "Pmax",
-        title = "CAISO reported physical maximum output for the matched resource.",
-        style = "
-            color: #325D88;
-            cursor: help;"
-        ),
-      " is ",
-      tags$strong(paste0(resource_pmax, " MW"), style = "color:#E74C3C;"),
-      ", and ID ",
-      target_id,
-      "'s maximum MW ever submitted in a bid is ",
-      tags$strong(paste0(id_max_mw, " MW"), style = "color:#E74C3C;"),
-      ". There were ",
-      tags$strong(n_matches),
-      " curtailment events that matched this ID."
-    )
+  validate(
+    need(nrow(gen_rows) > 0, "No deanonymization matches found for this ID.")
   )
-})
-```
 
+  rank_labels <- c("most likely", "second most likely", "third most likely", "fourth most likely", "fifth most likely")
+  cards <- purrr::map(seq_len(nrow(gen_rows)), function(i) {
+
+    row <- gen_rows[i, ]
+
+    resource_name <- row$`RESOURCE NAME`
+    resource_pmax <- round(row$`RESOURCE PMAX MW`, 3)
+    id_max_mw <- round(row$seq_max_mw, 3)
+    n_matches <- row$n_matches
+    total_events <- row$total_curtailment_events
+    score <- round(row$score, 3)
+    confidence <- round(row$confidence, 3)
+
+    confidence_text <- if (!is.na(confidence)) {
+      tagList(
+        ", with a ",
+        tags$span(
+          "confidence",
+          title = "How much better the top score is compared to the runner-up. Values closer to 1 indicate a clearer match. Confidence is only used between the top two matches.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " of ",
+        tags$strong(confidence, style = "color:#3498DB;")
+      )
+    } else {
+      NULL
+    }
+
+    div(
+      class = "card",
+      style = "
+        padding: 18px;
+        margin-bottom: 14px;
+        background-color: #FFFFFF;
+        border-left: 6px solid #a2c7ea;
+        font-size: 16px;
+        line-height: 1.6;
+      ",
+
+      p(
+        style = "margin-top:8px; margin-bottom:0;",
+
+        "The ",
+        rank_labels[i],
+        " ",
+        tags$span(
+          "resource",
+          title = "Official name of the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for anonymous ID ",
+        tags$strong(target_id),
+        " is ",
+        tags$strong(resource_name, style = "color:#F39C12;"),
+        ". Our final ",
+        tags$span(
+          "score",
+          title = "Number of matches multiplied by (1 - the mean absolute percentage error).",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " for this match is ",
+        tags$strong(score, style = "color:#3498DB;"),
+        confidence_text,
+        ". Why? The resource ",
+        tags$span(
+          "Pmax",
+          title = "CAISO reported physical maximum output for the matched resource.",
+          style = "color:#325D88; cursor:help;"
+        ),
+        " is ",
+        tags$strong(paste0(resource_pmax, " MW"), style = "color:#18BC9C;"),
+        ", and ID ",
+        target_id,
+        "'s maximum MW ever submitted in a bid is ",
+        tags$strong(paste0(id_max_mw, " MW"), style = "color:#18BC9C;"),
+        ". Out of ",
+        tags$strong(style = "color:#E74C3C;", total_events),
+        " total curtailment events, ",
+        tags$strong(style = "color:#E98A7F;", n_matches),
+        " matched this anonymous ID."
+      )
+    )
+  })
+
+    tagList(cards)
+
+  })
+```
 
 # ID Matching
 
