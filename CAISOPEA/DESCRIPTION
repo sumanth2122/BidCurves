@@ -1,0 +1,33 @@
+Package: CAISOPEA
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Visruth", "Srimath Kandali", , "vsrimath@calpoly.adu", role = c("aut", "cre")),
+    person("Sumanth", "Thokala", , "sthokala@calpoly.edu", role = "aut"),
+    person("Nicole", "Ye", , "nyee08@calpoly.edu", role = "aut")
+  )
+Description: Tools for scraping CAISO OASIS data and analyzing anonymized
+    DAM/RTM bid curves, resource features, outages, curtailments,
+    negative-MW bids, single-point curves, and NQC candidate matches.
+License: GPL (>= 3)
+Depends: 
+    R (>= 3.5)
+LazyData: true
+Imports: 
+    arrow,
+    dplyr,
+    duckplyr,
+    ggplot2,
+    httr,
+    lubridate,
+    readr,
+    stringr,
+    tibble
+Suggests:
+    knitr,
+    quarto,
+    rmarkdown
+VignetteBuilder: quarto
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0

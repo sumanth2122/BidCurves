@@ -1,0 +1,176 @@
+---
+title: "Package Overview"
+vignette: >
+  %\VignetteIndexEntry{Package Overview}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: "#>"
+---
+
+This vignette walks through the package functions using a small, sampled dataset.
+
+## Purpose
+
+CAISOPEA provides tools for working with CAISO public bid data and related resource-level signals. It helps collect bid data, inspect individual curves, compare anonymous
+sequence IDs by feature profiles, and build candidate links between anonymous bid IDs and named resources using outage and curtailment behavior.
+
+## Setup
+
+```{r}
+#| label: setup
+#| message: false
+Sys.setenv(
+  DUCKPLYR_FALLBACK_COLLECT = "0",
+  DUCKPLYR_FALLBACK_AUTOUPLOAD = "0",
+  DUCKPLYR_FALLBACK_INFO = "FALSE"
+)
+
+library(CAISOPEA)
+library(dplyr)
+
+data("caisopea_vignette_sample", package = "CAISOPEA")
+```
+
+## Fetch Bid Data
+
+`fetch_oasis_bids()` scrapes (downloads) CAISO public bid data from OASIS and writes one Parquet file per market day. Use `market = "DAM"` for Day-Ahead Market data and `market = "RTM"` for Real-Time Market data.
+
+```{r}
+#| eval: false
+fetch_oasis_bids(
+  start_date = "2025-01-01",
+  end_date = "2025-01-07",
+  market = "DAM",
+  output_dir = "data/dam",
+  skip_existing = TRUE
+)
+```
+
+The return value is a status table with one row per requested date. That makes it easy to see which files were written, skipped, returned no data, or failed after retries.
+
+## Load and Filter Bids
+
+The package functions expect ordinary data frames or compatible lazy tables. For bid-curve analysis, the most commonly used columns are:
+
+- `RESOURCEBID_SEQ`: anonymous bid sequence identifier
+- `STARTTIME`: bid date
+- `SELFSCHEDMW`: self-scheduled MW
+- `SCH_BID_XAXISDATA`: bid quantity in MW
+- `SCH_BID_Y1AXISDATA`: bid price
+
+Again, we are working with a small sample of the real data for demonstration purposes, but the functionality is identical. As you can see we have very little data:
+
+```{r}
+#| label: sample-tables
+lapply(
+  caisopea_vignette_sample[
+    c(
+      "curtailment_dam_data",
+      "rtm_data",
+      "dam_plot_data",
+      "outages",
+      "id_attrs"
+    )
+  ],
+  nrow
+)
+```
+
+For a full local analysis, the same columns can be selected from the large, downloaded Parquet files:
+
+## Plot Bid Curves
+
+`plot_curves()` draws hourly bid curves for one anonymous sequence ID. This is the quickest way to inspect the shape of a resource's submitted bids on a given day or filtered period.
+
+```{r}
+#| label: overview-plot-curves
+#| fig-width: 7
+#| fig-height: 4
+plot_curves(
+  market_data = caisopea_vignette_sample$dam_plot_data,
+  resource_id = caisopea_vignette_sample$plot_resource
+)
+```
+
+The function returns a `ggplot2` object, so it can be printed directly or customized with additional `ggplot2` layers.
+
+## Find Feature-Similar IDs
+
+`find_similar_ids()` matches IDs across time frames.
+
+```{r}
+#| label: overview-similar-ids
+find_similar_ids(
+  id = caisopea_vignette_sample$plot_resource,
+  n = 10,
+  start_filter = "none"
+)
+```
+
+`start_filter` has a few possible values, the most important being `start_filter = "after"` which only keeps candidate IDs whose first observed date is after the queried ID's start date. `start_filter = "before"` does the opposite. Those filters are useful when looking for possible ID transitions.
+
+## Match Planned Curtailments
+
+`get_curtailment_matches()` links named resources to anonymous DAM sequence IDs using planned partial curtailments. The idea is that a generator with a known derate before the day-ahead market closes should generally bid up to its available capacity:
+
+$$
+\text{expected available MW} =
+\text{resource PMAX MW} - \text{curtailment MW}
+$$
+
+The function compares that value with each compatible sequence ID's daily maximum bid MW on the same date.
+
+```{r}
+#| label: overview-curtailment-match
+curtailment_matches <- get_curtailment_matches(
+  dam_data = caisopea_vignette_sample$curtailment_dam_data,
+  outages = caisopea_vignette_sample$outages,
+  id_attrs = caisopea_vignette_sample$id_attrs,
+  tolerance = 0.05,
+  pmax_tolerance = 0.10,
+  min_matches = 2,
+  return_detail = TRUE
+)
+
+curtailment_matches$final_matches
+```
+
+Use `return_detail = TRUE` when developing or auditing results. The returned detail tables show which dates supported each match and how close the observed MW was to the expected available MW.
+
+See the Curtailments vignette for more details.
+
+Our full results are already included in the GitHub repository in the "final_outputs" folder.
+
+## Match Full RTM Outages
+
+`get_outage_rtm_matches()` is very similar but works on RTM data and uses outages (i.e., when $\text{resource PMAX MW} = \text{curtailment MW}$). Full generator outages should create gaps in RTM bids. The function finds bid gaps for anonymous RTM sequence IDs and aligns them with named generator outage windows from the CAISO prior trade day outage data in a very similar manner to curtailments.
+
+```{r}
+#| label: overview-outage-match
+outage_matches <- get_outage_rtm_matches(
+  rtm_data = caisopea_vignette_sample$rtm_data,
+  outages = caisopea_vignette_sample$outages,
+  generators = caisopea_vignette_sample$final_matches$`RESOURCE ID`,
+  edge_minutes = 360,
+  min_matches = 1,
+  return_detail = TRUE
+)
+
+outage_matches$final_matches
+```
+
+This compact sample uses a wider edge window so the small slice of actual RTM rows still produces demonstrative matches. For full local studies, start with a tighter `edge_minutes` value and widen only if required.
+
+Our full results are already included in the GitHub repository in the "final_outputs" folder.
+
+## Interpreting Match Output
+
+The matching functions return candidate maps rather than ground truth, with the following measures of closeness
+
+- `n_matches`: how many dates or outage windows supported the candidate
+- `mean_pct_err`: average absolute percentage error in matched capacity
+- `score`: combined ranking metric that rewards more matches and lower error
+- `confidence`: how clearly the top candidate beat the runner-up for that named resource
