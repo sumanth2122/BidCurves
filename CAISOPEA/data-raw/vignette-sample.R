@@ -8,10 +8,10 @@ final_matches <- read_csv(
   ),
   show_col_types = FALSE
 ) |>
-  arrange(desc(n_matches), desc(confidence), `RESOURCE ID`) |>
+  arrange(desc(n_matches), desc(confidence), generator) |>
   slice_head(n = 20)
 
-selected_resources <- final_matches$`RESOURCE ID`
+selected_resources <- final_matches$generator
 
 match_detail <- read_csv(
   here::here(
@@ -20,7 +20,7 @@ match_detail <- read_csv(
   ),
   show_col_types = FALSE
 ) |>
-  filter(`RESOURCE ID` %in% selected_resources)
+  filter(generator %in% selected_resources)
 
 id_attrs <- arrow::read_parquet("ID_attributes.parquet") |>
   semi_join(final_matches, by = "RESOURCEBID_SEQ")
@@ -35,11 +35,15 @@ curtailment_outages <- outages_raw |>
   inner_join(
     match_detail |>
       distinct(
-        `RESOURCE ID`,
+        generator,
         curtailment_date,
         expected_available_mw
       ),
-    by = c("RESOURCE ID", "curtailment_date", "expected_available_mw")
+    by = c(
+      "RESOURCE ID" = "generator",
+      "curtailment_date",
+      "expected_available_mw"
+    )
   ) |>
   filter(
     `OUTAGE TYPE` == "PLANNED",
@@ -163,11 +167,12 @@ if (nrow(dam_plot_data) == 0L) {
 rtm_outage_lookup <- full_outage_events |>
   inner_join(
     final_matches |>
-      select(`RESOURCE ID`, RESOURCEBID_SEQ),
-    by = "RESOURCE ID"
+      select(generator, RESOURCEBID_SEQ),
+    by = c("RESOURCE ID" = "generator")
   ) |>
   transmute(
     generator = `RESOURCE ID`,
+    generator_name = `RESOURCE NAME`,
     RESOURCEBID_SEQ,
     pmax_mw = `RESOURCE PMAX MW`,
     outage_start = as.POSIXct(`CURTAILMENT START DATE TIME`),

@@ -8,7 +8,7 @@ score_curtailment_matches(matches)
 }
 \arguments{
 \item{matches}{Candidate match rows with \code{daily_max_mw},
-\code{expected_available_mw}, \verb{RESOURCE ID}, \verb{RESOURCE NAME}, and
+\code{expected_available_mw}, \code{generator}, \code{generator_name}, and
 \code{RESOURCEBID_SEQ}.}
 }
 \value{
@@ -17,13 +17,13 @@ A tibble of candidate scores with \code{n_matches}, \code{mean_pct_err}, and
 }
 \description{
 The raw count of matching days (\code{n_matches}) alone is insufficient as a
-ranking signal because it ignores how closely a sequence ID's bids track the
+ranking signal because it ignores how closely an ID's bids track the
 expected available capacity on those days. Two candidates might both match 71
 days, but one always bids within 0.1\% of the target while the other
 consistently sits at 4.9\% -- the first is a much stronger match.
 }
 \details{
-For each (\verb{RESOURCE ID}, \code{RESOURCEBID_SEQ}) pair, compute \code{n_matches},
+For each (\code{generator}, \code{RESOURCEBID_SEQ}) pair, compute \code{n_matches},
 \code{mean_pct_err}, and \code{score = n_matches * (1 - mean_pct_err)}. This penalises
 candidates with high average MW error, so a candidate with 71 matches at 0\%
 error outscores one with 71 matches at 4\% error.

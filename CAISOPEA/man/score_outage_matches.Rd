@@ -7,8 +7,9 @@
 score_outage_matches(matches)
 }
 \arguments{
-\item{matches}{Raw join results with \code{generator}, \code{RESOURCEBID_SEQ},
-\code{pmax_mw}, \code{max_mw}, \code{stop_offset}, and \code{restart_offset}.}
+\item{matches}{Raw join results with \code{generator}, \code{generator_name},
+\code{RESOURCEBID_SEQ}, \code{pmax_mw}, \code{max_mw}, \code{stop_offset}, and
+\code{restart_offset}.}
 }
 \value{
 A tibble of per-match stats with offsets, match count, mean absolute
@@ -19,7 +20,7 @@ For each generator-ID pair, aggregate across all matched outages.
 }
 \details{
 The raw count of matching days (\code{n_matches}) alone is insufficient as a
-ranking signal because it ignores how closely a sequence ID's bids track the
+ranking signal because it ignores how closely an ID's bids track the
 expected available capacity on those days.
 
 For each (\code{generator}, \code{RESOURCEBID_SEQ}) pair, compute \code{n_matches},

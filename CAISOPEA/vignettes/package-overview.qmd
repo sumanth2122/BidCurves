@@ -15,7 +15,7 @@ This vignette walks through the package functions using a small, sampled dataset
 ## Purpose
 
 CAISOPEA provides tools for working with CAISO public bid data and related resource-level signals. It helps collect bid data, inspect individual curves, compare anonymous
-sequence IDs by feature profiles, and build candidate links between anonymous bid IDs and named resources using outage and curtailment behavior.
+IDs by feature profiles, and build candidate links between anonymous bid IDs and named resources using outage and curtailment behavior.
 
 ## Setup
 
@@ -55,7 +55,7 @@ The return value is a status table with one row per requested date. That makes i
 
 The package functions expect ordinary data frames or compatible lazy tables. For bid-curve analysis, the most commonly used columns are:
 
-- `RESOURCEBID_SEQ`: anonymous bid sequence identifier
+- `RESOURCEBID_SEQ`: anonymous bid ID
 - `STARTTIME`: bid date
 - `SELFSCHEDMW`: self-scheduled MW
 - `SCH_BID_XAXISDATA`: bid quantity in MW
@@ -83,7 +83,7 @@ For a full local analysis, the same columns can be selected from the large, down
 
 ## Plot Bid Curves
 
-`plot_curves()` draws hourly bid curves for one anonymous sequence ID. This is the quickest way to inspect the shape of a resource's submitted bids on a given day or filtered period.
+`plot_curves()` draws hourly bid curves for one anonymous ID. This is the quickest way to inspect the shape of a resource's submitted bids on a given day or filtered period.
 
 ```{r}
 #| label: overview-plot-curves
@@ -114,14 +114,14 @@ find_similar_ids(
 
 ## Match Planned Curtailments
 
-`get_curtailment_matches()` links named resources to anonymous DAM sequence IDs using planned partial curtailments. The idea is that a generator with a known derate before the day-ahead market closes should generally bid up to its available capacity:
+`get_curtailment_matches()` links named resources to anonymous DAM IDs using planned partial curtailments. The idea is that a generator with a known derate before the day-ahead market closes should generally bid up to its available capacity:
 
 $$
 \text{expected available MW} =
 \text{resource PMAX MW} - \text{curtailment MW}
 $$
 
-The function compares that value with each compatible sequence ID's daily maximum bid MW on the same date.
+The function compares that value with each compatible ID's daily maximum bid MW on the same date.
 
 ```{r}
 #| label: overview-curtailment-match
@@ -146,14 +146,14 @@ Our full results are already included in the GitHub repository in the "final_out
 
 ## Match Full RTM Outages
 
-`get_outage_rtm_matches()` is very similar but works on RTM data and uses outages (i.e., when $\text{resource PMAX MW} = \text{curtailment MW}$). Full generator outages should create gaps in RTM bids. The function finds bid gaps for anonymous RTM sequence IDs and aligns them with named generator outage windows from the CAISO prior trade day outage data in a very similar manner to curtailments.
+`get_outage_rtm_matches()` is very similar but works on RTM data and uses outages (i.e., when $\text{resource PMAX MW} = \text{curtailment MW}$). Full generator outages should create gaps in RTM bids. The function finds bid gaps for anonymous RTM IDs and aligns them with named generator outage windows from the CAISO prior trade day outage data in a very similar manner to curtailments.
 
 ```{r}
 #| label: overview-outage-match
 outage_matches <- get_outage_rtm_matches(
   rtm_data = caisopea_vignette_sample$rtm_data,
   outages = caisopea_vignette_sample$outages,
-  generators = caisopea_vignette_sample$final_matches$`RESOURCE ID`,
+  generators = curtailment_matches$final_matches$generator,
   edge_minutes = 360,
   min_matches = 1,
   return_detail = TRUE

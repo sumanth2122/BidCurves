@@ -75,7 +75,9 @@ cat(
 
 ## Final Matches
 
-One row per named generator — best seq ID after collision resolution.
+One row per named generator — best ID after collision resolution. Capacity
+columns use `pmax_mw` for the named generator PMAX and `max_mw` for the matched
+ID's observed maximum MW.
 
 ```{r}
 #| label: final-matches
@@ -84,54 +86,13 @@ rtm_results$final_matches
 
 ## Top Candidates (up to 5 per generator)
 
-Up to 5 candidate seq IDs per generator, ranked by score with no collision
-resolution applied.
+Up to 5 candidate IDs per generator, ranked by score with no collision
+resolution applied. Capacity columns use the same `pmax_mw` and `max_mw` names
+as final matches.
 
 ```{r}
 #| label: top-candidates
 rtm_results$top_candidates
-```
-
-```{r}
-#| label: plot-confidence
-#| fig-width: 8
-#| fig-height: 4
-plot_data <- rtm_results$final_matches |>
-  filter(is.finite(confidence), confidence < 1)
-
-n_unambiguous <- sum(rtm_results$final_matches$confidence == 1)
-
-ggplot(plot_data, aes(x = 1 / (1 - confidence))) +
-  geom_histogram(bins = 40, fill = "steelblue", color = "white") +
-  geom_vline(xintercept = 2, linetype = "dashed", color = "firebrick") +
-  scale_x_log10(labels = scales::comma) +
-  annotate(
-    "text",
-    x = 2.2,
-    y = Inf,
-    label = "ratio > 2  (confidence \u2265 0.5)",
-    hjust = 0,
-    vjust = 1.5,
-    color = "firebrick",
-    size = 3.5
-  ) +
-  annotate(
-    "text",
-    x = Inf,
-    y = Inf,
-    label = paste0(n_unambiguous, " unambiguous matches\n(confidence = 1.0)"),
-    hjust = 1.05,
-    vjust = 1.5,
-    size = 3.5,
-    color = "grey40"
-  ) +
-  labs(
-    title = "Distribution of Raw Confidence Ratios (log scale)",
-    subtitle = "Excludes unambiguous matches (confidence = 1.0)",
-    x = "Raw Score Ratio (log scale)",
-    y = "Count"
-  ) +
-  theme_minimal()
 ```
 
 ## Export
@@ -159,6 +120,31 @@ write.csv(
   row.names = FALSE
 )
 
+# Total outage windows per generator vs how many matched
+write.csv(
+  rtm_results$outages |>
+    dplyr::count(
+      generator,
+      name = "total_outage_events"
+    ) |>
+    dplyr::left_join(
+      rtm_results$final_matches |>
+        dplyr::select(
+          generator,
+          generator_name,
+          RESOURCEBID_SEQ,
+          n_matches,
+          pmax_mw,
+          max_mw,
+          confidence,
+          score
+        ),
+      by = "generator"
+    ),
+  here("final_outputs", "outage_rtm_event_counts.csv"),
+  row.names = FALSE
+)
+
 cat(
   "Wrote final_outputs/outage_rtm_matches_final.csv    —",
   nrow(rtm_results$final_matches),
@@ -173,5 +159,10 @@ cat(
   "Wrote final_outputs/outage_rtm_match_detail.csv     —",
   nrow(rtm_results$match_detail),
   "rows\n"
+)
+cat(
+  "Wrote final_outputs/outage_rtm_event_counts.csv     —",
+  n_distinct(rtm_results$outages$generator),
+  "generators\n"
 )
 ```

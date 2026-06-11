@@ -24,7 +24,7 @@ get_curtailment_matches(
 \verb{RESOURCE ID}, \verb{RESOURCE NAME}, \verb{RESOURCE PMAX MW}, \verb{CURTAILMENT MW}, and
 \verb{CURTAILMENT START DATE TIME}.}
 
-\item{id_attrs}{Sequence ID attributes. Must include \code{RESOURCEBID_SEQ} and
+\item{id_attrs}{ID attributes. Must include \code{RESOURCEBID_SEQ} and
 all-time observed \code{max_mw}.}
 
 \item{tolerance}{Tolerance used when comparing \code{daily_max_mw} to
@@ -38,7 +38,7 @@ all-time observed \code{max_mw}.}
 \item{resolve_collisions}{If \code{TRUE}, resolve collisions where the same
 \code{RESOURCEBID_SEQ} is claimed by multiple named resources.}
 
-\item{top_n}{Maximum number of candidate seq IDs to retain per resource in
+\item{top_n}{Maximum number of candidate IDs to retain per resource in
 \code{top_candidates} (returned when \code{return_detail = TRUE}). Candidates are
 ranked by score with no collision resolution applied, so the same
 \code{RESOURCEBID_SEQ} may appear for multiple resources.}
@@ -48,8 +48,9 @@ scores, top candidates, and raw matches.}
 }
 \value{
 If \code{return_detail = FALSE}, a tibble with the final deanonymization
-map: one row per named resource to seq ID pair, joined with resource
-nameplate PMAX and the seq ID's all-time observed max MW. If
+map: one row per named resource to ID pair, with identity columns
+\code{generator} and \code{generator_name}, resource nameplate \code{pmax_mw}, and the
+ID's all-time observed \code{max_mw}. If
 \code{return_detail = TRUE}, a named list with \code{final_matches}, \code{match_detail},
 \code{scores}, \code{top_candidates}, \code{raw_matches}, and \code{planned_partial} (all
 planned partial curtailment events, useful for computing total event counts).
@@ -66,19 +67,19 @@ When a generator files a planned partial curtailment, it knows its reduced
 operating limit before the DAM closes. Its day-ahead bid curve should
 therefore reflect a maximum MW of approximately \verb{RESOURCE PMAX MW - CURTAILMENT MW} -- the expected available capacity. If we find an anonymous
 \code{RESOURCEBID_SEQ} whose daily max bid MW closely matches this expected
-available capacity on the same date, that sequence ID is a candidate match
+available capacity on the same date, that ID is a candidate match
 for the named resource.
 
 Filter outages to \code{PLANNED} + partial curtailments (\verb{CURTAILMENT MW < RESOURCE PMAX MW}). Compute \verb{expected_available_mw = RESOURCE PMAX MW - CURTAILMENT MW} per resource per curtailment date. Compute \code{daily_max_mw} per
-\code{RESOURCEBID_SEQ} from the DAM bid data. Pre-filter sequence IDs using
+\code{RESOURCEBID_SEQ} from the DAM bid data. Pre-filter IDs using
 \code{id_attrs}: only consider IDs whose all-time \code{max_mw} is within
 \code{pmax_tolerance} of \verb{RESOURCE PMAX MW}. This eliminates implausible size
 mismatches before the expensive join. Join on date -- every size-compatible
-sequence ID active on a curtailment day becomes a candidate. Filter to
+ID active on a curtailment day becomes a candidate. Filter to
 candidates whose \code{daily_max_mw} is within \code{tolerance} of
 \code{expected_available_mw}.
 
-Score each (\verb{RESOURCE ID}, \code{RESOURCEBID_SEQ}) pair using a combined metric
+Score each (\code{generator}, \code{RESOURCEBID_SEQ}) pair using a combined metric
 that rewards both more matching days and lower MW error.
 Compute a confidence score from 0 to 1 comparing the top candidate's score to
 the runner-up: 0 means tied, 1 means no competing candidate existed.

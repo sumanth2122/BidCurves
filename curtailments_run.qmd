@@ -71,14 +71,16 @@ cat(
 )
 cat(
   "Resources with candidates:                 ",
-  n_distinct(results$top_candidates$`RESOURCE ID`),
+  n_distinct(results$top_candidates$generator),
   "\n"
 )
 ```
 
 ## Final Matches
 
-One row per named resource — best seq ID after collision resolution.
+One row per named resource — best ID after collision resolution. Capacity columns
+use `pmax_mw` for the named resource PMAX and `max_mw` for the matched ID's
+observed maximum MW.
 
 ```{r}
 #| label: final-matches
@@ -87,8 +89,9 @@ results$final_matches
 
 ## Top Candidates (up to 5 per resource)
 
-Up to 5 candidate seq IDs per named resource, ranked by score with no collision
+Up to 5 candidate IDs per named resource, ranked by score with no collision
 resolution applied. The same `RESOURCEBID_SEQ` may appear for multiple resources.
+Capacity columns use the same `pmax_mw` and `max_mw` names as final matches.
 
 ```{r}
 #| label: top-candidates
@@ -168,20 +171,23 @@ write.csv(
 write.csv(
   results$planned_partial |>
     dplyr::count(
-      `RESOURCE ID`,
-      `RESOURCE NAME`,
+      generator,
+      generator_name,
       name = "total_curtailment_events"
     ) |>
     dplyr::left_join(
       results$final_matches |>
         dplyr::select(
-          `RESOURCE ID`,
+          generator,
+          generator_name,
           RESOURCEBID_SEQ,
           n_matches,
+          pmax_mw,
+          max_mw,
           confidence,
           score
         ),
-      by = "RESOURCE ID"
+      by = c("generator", "generator_name")
     ),
   here("final_outputs", "curtailment_event_counts.csv"),
   row.names = FALSE
@@ -204,7 +210,7 @@ cat(
 )
 cat(
   "Wrote final_outputs/curtailment_event_counts.csv     —",
-  n_distinct(results$planned_partial$`RESOURCE ID`),
+  n_distinct(results$planned_partial$generator),
   "resources\n"
 )
 ```

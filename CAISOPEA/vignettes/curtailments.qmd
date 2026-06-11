@@ -16,17 +16,17 @@ CAISO's Day-Ahead Market (DAM) bid data anonymizes generators using a numeric `R
 
 The core idea is:
 
-> When a generator files a **planned partial curtailment**, it knows its reduced operating limit before the DAM closes. Its day-ahead bid curve should therefore reflect a maximum MW of approximately `RESOURCE PMAX MW − CURTAILMENT MW` — the expected available capacity. If we find an anonymous `RESOURCEBID_SEQ` whose daily max bid MW closely matches this expected available capacity on the same date, that sequence ID is a candidate match for the named resource.
+> When a generator files a **planned partial curtailment**, it knows its reduced operating limit before the DAM closes. Its day-ahead bid curve should therefore reflect a maximum MW of approximately `RESOURCE PMAX MW − CURTAILMENT MW` — the expected available capacity. If we find an anonymous `RESOURCEBID_SEQ` whose daily max bid MW closely matches this expected available capacity on the same date, that ID is a candidate match for the named resource.
 
 **Matching logic:**
 
 1. Filter outages to `PLANNED` + partial curtailments (`CURTAILMENT MW < RESOURCE PMAX MW`)
 2. Compute `expected_available_mw = RESOURCE PMAX MW − CURTAILMENT MW` per resource per curtailment date
 3. Compute `daily_max_mw` per `RESOURCEBID_SEQ` from the DAM bid data
-4. **Pre-filter** sequence IDs using `ID_attributes.parquet`: only consider IDs whose all-time `max_mw` is within 10% of `RESOURCE PMAX MW`. This eliminates implausible size mismatches (e.g. a 500 MW resource matching against a 9 MW curtailment target) before the expensive join
-5. Join on date — every size-compatible sequence ID active on a curtailment day becomes a candidate
+4. **Pre-filter** IDs using `ID_attributes.parquet`: only consider IDs whose all-time `max_mw` is within 10% of `RESOURCE PMAX MW`. This eliminates implausible size mismatches (e.g. a 500 MW resource matching against a 9 MW curtailment target) before the expensive join
+5. Join on date — every size-compatible ID active on a curtailment day becomes a candidate
 6. Filter to candidates whose `daily_max_mw` is within `TOLERANCE` of `expected_available_mw`
-7. **Score** each `(RESOURCE ID, RESOURCEBID_SEQ)` pair using a combined metric that rewards both more matching days *and* lower MW error — described below
+7. **Score** each `(generator, RESOURCEBID_SEQ)` pair using a combined metric that rewards both more matching days *and* lower MW error — described below
 8. Compute a **confidence score** (0–1) comparing the top candidate's score to the runner-up — 0 means tied, 1.0 means no competing candidate existed (unambiguous)
 9. **Resolve collisions** where the same `RESOURCEBID_SEQ` is claimed by multiple named resources — keep only the highest-confidence claim
 
@@ -37,7 +37,7 @@ The core idea is:
 ### Scoring
 
 The raw count of matching days (`n_matches`) alone is insufficient as a ranking
-signal because it ignores *how closely* a sequence ID's bids track the expected
+signal because it ignores *how closely* an ID's bids track the expected
 available capacity on those days. Two candidates might both match 71 days, but
 one always bids within 0.1% of the target while the other consistently sits at
 4.9% — the first is a much stronger match.
@@ -71,7 +71,7 @@ reserved for unambiguous matches.
 ### Collision resolution
 
 A given `RESOURCEBID_SEQ` can only correspond to one physical generator. If
-multiple named resources claim the same sequence ID, we keep only the claim with
+multiple named resources claim the same ID, we keep only the claim with
 the highest confidence score and discard the rest.
 
 ## Detailed Pipeline
@@ -86,26 +86,26 @@ multiple report publication dates for the same event.
 
 ### Step 2: Daily Max MW from DAM
 
-Compute the maximum MW offered by each anonymous sequence ID on each calendar
+Compute the maximum MW offered by each anonymous ID on each calendar
 day. `pmax()` handles the element-wise maximum across the economic bid column
 and the self-schedule column, ignoring NAs.
 
 ### Step 3: Pre-filter by PMAX Compatibility
 
-Before joining on date, restrict sequence IDs to those whose all-time observed
+Before joining on date, restrict IDs to those whose all-time observed
 `max_mw` (from `ID_attributes.parquet`) is within 10% of `RESOURCE PMAX MW`
 for at least one curtailment event. This eliminates implausible size mismatches
 before the expensive cross-join.
 
 ### Step 4: Match on Date + Capacity
 
-Join curtailment events to size-compatible sequence IDs active on the same
+Join curtailment events to size-compatible IDs active on the same
 date, then keep only those whose `daily_max_mw` falls within `TOLERANCE` of
 `expected_available_mw`.
 
 ### Step 5: Score Candidate Matches
 
-For each `(RESOURCE ID, RESOURCEBID_SEQ)` pair, compute:
+For each `(generator, RESOURCEBID_SEQ)` pair, compute:
 
 - `n_matches` — number of curtailment days where the daily max MW was within tolerance
 - `mean_pct_err` — mean absolute % error across those matching days
@@ -113,17 +113,17 @@ For each `(RESOURCE ID, RESOURCEBID_SEQ)` pair, compute:
 
 ### Step 6: Top Candidates with Confidence
 
-For each named resource, select the single best-scoring sequence ID. The
+For each named resource, select the single best-scoring ID. The
 runner-up score is extracted with `nth(..., 2)`. The raw ratio
 `score_top / score_runner_up` is computed internally, with `Inf` for resources
 that have no runner-up. This is later normalised to 0–1 at export via
 `1 - 1/ratio`, where 1.0 is exclusively reserved for unambiguous (uncontested)
 matches.
 
-### Step 7: Resolve Seq ID Collisions
+### Step 7: Resolve ID Collisions
 
 A `RESOURCEBID_SEQ` can only correspond to one physical generator. Where
-multiple named resources claim the same sequence ID, retain only the
+multiple named resources claim the same ID, retain only the
 highest-confidence claim.
 
 ### Step 8: Inspect Match Detail

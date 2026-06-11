@@ -11,21 +11,21 @@
 #' therefore reflect a maximum MW of approximately `RESOURCE PMAX MW -
 #' CURTAILMENT MW` -- the expected available capacity. If we find an anonymous
 #' `RESOURCEBID_SEQ` whose daily max bid MW closely matches this expected
-#' available capacity on the same date, that sequence ID is a candidate match
+#' available capacity on the same date, that ID is a candidate match
 #' for the named resource.
 #'
 #' Filter outages to `PLANNED` + partial curtailments (`CURTAILMENT MW <
 #' RESOURCE PMAX MW`). Compute `expected_available_mw = RESOURCE PMAX MW -
 #' CURTAILMENT MW` per resource per curtailment date. Compute `daily_max_mw` per
-#' `RESOURCEBID_SEQ` from the DAM bid data. Pre-filter sequence IDs using
+#' `RESOURCEBID_SEQ` from the DAM bid data. Pre-filter IDs using
 #' `id_attrs`: only consider IDs whose all-time `max_mw` is within
 #' `pmax_tolerance` of `RESOURCE PMAX MW`. This eliminates implausible size
 #' mismatches before the expensive join. Join on date -- every size-compatible
-#' sequence ID active on a curtailment day becomes a candidate. Filter to
+#' ID active on a curtailment day becomes a candidate. Filter to
 #' candidates whose `daily_max_mw` is within `tolerance` of
 #' `expected_available_mw`.
 #'
-#' Score each (`RESOURCE ID`, `RESOURCEBID_SEQ`) pair using a combined metric
+#' Score each (`generator`, `RESOURCEBID_SEQ`) pair using a combined metric
 #' that rewards both more matching days and lower MW error.
 #' Compute a confidence score from 0 to 1 comparing the top candidate's score to
 #' the runner-up: 0 means tied, 1 means no competing candidate existed.
@@ -42,7 +42,7 @@
 #' @param outages Prior trade day outage data. Must include `OUTAGE TYPE`,
 #'   `RESOURCE ID`, `RESOURCE NAME`, `RESOURCE PMAX MW`, `CURTAILMENT MW`, and
 #'   `CURTAILMENT START DATE TIME`.
-#' @param id_attrs Sequence ID attributes. Must include `RESOURCEBID_SEQ` and
+#' @param id_attrs ID attributes. Must include `RESOURCEBID_SEQ` and
 #'   all-time observed `max_mw`.
 #' @param tolerance Tolerance used when comparing `daily_max_mw` to
 #'   `expected_available_mw`.
@@ -51,7 +51,7 @@
 #' @param min_matches Minimum number of matching days.
 #' @param resolve_collisions If `TRUE`, resolve collisions where the same
 #'   `RESOURCEBID_SEQ` is claimed by multiple named resources.
-#' @param top_n Maximum number of candidate seq IDs to retain per resource in
+#' @param top_n Maximum number of candidate IDs to retain per resource in
 #'   `top_candidates` (returned when `return_detail = TRUE`). Candidates are
 #'   ranked by score with no collision resolution applied, so the same
 #'   `RESOURCEBID_SEQ` may appear for multiple resources.
@@ -59,8 +59,9 @@
 #'   scores, top candidates, and raw matches.
 #'
 #' @return If `return_detail = FALSE`, a tibble with the final deanonymization
-#'   map: one row per named resource to seq ID pair, joined with resource
-#'   nameplate PMAX and the seq ID's all-time observed max MW. If
+#'   map: one row per named resource to ID pair, with identity columns
+#'   `generator` and `generator_name`, resource nameplate `pmax_mw`, and the
+#'   ID's all-time observed `max_mw`. If
 #'   `return_detail = TRUE`, a named list with `final_matches`, `match_detail`,
 #'   `scores`, `top_candidates`, `raw_matches`, and `planned_partial` (all
 #'   planned partial curtailment events, useful for computing total event counts).
@@ -98,23 +99,29 @@ get_curtailment_matches <- function(
       `RESOURCE PMAX MW`,
       `CURTAILMENT MW`,
       expected_available_mw
+    ) |>
+    dplyr::rename(
+      generator = `RESOURCE ID`,
+      generator_name = `RESOURCE NAME`,
+      pmax_mw = `RESOURCE PMAX MW`,
+      curtailment_mw = `CURTAILMENT MW`
     )
 
   pmax_lookup <- planned_partial |>
-    dplyr::distinct(`RESOURCE ID`, `RESOURCE PMAX MW`) |>
+    dplyr::distinct(generator, pmax_mw) |>
     dplyr::cross_join(
       id_attrs |>
         dplyr::select(RESOURCEBID_SEQ, max_mw)
     ) |>
     dplyr::filter(
-      abs(max_mw - `RESOURCE PMAX MW`) / `RESOURCE PMAX MW` <= pmax_tolerance
+      abs(max_mw - pmax_mw) / pmax_mw <= pmax_tolerance
     ) |>
-    dplyr::select(`RESOURCE ID`, RESOURCEBID_SEQ)
+    dplyr::select(generator, RESOURCEBID_SEQ)
 
   matches <- planned_partial |>
     dplyr::inner_join(
       pmax_lookup,
-      by = "RESOURCE ID",
+      by = "generator",
       relationship = "many-to-many"
     ) |>
     dplyr::inner_join(
@@ -142,11 +149,11 @@ get_curtailment_matches <- function(
         tolerance
     ) |>
     dplyr::select(
-      `RESOURCE ID`,
-      `RESOURCE NAME`,
+      generator,
+      generator_name,
       curtailment_date,
-      `RESOURCE PMAX MW`,
-      `CURTAILMENT MW`,
+      pmax_mw,
+      curtailment_mw,
       expected_available_mw,
       RESOURCEBID_SEQ,
       daily_max_mw
@@ -157,7 +164,7 @@ get_curtailment_matches <- function(
   top_matches <- scores |>
     dplyr::filter(n_matches >= min_matches) |>
     dplyr::arrange(
-      `RESOURCE ID`,
+      generator,
       dplyr::desc(score),
       mean_pct_err,
       RESOURCEBID_SEQ
@@ -170,7 +177,7 @@ get_curtailment_matches <- function(
         score <= 0 ~ 0,
         TRUE ~ pmax(0, pmin(1, 1 - runner_up / score))
       ),
-      .by = `RESOURCE ID`
+      .by = generator
     ) |>
     dplyr::filter(rank == 1L) |>
     dplyr::select(-rank, -runner_up)
@@ -193,23 +200,23 @@ get_curtailment_matches <- function(
     dplyr::left_join(
       planned_partial |>
         dplyr::summarise(
-          `RESOURCE PMAX MW` = max(`RESOURCE PMAX MW`, na.rm = TRUE),
-          .by = `RESOURCE ID`
+          pmax_mw = max(pmax_mw, na.rm = TRUE),
+          .by = generator
         ),
-      by = "RESOURCE ID"
+      by = "generator"
     ) |>
     dplyr::left_join(
       id_attrs |>
-        dplyr::select(RESOURCEBID_SEQ, seq_max_mw = max_mw),
+        dplyr::select(RESOURCEBID_SEQ, max_mw),
       by = "RESOURCEBID_SEQ"
     ) |>
     dplyr::select(
-      `RESOURCE ID`,
-      `RESOURCE NAME`,
-      `RESOURCE PMAX MW`,
+      generator,
+      generator_name,
       RESOURCEBID_SEQ,
-      seq_max_mw,
       n_matches,
+      pmax_mw,
+      max_mw,
       mean_pct_err,
       score,
       confidence
@@ -220,7 +227,7 @@ get_curtailment_matches <- function(
     top_candidates <- scores |>
       dplyr::filter(n_matches >= min_matches) |>
       dplyr::arrange(
-        `RESOURCE ID`,
+        generator,
         dplyr::desc(score),
         mean_pct_err,
         RESOURCEBID_SEQ
@@ -234,31 +241,31 @@ get_curtailment_matches <- function(
           score <= 0 ~ 0,
           TRUE ~ pmax(0, pmin(1, 1 - runner_up / score))
         ),
-        .by = `RESOURCE ID`
+        .by = generator
       ) |>
       dplyr::filter(rank <= top_n) |>
       dplyr::select(-runner_up) |>
       dplyr::left_join(
         planned_partial |>
           dplyr::summarise(
-            `RESOURCE PMAX MW` = max(`RESOURCE PMAX MW`, na.rm = TRUE),
-            .by = `RESOURCE ID`
+            pmax_mw = max(pmax_mw, na.rm = TRUE),
+            .by = generator
           ),
-        by = "RESOURCE ID"
+        by = "generator"
       ) |>
       dplyr::left_join(
         id_attrs |>
-          dplyr::select(RESOURCEBID_SEQ, seq_max_mw = max_mw),
+          dplyr::select(RESOURCEBID_SEQ, max_mw),
         by = "RESOURCEBID_SEQ"
       ) |>
       dplyr::select(
-        `RESOURCE ID`,
-        `RESOURCE NAME`,
-        `RESOURCE PMAX MW`,
+        generator,
+        generator_name,
         RESOURCEBID_SEQ,
-        seq_max_mw,
         rank,
         n_matches,
+        pmax_mw,
+        max_mw,
         mean_pct_err,
         score,
         confidence
@@ -269,13 +276,13 @@ get_curtailment_matches <- function(
       match_detail = matches |>
         dplyr::semi_join(
           final_matches,
-          by = c("RESOURCE ID", "RESOURCEBID_SEQ")
+          by = c("generator", "RESOURCEBID_SEQ")
         ) |>
         dplyr::mutate(
           mw_error = daily_max_mw - expected_available_mw,
           pct_error = mw_error / expected_available_mw
         ) |>
-        dplyr::arrange(`RESOURCE ID`, curtailment_date),
+        dplyr::arrange(generator, curtailment_date),
       scores = scores,
       top_candidates = top_candidates,
       raw_matches = matches,
@@ -326,15 +333,16 @@ get_curtailment_matches <- function(
 #' @param min_matches Minimum number of matched outages.
 #' @param resolve_collisions If `TRUE`, resolve collisions where the same
 #'   `RESOURCEBID_SEQ` is claimed by multiple named resources.
-#' @param top_n Maximum number of candidate seq IDs to retain per generator in
+#' @param top_n Maximum number of candidate IDs to retain per generator in
 #'   `top_candidates` (returned when `return_detail = TRUE`). Candidates are
 #'   ranked by score with no collision resolution applied.
 #' @param return_detail If `TRUE`, return final matches, match detail, scores,
 #'   top candidates, raw matches, and cleaned outages.
 #'
-#' @return If `return_detail = FALSE`, a tibble of generator-bid ID pairs. If
-#'   `return_detail = TRUE`, a named list with `final_matches`, `match_detail`,
-#'   `scores`, `top_candidates`, `raw_matches`, and `outages`.
+#' @return If `return_detail = FALSE`, a tibble of generator-bid ID pairs with
+#'   identity columns `generator` and `generator_name`. If `return_detail =
+#'   TRUE`, a named list with `final_matches`, `match_detail`, `scores`,
+#'   `top_candidates`, `raw_matches`, and `outages`.
 #'
 #' @export
 get_outage_rtm_matches <- function(
@@ -401,7 +409,7 @@ get_outage_rtm_matches <- function(
       gap_start_max
     )
 
-  seq_max_mw <- rtm_en |>
+  seq_max <- rtm_en |>
     dplyr::summarise(
       max_mw = max(SCH_BID_XAXISDATA, na.rm = TRUE),
       .by = RESOURCEBID_SEQ
@@ -425,7 +433,7 @@ get_outage_rtm_matches <- function(
       relationship = "many-to-many"
     ) |>
     dplyr::filter(next_bid_start_cmp >= outage_stop_min) |>
-    dplyr::left_join(seq_max_mw, by = "RESOURCEBID_SEQ") |>
+    dplyr::left_join(seq_max, by = "RESOURCEBID_SEQ") |>
     dplyr::mutate(
       stop_offset = as.numeric(difftime(
         last_bid_stop,
@@ -440,6 +448,7 @@ get_outage_rtm_matches <- function(
     ) |>
     dplyr::select(
       generator,
+      generator_name,
       outage_start,
       outage_stop,
       pmax_mw,
@@ -452,6 +461,7 @@ get_outage_rtm_matches <- function(
     ) |>
     dplyr::arrange(
       generator,
+      generator_name,
       outage_start,
       abs(stop_offset),
       abs(max_mw - pmax_mw),
@@ -512,10 +522,17 @@ get_outage_rtm_matches <- function(
       ) |>
       dplyr::mutate(
         rank = dplyr::row_number(),
+        runner_up = dplyr::nth(score, 2L),
+        confidence = dplyr::case_when(
+          rank != 1L ~ NA_real_,
+          is.na(runner_up) ~ 1,
+          score <= 0 ~ 0,
+          TRUE ~ pmax(0, pmin(1, 1 - runner_up / score))
+        ),
         .by = generator
       ) |>
       dplyr::filter(rank <= top_n) |>
-      dplyr::select(-rank)
+      dplyr::select(-runner_up)
 
     return(list(
       final_matches = final_matches,
@@ -538,18 +555,18 @@ get_outage_rtm_matches <- function(
 #' Score curtailment match candidates
 #'
 #' The raw count of matching days (`n_matches`) alone is insufficient as a
-#' ranking signal because it ignores how closely a sequence ID's bids track the
+#' ranking signal because it ignores how closely an ID's bids track the
 #' expected available capacity on those days. Two candidates might both match 71
 #' days, but one always bids within 0.1% of the target while the other
 #' consistently sits at 4.9% -- the first is a much stronger match.
 #'
-#' For each (`RESOURCE ID`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
+#' For each (`generator`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
 #' `mean_pct_err`, and `score = n_matches * (1 - mean_pct_err)`. This penalises
 #' candidates with high average MW error, so a candidate with 71 matches at 0%
 #' error outscores one with 71 matches at 4% error.
 #'
 #' @param matches Candidate match rows with `daily_max_mw`,
-#'   `expected_available_mw`, `RESOURCE ID`, `RESOURCE NAME`, and
+#'   `expected_available_mw`, `generator`, `generator_name`, and
 #'   `RESOURCEBID_SEQ`.
 #'
 #' @return A tibble of candidate scores with `n_matches`, `mean_pct_err`, and
@@ -566,7 +583,7 @@ score_curtailment_matches <- function(matches) {
       n_matches = dplyr::n(),
       mean_pct_err = mean(abs_pct_err, na.rm = TRUE),
       score = n_matches * (1 - mean_pct_err),
-      .by = c(`RESOURCE ID`, `RESOURCE NAME`, RESOURCEBID_SEQ)
+      .by = c(generator, generator_name, RESOURCEBID_SEQ)
     ) |>
     dplyr::arrange(dplyr::desc(score), mean_pct_err)
 }
@@ -576,15 +593,16 @@ score_curtailment_matches <- function(matches) {
 #' For each generator-ID pair, aggregate across all matched outages.
 #'
 #' The raw count of matching days (`n_matches`) alone is insufficient as a
-#' ranking signal because it ignores how closely a sequence ID's bids track the
+#' ranking signal because it ignores how closely an ID's bids track the
 #' expected available capacity on those days.
 #'
 #' For each (`generator`, `RESOURCEBID_SEQ`) pair, compute `n_matches`,
 #' `mean_pct_err`, and `score = n_matches * (1 - mean_pct_err)`. This penalises
 #' candidates with high average MW error.
 #'
-#' @param matches Raw join results with `generator`, `RESOURCEBID_SEQ`,
-#'   `pmax_mw`, `max_mw`, `stop_offset`, and `restart_offset`.
+#' @param matches Raw join results with `generator`, `generator_name`,
+#'   `RESOURCEBID_SEQ`, `pmax_mw`, `max_mw`, `stop_offset`, and
+#'   `restart_offset`.
 #'
 #' @return A tibble of per-match stats with offsets, match count, mean absolute
 #'   percentage error, and score.
@@ -611,7 +629,7 @@ score_outage_matches <- function(matches) {
       mean_abs_stop_offset = mean(abs_stop_offset, na.rm = TRUE),
       mean_abs_restart_offset = mean(abs_restart_offset, na.rm = TRUE),
       score = n_matches * (1 - mean_pct_err),
-      .by = c(generator, RESOURCEBID_SEQ)
+      .by = c(generator, generator_name, RESOURCEBID_SEQ)
     ) |>
     dplyr::arrange(
       generator,
@@ -665,6 +683,7 @@ get_generator_outages <- function(outages, generators = NULL) {
     ) |>
     dplyr::transmute(
       generator = `RESOURCE ID`,
+      generator_name = `RESOURCE NAME`,
       outage_start = as.POSIXct(`CURTAILMENT START DATE TIME`),
       outage_stop = as.POSIXct(`CURTAILMENT END DATE TIME`),
       pmax_mw = `RESOURCE PMAX MW`
@@ -676,6 +695,7 @@ get_generator_outages <- function(outages, generators = NULL) {
       } else {
         max(outage_stop, na.rm = TRUE)
       },
+      generator_name = dplyr::first(generator_name),
       pmax_mw = max(pmax_mw, na.rm = TRUE),
       .by = c(generator, outage_start)
     ) |>
@@ -701,9 +721,16 @@ get_generator_outages <- function(outages, generators = NULL) {
       } else {
         max(outage_stop, na.rm = TRUE)
       },
+      generator_name = dplyr::first(generator_name),
       pmax_mw = max(pmax_mw, na.rm = TRUE),
       .by = c(generator, outage_group)
     ) |>
-    dplyr::select(generator, outage_start, outage_stop, pmax_mw) |>
+    dplyr::select(
+      generator,
+      generator_name,
+      outage_start,
+      outage_stop,
+      pmax_mw
+    ) |>
     dplyr::arrange(generator, outage_start, outage_stop)
 }
